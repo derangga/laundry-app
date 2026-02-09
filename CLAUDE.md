@@ -1,0 +1,151 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Laundry management web application for managing customers, orders, services, and payments with analytics dashboard.
+
+**Tech Stack:**
+- Backend: Effect TypeScript
+- Frontend: TanStack Start (React framework)
+- Database: PostgreSQL
+- Target Platform: Web only
+
+## Architecture
+
+### Domain Model
+
+The application is built around these core entities:
+
+1. **Users** (Staff/Admin) - Authentication and authorization
+2. **Customers** - Identified by phone number (unique identifier)
+3. **Services** - Laundry service packages (e.g., regular/express laundry, bed covers) with price and unit type (kg/set)
+4. **Orders** - Customer orders containing multiple service items
+5. **Order Items** - Junction between orders and services with quantity and pricing snapshot
+
+### User Roles & Permissions
+
+- **Admin**: Full access including service management and analytics
+- **Staff**: Create orders, manage customers, process payments (no service management)
+- **Customers**: No system access (staff-managed workflow)
+
+### Order Workflow
+
+Orders progress through distinct statuses:
+```
+Received → In Progress → Ready → Delivered
+```
+
+Payment can occur at two points:
+- Immediately at order creation (status: paid)
+- Later when laundry is ready (status: unpaid → paid)
+
+### Key Business Rules
+
+- **Customer Identification**: Phone number is the unique identifier for customers
+- **First-Time Check**: System must verify if customer exists before registration
+- **Price Calculation**: Total = sum of (service_price × weight/quantity) for each order item
+- **Price Snapshot**: Order items store `price_at_order` to preserve pricing even if service prices change later
+- **Service Units**: Services can be measured in kg (weight) or set (count)
+
+## Database Schema
+
+Key relationships:
+- `orders.customer_id` → `customers.id`
+- `orders.created_by` → `users.id`
+- `order_items.order_id` → `orders.id`
+- `order_items.service_id` → `services.id`
+
+Order items store denormalized pricing (`price_at_order`, `subtotal`) to maintain historical accuracy.
+
+## API Endpoints
+
+**Authentication:**
+- `POST /api/auth/login`, `POST /api/auth/logout`
+
+**Customers:**
+- `GET /api/customers?phone={phone}` - Search by phone
+- `POST /api/customers` - Register new customer
+- `GET /api/customers/:id`
+
+**Services (Admin only for CUD operations):**
+- `GET /api/services`
+- `POST /api/services`, `PUT /api/services/:id`, `DELETE /api/services/:id`
+
+**Orders:**
+- `GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders`
+- `PUT /api/orders/:id/status` - Update order status
+- `PUT /api/orders/:id/payment` - Update payment status
+
+**Analytics:**
+- `GET /api/analytics/weekly?startDate={date}&status={paid|unpaid|all}`
+
+**Receipts:**
+- `GET /api/receipts/:orderId`
+
+## Frontend Routes
+
+- `/login` - Authentication
+- `/dashboard` - Main dashboard with weekly analytics charts
+- `/customers/search` - Customer lookup and registration
+- `/orders/new` - Order creation workflow
+- `/orders` - Order list view
+- `/orders/:id` - Order details
+- `/services` - Service management (Admin only)
+- `/settings` - User settings
+
+## Analytics Requirements
+
+Weekly transaction visualization showing:
+- Total revenue (IDR)
+- Order count
+
+Filterable by:
+- Successful transactions (paid orders only)
+- Pending transactions (unpaid orders only)
+- Both (combined view)
+
+Display as graph/chart with weekly trends.
+
+## Critical Implementation Notes
+
+### Effect TypeScript Backend
+
+Use Effect-TS patterns for:
+- Error handling and failure modeling
+- Service layer composition
+- Database operations with proper effect lifting
+- Authentication/authorization middleware
+
+### Customer Phone Number Handling
+
+- Phone numbers must be validated and normalized before storage
+- Search should handle variations in phone number format
+- Uniqueness constraint enforced at database level
+
+### Service Management
+
+When deleting services, handle existing orders gracefully:
+- Consider soft delete (is_active flag) instead of hard delete
+- Preserve service information in order_items via denormalization
+
+### Receipt Generation
+
+Receipts must include:
+- Order details (order number, date, status)
+- Customer info (name, phone)
+- Service items with quantities and prices
+- Total price
+- Payment status
+
+### Authorization Middleware
+
+Protect admin-only routes:
+- Service CRUD operations (except GET)
+- Analytics dashboard access
+
+Staff should have access to:
+- Customer management
+- Order creation and updates
+- Payment processing
