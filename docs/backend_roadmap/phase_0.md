@@ -12,12 +12,12 @@
 
 #### Task 0.1: Initialize Bun Workspace
 
-- [ ] Create `/applications/backend` directory
+- [ ] Create `/backend` directory
 - [ ] Initialize Bun package: `bun init`
 - [ ] Set up workspace in root `package.json`:
   ```json
   {
-    "workspaces": ["applications/*", "packages/*"]
+    "workspaces": ["/*", "packages/*"]
   }
   ```
 
@@ -69,7 +69,7 @@
 
 - [ ] Create directory structure:
   ```
-  /applications/backend/
+  /backend/
   ├── src/
   │   ├── domain/
   │   │   ├── customer/
@@ -198,12 +198,12 @@
 
 ### Key Files to Create
 
-- `/applications/backend/package.json`
-- `/applications/backend/tsconfig.json`
-- `/applications/backend/vitest.config.ts`
-- `/applications/backend/.env.example`
-- `/applications/backend/.prettierrc`
-- `/applications/backend/.gitignore`
+- `/backend/package.json`
+- `/backend/tsconfig.json`
+- `/backend/vitest.config.ts`
+- `/backend/.env.example`
+- `/backend/.prettierrc`
+- `/backend/.gitignore`
 
 ### Verification Steps
 

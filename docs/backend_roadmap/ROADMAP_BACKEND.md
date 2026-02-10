@@ -325,7 +325,7 @@ class Customer extends Model.Class<Customer>("Customer")({
 ### Migration Strategy
 
 1. **Tool**: Use `golang-migrate` for SQL migrations
-2. **Location**: `/applications/backend/migrations/`
+2. **Location**: `/backend/migrations/`
 3. **Naming**: Timestamp-based (e.g., `000001_create_users_table.up.sql`)
 4. **Process**: Run migrations during deployment before starting the app
 
@@ -359,7 +359,7 @@ class Customer extends Model.Class<Customer>("Customer")({
 1. **Clone repository and navigate to backend**:
 
    ```bash
-   cd /applications/backend
+   cd /backend
    ```
 
 2. **Install dependencies**:

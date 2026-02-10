@@ -364,9 +364,9 @@
 
 ### Key Files to Create
 
-- Migration files in `/applications/backend/migrations/`
-- Entity models in `/applications/backend/src/domain/`
-- SqlClient configuration in `/applications/backend/src/infrastructure/database/`
+- Migration files in `/backend/migrations/`
+- Entity models in `/backend/src/domain/`
+- SqlClient configuration in `/backend/src/infrastructure/database/`
 
 ### Verification Steps
 
