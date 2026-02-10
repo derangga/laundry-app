@@ -174,6 +174,12 @@ Before implementing non-trivial features or changes, create a plan document:
 - Success criteria
 - Potential risks and alternatives
 
+## Agents
+
+When working with Effect TypeScript code, use the Effect coder agent for guidance:
+- **Location**: `/.claude/agents/effect-coder.md`
+- **Usage**: Consult this agent for Effect patterns, best practices, and setup
+
 ## Documentation Structure
 
 **Core Documentation**:
@@ -188,3 +194,6 @@ Before implementing non-trivial features or changes, create a plan document:
 
 **Plans** (for non-trivial work):
 - `/docs/plans/` - Directory for planning documents before implementation
+
+**Agents**:
+- `/.claude/agents/effect-coder.md` - Effect TypeScript setup and patterns guide

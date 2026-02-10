@@ -1,11 +1,14 @@
 import { Schema } from "effect"
 import { Model } from "@effect/sql"
 
+export const ServiceId = Schema.String.pipe(Schema.brand("ServiceId"))
+export type ServiceId = typeof ServiceId.Type
+
 export const UnitType = Schema.Literal("kg", "set")
 export type UnitType = typeof UnitType.Type
 
 export class LaundryService extends Model.Class<LaundryService>("LaundryService")({
-  id: Model.Generated(Schema.String),
+  id: Model.Generated(ServiceId),
   name: Schema.String,
   price: Schema.Number,
   unit_type: UnitType,

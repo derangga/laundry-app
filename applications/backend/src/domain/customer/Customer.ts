@@ -1,8 +1,11 @@
 import { Schema } from "effect"
 import { Model } from "@effect/sql"
 
+export const CustomerId = Schema.String.pipe(Schema.brand("CustomerId"))
+export type CustomerId = typeof CustomerId.Type
+
 export class Customer extends Model.Class<Customer>("Customer")({
-  id: Model.Generated(Schema.String),
+  id: Model.Generated(CustomerId),
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
