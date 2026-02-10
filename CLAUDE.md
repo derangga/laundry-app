@@ -152,6 +152,25 @@ Staff should have access to:
 
 ## Development Workflow
 
+### Git Workflow
+
+**Branch Management**:
+- **NEVER push changes directly to the master branch**
+- **ALWAYS create a new branch for any changes**
+
+**Standard workflow**:
+1. Create a new branch with a descriptive name: `git checkout -b feature/your-feature-name`
+2. Make your changes and commit them
+3. Push the branch to remote: `git push -u origin your-branch-name`
+4. Create a pull request for review and merging
+
+**Branch naming conventions**:
+- `feature/` - For new features
+- `fix/` - For bug fixes
+- `refactor/` - For code refactoring
+- `docs/` - For documentation updates
+- `chore/` - For maintenance tasks
+
 ### Planning for Non-Trivial Work
 
 Before implementing non-trivial features or changes, create a plan document:
