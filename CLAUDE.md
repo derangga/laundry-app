@@ -118,6 +118,13 @@ Use Effect-TS patterns for:
 - Database operations with proper effect lifting
 - Authentication/authorization middleware
 
+### Domain Model Placement
+
+- **ALWAYS place data models (request/response types, DTOs) in the domain layer** (`/backend/src/domain/`)
+- **NEVER define data models inside application layer use cases** (`/backend/src/application/`)
+- Use cases should only contain business logic, importing models from the domain layer
+- Group related domain models by feature (e.g., `Auth.ts`, `User.ts`, `Order.ts`, `Customer.ts`)
+
 ### Customer Phone Number Handling
 
 - Phone numbers must be validated and normalized before storage
@@ -159,7 +166,7 @@ Staff should have access to:
 - **ALWAYS create a new branch for any changes**
 
 **Standard workflow**:
-1. Create a new branch with a descriptive name: `git checkout -b feature/your-feature-name`
+1. Create a new branch from master with a descriptive name: `git checkout -b feature/your-feature-name master`
 2. Make your changes and commit them
 3. Push the branch to remote: `git push -u origin your-branch-name`
 4. Create a pull request for review and merging
@@ -206,6 +213,7 @@ When working with Effect TypeScript code, use the Effect coder agent for guidanc
 - `/docs/PRD.md` - Product Requirements Document (comprehensive product spec)
 - `/docs/ADR_BACKEND.md` - Backend architectural decisions
 - `/docs/PRD_PLAN.md` - PRD planning and structure outline
+- `/docs/CONTEXT.md` - Project context and background information
 
 **Backend Roadmap**:
 - `/docs/backend_roadmap/` - Directory containing all backend implementation roadmaps
