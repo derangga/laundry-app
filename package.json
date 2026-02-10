@@ -1,0 +1,12 @@
+{
+  "name": "laundry-app",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "applications/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "backend": "bun --cwd applications/backend"
+  }
+}
