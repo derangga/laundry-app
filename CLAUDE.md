@@ -149,3 +149,42 @@ Staff should have access to:
 - Customer management
 - Order creation and updates
 - Payment processing
+
+## Development Workflow
+
+### Planning for Non-Trivial Work
+
+Before implementing non-trivial features or changes, create a plan document:
+- **Location**: `docs/plans/<NAME>_<DATE>.md`
+- **Naming**: Use descriptive name and date (e.g., `order_workflow_20260209.md`)
+- **Purpose**: Document approach, gather context, and get alignment before implementation
+
+**When to create a plan**:
+- New feature implementation
+- Significant refactoring
+- Architectural changes
+- Multi-file modifications
+- Changes requiring stakeholder approval
+
+**Plan should include**:
+- Overview and context
+- Current state analysis
+- Proposed approach
+- Implementation steps
+- Success criteria
+- Potential risks and alternatives
+
+## Documentation Structure
+
+**Core Documentation**:
+- `/CLAUDE.md` - Project overview and development guidelines (this file)
+- `/docs/PRD.md` - Product Requirements Document (comprehensive product spec)
+- `/docs/ADR_BACKEND.md` - Backend architectural decisions
+- `/docs/PRD_PLAN.md` - PRD planning and structure outline
+
+**Backend Roadmap**:
+- `/docs/backend_roadmap/` - Directory containing all backend implementation roadmaps
+- `/docs/backend_roadmap/ROADMAP_BACKEND.md` - Main backend implementation roadmap
+
+**Plans** (for non-trivial work):
+- `/docs/plans/` - Directory for planning documents before implementation
