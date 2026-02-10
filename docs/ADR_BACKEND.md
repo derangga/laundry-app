@@ -34,7 +34,7 @@ This ADR documents the architectural decisions for the laundry management applic
 
 ### Monorepo Context
 
-The backend is located at `/applications/backend` within a Bun workspace monorepo structure, allowing for shared packages and consistent dependency management across frontend and backend.
+The backend is located at `/backend` within a Bun workspace monorepo structure, allowing for shared packages and consistent dependency management across frontend and backend.
 
 ---
 
@@ -394,7 +394,7 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()(
 
 **Migration Strategy**:
 - Consider golang-migrate or similar tool for SQL migrations
-- Store migration files in `/applications/backend/migrations/`
+- Store migration files in `/backend/migrations/`
 - Version migrations with timestamps
 - Run migrations as part of deployment process
 
@@ -554,7 +554,7 @@ The backend codebase needs a clear directory structure that organizes code by re
 
 #### Decision
 
-Organize code using Clean Architecture / Hexagonal Architecture principles within `/applications/backend`, with layers for domain logic, application use cases, infrastructure concerns, and API routes.
+Organize code using Clean Architecture / Hexagonal Architecture principles within `/backend`, with layers for domain logic, application use cases, infrastructure concerns, and API routes.
 
 #### Rationale
 
@@ -568,7 +568,7 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Project Structure
 
 ```
-/applications/backend
+/backend
 ├── src/
 │   ├── domain/                    # Business logic & entities
 │   │   ├── customer/
@@ -1344,7 +1344,7 @@ parseResult.pipe(
 ## 4. Project Structure Overview
 
 ```
-/applications/backend/
+/backend/
 ├── src/
 │   ├── domain/              # Business entities, logic, domain services
 │   ├── application/         # Use cases orchestrating domain
