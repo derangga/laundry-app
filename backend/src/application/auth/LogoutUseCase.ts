@@ -5,16 +5,9 @@ import { TokenGenerator } from "../../infrastructure/TokenGenerator"
 import { CurrentUser } from "../../domain/CurrentUser"
 import { UserId } from "../../domain/User"
 import { UnauthorizedError } from "../../domain/UserErrors"
+import { LogoutInput, LogoutResult } from "../../domain/Auth"
 
-export interface LogoutInput {
-  readonly refreshToken?: string
-  readonly logoutAll?: boolean
-}
-
-export interface LogoutResult {
-  readonly success: boolean
-  readonly message: string
-}
+export { LogoutInput, LogoutResult }
 
 export const logout = (
   input: LogoutInput

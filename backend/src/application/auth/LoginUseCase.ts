@@ -5,24 +5,11 @@ import { RefreshTokenRepository } from "../../infrastructure/database/repositori
 import { PasswordService } from "../../infrastructure/PasswordService"
 import { JwtService, JwtPayload } from "../../infrastructure/JwtService"
 import { TokenGenerator } from "../../infrastructure/TokenGenerator"
-import { UserId, UserRole } from "../../domain/User"
 import { InvalidCredentialsError } from "../../domain/UserErrors"
+import { LoginInput, AuthResponse } from "../../domain/Auth"
 
-export interface LoginInput {
-  readonly email: string
-  readonly password: string
-}
-
-export interface LoginResult {
-  readonly accessToken: string
-  readonly refreshToken: string
-  readonly user: {
-    readonly id: UserId
-    readonly email: string
-    readonly name: string
-    readonly role: UserRole
-  }
-}
+export { LoginInput }
+export type LoginResult = AuthResponse
 
 export const login = (
   input: LoginInput

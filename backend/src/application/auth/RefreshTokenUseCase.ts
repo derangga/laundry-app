@@ -4,23 +4,11 @@ import { UserRepository } from "../../infrastructure/database/repositories/UserR
 import { RefreshTokenRepository } from "../../infrastructure/database/repositories/RefreshTokenRepository"
 import { JwtService, JwtPayload } from "../../infrastructure/JwtService"
 import { TokenGenerator } from "../../infrastructure/TokenGenerator"
-import { UserId, UserRole } from "../../domain/User"
 import { InvalidTokenError, RefreshTokenNotFoundError, UserNotFoundError } from "../../domain/UserErrors"
+import { RefreshTokenInput, AuthResponse } from "../../domain/Auth"
 
-export interface RefreshTokenInput {
-  readonly refreshToken: string
-}
-
-export interface RefreshTokenResult {
-  readonly accessToken: string
-  readonly refreshToken: string
-  readonly user: {
-    readonly id: UserId
-    readonly email: string
-    readonly name: string
-    readonly role: UserRole
-  }
-}
+export { RefreshTokenInput }
+export type RefreshTokenResult = AuthResponse
 
 export const refreshTokens = (
   input: RefreshTokenInput
