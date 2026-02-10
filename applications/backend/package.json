@@ -16,15 +16,16 @@
     "migrate:create": "bun run src/infrastructure/database/migrate-create.ts"
   },
   "dependencies": {
-    "effect": "^3.19.16",
+    "@effect/experimental": "^0.58.0",
     "@effect/platform": "^0.72.2",
     "@effect/platform-bun": "^0.53.1",
     "@effect/schema": "^0.75.5",
     "@effect/sql": "^0.24.3",
     "@effect/sql-pg": "^0.24.0",
-    "pg": "^8.18.0",
+    "@node-rs/bcrypt": "^1.10.7",
+    "effect": "^3.19.16",
     "jose": "^5.10.0",
-    "@node-rs/bcrypt": "^1.10.7"
+    "pg": "^8.18.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

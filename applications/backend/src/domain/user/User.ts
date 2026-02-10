@@ -1,16 +1,17 @@
 import { Schema } from "effect"
+import { Model } from "@effect/sql"
 
 export const UserRole = Schema.Literal("admin", "staff")
 export type UserRole = typeof UserRole.Type
 
-export class User extends Schema.Class<User>("User")({
-  id: Schema.UUID,
-  email: Schema.String.pipe(Schema.nonEmptyString()),
-  passwordHash: Schema.String.pipe(Schema.nonEmptyString()),
-  name: Schema.String.pipe(Schema.nonEmptyString()),
+export class User extends Model.Class<User>("User")({
+  id: Model.Generated(Schema.String),
+  email: Schema.String,
+  password_hash: Schema.String,
+  name: Schema.String,
   role: UserRole,
-  createdAt: Schema.DateTimeUtc,
-  updatedAt: Schema.DateTimeUtc,
+  created_at: Model.DateTimeInsert,
+  updated_at: Model.DateTimeUpdate,
 }) {}
 
 export class CreateUserInput extends Schema.Class<CreateUserInput>("CreateUserInput")({
@@ -21,10 +22,10 @@ export class CreateUserInput extends Schema.Class<CreateUserInput>("CreateUserIn
 }) {}
 
 export class UserWithoutPassword extends Schema.Class<UserWithoutPassword>("UserWithoutPassword")({
-  id: Schema.UUID,
+  id: Schema.String,
   email: Schema.String.pipe(Schema.nonEmptyString()),
   name: Schema.String.pipe(Schema.nonEmptyString()),
   role: UserRole,
-  createdAt: Schema.DateTimeUtc,
-  updatedAt: Schema.DateTimeUtc,
+  created_at: Schema.DateTimeUtc,
+  updated_at: Schema.DateTimeUtc,
 }) {}

@@ -1,22 +1,23 @@
 import { Schema } from "effect"
+import { Model } from "@effect/sql"
 
-export class Customer extends Schema.Class<Customer>("Customer")({
-  id: Schema.UUID,
-  name: Schema.String.pipe(Schema.nonEmptyString()),
-  phone: Schema.String.pipe(Schema.nonEmptyString()),
-  address: Schema.OptionFromNullOr(Schema.String),
-  createdAt: Schema.DateTimeUtc,
-  updatedAt: Schema.DateTimeUtc,
+export class Customer extends Model.Class<Customer>("Customer")({
+  id: Model.Generated(Schema.String),
+  name: Schema.String,
+  phone: Schema.String,
+  address: Schema.NullOr(Schema.String),
+  created_at: Model.DateTimeInsert,
+  updated_at: Model.DateTimeUpdate,
 }) {}
 
 export class CreateCustomerInput extends Schema.Class<CreateCustomerInput>("CreateCustomerInput")({
   name: Schema.String.pipe(Schema.nonEmptyString()),
   phone: Schema.String.pipe(Schema.nonEmptyString()),
-  address: Schema.OptionFromNullOr(Schema.String),
+  address: Schema.NullOr(Schema.String),
 }) {}
 
 export class UpdateCustomerInput extends Schema.Class<UpdateCustomerInput>("UpdateCustomerInput")({
   name: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
   phone: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
-  address: Schema.optional(Schema.OptionFromNullOr(Schema.String)),
+  address: Schema.optional(Schema.NullOr(Schema.String)),
 }) {}

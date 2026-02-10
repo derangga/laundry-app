@@ -1,16 +1,17 @@
 import { Schema } from "effect"
+import { Model } from "@effect/sql"
 
-export class OrderItem extends Schema.Class<OrderItem>("OrderItem")({
-  id: Schema.UUID,
-  orderId: Schema.UUID,
-  serviceId: Schema.UUID,
-  quantity: Schema.BigDecimal,
-  priceAtOrder: Schema.BigDecimal,
-  subtotal: Schema.BigDecimal,
-  createdAt: Schema.DateTimeUtc,
+export class OrderItem extends Model.Class<OrderItem>("OrderItem")({
+  id: Model.Generated(Schema.String),
+  order_id: Schema.String,
+  service_id: Schema.String,
+  quantity: Schema.Number,
+  price_at_order: Schema.Number,
+  subtotal: Schema.Number,
+  created_at: Model.DateTimeInsert,
 }) {}
 
 export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>("CreateOrderItemInput")({
-  serviceId: Schema.UUID,
-  quantity: Schema.BigDecimal,
+  service_id: Schema.String,
+  quantity: Schema.Number,
 }) {}

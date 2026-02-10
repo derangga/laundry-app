@@ -1,27 +1,28 @@
 import { Schema } from "effect"
+import { Model } from "@effect/sql"
 
 export const UnitType = Schema.Literal("kg", "set")
 export type UnitType = typeof UnitType.Type
 
-export class LaundryService extends Schema.Class<LaundryService>("LaundryService")({
-  id: Schema.UUID,
-  name: Schema.String.pipe(Schema.nonEmptyString()),
-  price: Schema.BigDecimal,
-  unitType: UnitType,
-  isActive: Schema.Boolean,
-  createdAt: Schema.DateTimeUtc,
-  updatedAt: Schema.DateTimeUtc,
+export class LaundryService extends Model.Class<LaundryService>("LaundryService")({
+  id: Model.Generated(Schema.String),
+  name: Schema.String,
+  price: Schema.Number,
+  unit_type: UnitType,
+  is_active: Schema.Boolean,
+  created_at: Model.DateTimeInsert,
+  updated_at: Model.DateTimeUpdate,
 }) {}
 
 export class CreateLaundryServiceInput extends Schema.Class<CreateLaundryServiceInput>("CreateLaundryServiceInput")({
   name: Schema.String.pipe(Schema.nonEmptyString()),
-  price: Schema.BigDecimal,
-  unitType: UnitType,
+  price: Schema.Number,
+  unit_type: UnitType,
 }) {}
 
 export class UpdateLaundryServiceInput extends Schema.Class<UpdateLaundryServiceInput>("UpdateLaundryServiceInput")({
   name: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
-  price: Schema.optional(Schema.BigDecimal),
-  unitType: Schema.optional(UnitType),
-  isActive: Schema.optional(Schema.Boolean),
+  price: Schema.optional(Schema.Number),
+  unit_type: Schema.optional(UnitType),
+  is_active: Schema.optional(Schema.Boolean),
 }) {}
