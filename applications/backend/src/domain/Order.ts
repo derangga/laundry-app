@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 import { Model } from "@effect/sql"
-import { CustomerId } from "../customer/Customer.js"
-import { UserId } from "../user/User.js"
+import { CustomerId } from "./Customer.js"
+import { UserId } from "./User.js"
 
 export const OrderId = Schema.String.pipe(Schema.brand("OrderId"))
 export type OrderId = typeof OrderId.Type
