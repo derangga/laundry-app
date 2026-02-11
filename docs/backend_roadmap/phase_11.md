@@ -15,12 +15,12 @@
 - [ ] Create `src/main.ts`:
 
   ```typescript
-  import { Effect, Layer } from "effect";
-  import { BunRuntime } from "@effect/platform-bun";
-  import { SqlLive } from "./infrastructure/database/SqlClient";
-  import { HttpServerLive } from "./infrastructure/http/HttpServer";
-  import { UserRepository } from "./infrastructure/database/repositories/UserRepository";
-  import { CustomerRepository } from "./infrastructure/database/repositories/CustomerRepository";
+  import { Effect, Layer } from 'effect'
+  import { BunRuntime } from '@effect/platform-bun'
+  import { SqlLive } from './infrastructure/database/SqlClient'
+  import { HttpServerLive } from './infrastructure/http/HttpServer'
+  import { UserRepository } from './repositories/UserRepository'
+  import { CustomerRepository } from './repositories/CustomerRepository'
   // ... import all repositories and services
 
   // Compose all layers
@@ -37,23 +37,23 @@
     CustomerService.Default,
     LaundryServiceService.Default,
     OrderService.Default,
-    HttpServerLive,
-  );
+    HttpServerLive
+  )
 
   // Main program
   const program = Effect.gen(function* () {
-    const server = yield* HttpServer.HttpServer;
+    const server = yield* HttpServer.HttpServer
 
-    yield* Effect.logInfo("Starting server...");
-    yield* server.serve(router); // Mount all routes
-    yield* Effect.logInfo("Server started successfully");
+    yield* Effect.logInfo('Starting server...')
+    yield* server.serve(router) // Mount all routes
+    yield* Effect.logInfo('Server started successfully')
 
     // Keep server running
-    yield* Effect.never;
-  });
+    yield* Effect.never
+  })
 
   // Run application
-  program.pipe(Effect.provide(AppLive), BunRuntime.runMain);
+  program.pipe(Effect.provide(AppLive), BunRuntime.runMain)
   ```
 
 #### Task 11.2: Mount All Routes

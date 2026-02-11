@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest"
-import { Effect } from "effect"
-import { PasswordService, PasswordServiceLive } from "@infrastructure/PasswordService"
+import { describe, it, expect } from 'vitest'
+import { Effect } from 'effect'
+import { PasswordService, PasswordServiceLive } from '@application/auth/PasswordService'
 
-describe("PasswordService", () => {
+describe('PasswordService', () => {
   const runWithService = <A, E>(effect: Effect.Effect<A, E, PasswordService>) =>
     Effect.runPromise(Effect.provide(effect, PasswordServiceLive))
 
-  describe("hash", () => {
-    it("should hash a password", async () => {
-      const password = "securePassword123!"
+  describe('hash', () => {
+    it('should hash a password', async () => {
+      const password = 'securePassword123!'
 
       const program = Effect.gen(function* () {
         const service = yield* PasswordService
@@ -21,8 +21,8 @@ describe("PasswordService", () => {
       expect(hash.length).toBeGreaterThan(0)
     })
 
-    it("should produce different hashes for the same password", async () => {
-      const password = "securePassword123!"
+    it('should produce different hashes for the same password', async () => {
+      const password = 'securePassword123!'
 
       const program = Effect.gen(function* () {
         const service = yield* PasswordService
@@ -36,9 +36,9 @@ describe("PasswordService", () => {
     })
   })
 
-  describe("verify", () => {
-    it("should verify correct password", async () => {
-      const password = "securePassword123!"
+  describe('verify', () => {
+    it('should verify correct password', async () => {
+      const password = 'securePassword123!'
 
       const program = Effect.gen(function* () {
         const service = yield* PasswordService
@@ -50,9 +50,9 @@ describe("PasswordService", () => {
       expect(isValid).toBe(true)
     })
 
-    it("should reject incorrect password", async () => {
-      const password = "securePassword123!"
-      const wrongPassword = "wrongPassword456!"
+    it('should reject incorrect password', async () => {
+      const password = 'securePassword123!'
+      const wrongPassword = 'wrongPassword456!'
 
       const program = Effect.gen(function* () {
         const service = yield* PasswordService
@@ -64,11 +64,11 @@ describe("PasswordService", () => {
       expect(isValid).toBe(false)
     })
 
-    it("should handle empty passwords", async () => {
+    it('should handle empty passwords', async () => {
       const program = Effect.gen(function* () {
         const service = yield* PasswordService
-        const hash = yield* service.hash("")
-        return yield* service.verify("", hash)
+        const hash = yield* service.hash('')
+        return yield* service.verify('', hash)
       })
 
       const isValid = await runWithService(program)

@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { Effect, Layer, Option } from "effect"
-import { ServiceRepository } from "@infrastructure/database/repositories/ServiceRepository"
+import { describe, it, expect } from 'vitest'
+import { Effect, Layer, Option } from 'effect'
+import { ServiceRepository } from '@repositories/ServiceRepository'
 import {
   LaundryService,
   ServiceId,
@@ -8,15 +8,15 @@ import {
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
   UnitType,
-} from "@domain/LaundryService"
+} from '@domain/LaundryService'
 
 // Create a mock service
 const createMockService = (overrides: Partial<LaundryService> = {}): LaundryService =>
   ({
-    id: "service-123" as ServiceId,
-    name: "Regular Wash",
+    id: 'service-123' as ServiceId,
+    name: 'Regular Wash',
     price: 10000,
-    unit_type: "kg" as UnitType,
+    unit_type: 'kg' as UnitType,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -24,18 +24,12 @@ const createMockService = (overrides: Partial<LaundryService> = {}): LaundryServ
   }) as unknown as LaundryService
 
 // Create a mock ServiceRepository
-const createMockServiceRepo = (
-  services: LaundryService[] = []
-) =>
+const createMockServiceRepo = (services: LaundryService[] = []) =>
   Layer.succeed(ServiceRepository, {
     findById: (id: ServiceId) =>
-      Effect.succeed(
-        Option.fromNullable(services.find((s) => s.id === id))
-      ),
-    findActive: () =>
-      Effect.succeed(services.filter((s) => s.is_active)),
-    findAll: () =>
-      Effect.succeed(services),
+      Effect.succeed(Option.fromNullable(services.find((s) => s.id === id))),
+    findActive: () => Effect.succeed(services.filter((s) => s.is_active)),
+    findAll: () => Effect.succeed(services),
     insert: (data: CreateLaundryServiceInput) =>
       Effect.succeed(
         createMockService({
@@ -75,32 +69,32 @@ const createMockServiceRepo = (
       ),
   } as unknown as ServiceRepository)
 
-describe("ServiceRepository", () => {
+describe('ServiceRepository', () => {
   const mockService = createMockService()
 
-  describe("findById", () => {
-    it("should return Some when service exists", async () => {
+  describe('findById', () => {
+    it('should return Some when service exists', async () => {
       const MockRepo = createMockServiceRepo([mockService])
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.findById("service-123" as ServiceId)
+        return yield* repo.findById('service-123' as ServiceId)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
       expect(Option.isSome(result)).toBe(true)
       if (Option.isSome(result)) {
-        expect(result.value.id).toBe("service-123")
-        expect(result.value.name).toBe("Regular Wash")
+        expect(result.value.id).toBe('service-123')
+        expect(result.value.name).toBe('Regular Wash')
       }
     })
 
-    it("should return None when service does not exist", async () => {
+    it('should return None when service does not exist', async () => {
       const MockRepo = createMockServiceRepo([])
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.findById("nonexistent" as ServiceId)
+        return yield* repo.findById('nonexistent' as ServiceId)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
@@ -108,12 +102,12 @@ describe("ServiceRepository", () => {
     })
   })
 
-  describe("findActive", () => {
-    it("should return only active services", async () => {
+  describe('findActive', () => {
+    it('should return only active services', async () => {
       const services = [
-        createMockService({ id: "1" as ServiceId, is_active: true }),
-        createMockService({ id: "2" as ServiceId, is_active: false }),
-        createMockService({ id: "3" as ServiceId, is_active: true }),
+        createMockService({ id: '1' as ServiceId, is_active: true }),
+        createMockService({ id: '2' as ServiceId, is_active: false }),
+        createMockService({ id: '3' as ServiceId, is_active: true }),
       ]
       const MockRepo = createMockServiceRepo(services)
 
@@ -128,11 +122,11 @@ describe("ServiceRepository", () => {
     })
   })
 
-  describe("findAll", () => {
-    it("should return all services", async () => {
+  describe('findAll', () => {
+    it('should return all services', async () => {
       const services = [
-        createMockService({ id: "1" as ServiceId, is_active: true }),
-        createMockService({ id: "2" as ServiceId, is_active: false }),
+        createMockService({ id: '1' as ServiceId, is_active: true }),
+        createMockService({ id: '2' as ServiceId, is_active: false }),
       ]
       const MockRepo = createMockServiceRepo(services)
 
@@ -146,14 +140,14 @@ describe("ServiceRepository", () => {
     })
   })
 
-  describe("insert", () => {
-    it("should create a new service", async () => {
+  describe('insert', () => {
+    it('should create a new service', async () => {
       const MockRepo = createMockServiceRepo([])
 
       const input: CreateLaundryServiceInput = {
-        name: "Express Wash",
+        name: 'Express Wash',
         price: 20000,
-        unit_type: "kg" as UnitType,
+        unit_type: 'kg' as UnitType,
       } as CreateLaundryServiceInput
 
       const program = Effect.gen(function* () {
@@ -162,14 +156,14 @@ describe("ServiceRepository", () => {
       })
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
-      expect(result.name).toBe("Express Wash")
+      expect(result.name).toBe('Express Wash')
       expect(result.price).toBe(20000)
-      expect(result.unit_type).toBe("kg")
+      expect(result.unit_type).toBe('kg')
     })
   })
 
-  describe("update", () => {
-    it("should update existing service", async () => {
+  describe('update', () => {
+    it('should update existing service', async () => {
       const MockRepo = createMockServiceRepo([mockService])
 
       const updateData: UpdateLaundryServiceInput = {
@@ -178,7 +172,7 @@ describe("ServiceRepository", () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update("service-123" as ServiceId, updateData)
+        return yield* repo.update('service-123' as ServiceId, updateData)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
@@ -188,12 +182,15 @@ describe("ServiceRepository", () => {
       }
     })
 
-    it("should return None when service does not exist", async () => {
+    it('should return None when service does not exist', async () => {
       const MockRepo = createMockServiceRepo([])
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update("nonexistent" as ServiceId, { price: 15000 } as UpdateLaundryServiceInput)
+        return yield* repo.update(
+          'nonexistent' as ServiceId,
+          { price: 15000 } as UpdateLaundryServiceInput
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
@@ -201,13 +198,13 @@ describe("ServiceRepository", () => {
     })
   })
 
-  describe("softDelete", () => {
-    it("should soft delete service", async () => {
+  describe('softDelete', () => {
+    it('should soft delete service', async () => {
       const MockRepo = createMockServiceRepo([mockService])
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.softDelete("service-123" as ServiceId)
+        return yield* repo.softDelete('service-123' as ServiceId)
       })
 
       // Should complete without throwing
@@ -215,12 +212,12 @@ describe("ServiceRepository", () => {
     })
   })
 
-  describe("findActiveServiceInfo", () => {
-    it("should return active service info without timestamps", async () => {
+  describe('findActiveServiceInfo', () => {
+    it('should return active service info without timestamps', async () => {
       const services = [
-        createMockService({ id: "1" as ServiceId, is_active: true }),
-        createMockService({ id: "2" as ServiceId, is_active: false }),
-        createMockService({ id: "3" as ServiceId, is_active: true }),
+        createMockService({ id: '1' as ServiceId, is_active: true }),
+        createMockService({ id: '2' as ServiceId, is_active: false }),
+        createMockService({ id: '3' as ServiceId, is_active: true }),
       ]
       const MockRepo = createMockServiceRepo(services)
 
@@ -231,12 +228,12 @@ describe("ServiceRepository", () => {
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
       expect(result.length).toBe(2)
-      expect(result[0]).toHaveProperty("id")
-      expect(result[0]).toHaveProperty("name")
-      expect(result[0]).toHaveProperty("price")
-      expect(result[0]).toHaveProperty("unit_type")
-      expect(result[0]).not.toHaveProperty("is_active")
-      expect(result[0]).not.toHaveProperty("created_at")
+      expect(result[0]).toHaveProperty('id')
+      expect(result[0]).toHaveProperty('name')
+      expect(result[0]).toHaveProperty('price')
+      expect(result[0]).toHaveProperty('unit_type')
+      expect(result[0]).not.toHaveProperty('is_active')
+      expect(result[0]).not.toHaveProperty('created_at')
     })
   })
 })

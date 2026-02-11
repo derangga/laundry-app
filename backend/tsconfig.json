@@ -24,6 +24,7 @@
       "@domain/*": ["src/domain/*"],
       "@application/*": ["src/application/*"],
       "@infrastructure/*": ["src/infrastructure/*"],
+      "@repositories/*": ["src/repositories/*"],
       "@api/*": ["src/api/*"],
       "@shared/*": ["src/shared/*"]
     },

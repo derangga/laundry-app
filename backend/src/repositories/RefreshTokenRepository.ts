@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { RefreshToken, RefreshTokenId } from '../../../domain/RefreshToken'
-import { UserId } from '../../../domain/User'
+import { RefreshToken, RefreshTokenId } from '../domain/RefreshToken'
+import { UserId } from '../domain/User'
 
 export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepository>()(
   'RefreshTokenRepository',

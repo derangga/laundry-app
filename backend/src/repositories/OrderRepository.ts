@@ -7,9 +7,9 @@ import {
   PaymentStatus,
   OrderWithDetails,
   OrderSummary,
-} from '../../../domain/Order'
-import { CustomerId } from '../../../domain/Customer'
-import { UserId } from '../../../domain/User'
+} from '../domain/Order'
+import { CustomerId } from '../domain/Customer'
+import { UserId } from '../domain/User'
 
 export interface OrderInsertData {
   order_number: string

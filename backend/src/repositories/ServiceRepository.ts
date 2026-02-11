@@ -6,7 +6,7 @@ import {
   ActiveServiceInfo,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
-} from '../../../domain/LaundryService'
+} from '../domain/LaundryService'
 
 export class ServiceRepository extends Effect.Service<ServiceRepository>()('ServiceRepository', {
   effect: Effect.gen(function* () {
