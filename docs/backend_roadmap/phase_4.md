@@ -80,7 +80,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.2: Create Phone Number Validation
 
-- [ ] Create `src/domain/PhoneNumber.ts`:
+- [x] Create `src/domain/PhoneNumber.ts`:
 
   ```typescript
   import { Schema } from '@effect/schema'
@@ -122,7 +122,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.3: Create Order Number Generator
 
-- [ ] Create `src/domain/OrderNumberGenerator.ts`:
+- [x] Create `src/domain/OrderNumberGenerator.ts`:
 
   ```typescript
   import { Effect } from 'effect'
@@ -141,7 +141,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.4: Create Order Status Validator
 
-- [ ] Create `src/domain/OrderStatusValidator.ts`:
+- [x] Create `src/domain/OrderStatusValidator.ts`:
 
   ```typescript
   import { Effect } from 'effect'
@@ -176,7 +176,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.5: Create CustomerService
 
-- [ ] Create `src/domain/CustomerService.ts`:
+- [x] Create `src/application/customer/CustomerService.ts`:
 
   ```typescript
   import { Effect, Option } from 'effect'
@@ -243,7 +243,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.6: Create LaundryServiceService
 
-- [ ] Create `src/domain/LaundryServiceService.ts`:
+- [x] Create `src/application/order/LaundryServiceService.ts`:
 
   ```typescript
   import { Effect, Option } from 'effect'
@@ -324,7 +324,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.7: Create OrderService
 
-- [ ] Create `src/domain/OrderService.ts`:
+- [x] Create `src/application/order/OrderService.ts`:
 
   ```typescript
   import { Effect, Option } from 'effect'
@@ -472,19 +472,19 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.8: Write Domain Service Tests
 
-- [ ] Test CustomerService:
-  - Phone number normalization and validation
-  - Customer creation with duplicate check
-  - Find customer by phone
-- [ ] Test LaundryServiceService:
-  - Service creation
-  - Service soft delete
-  - Find active services
-- [ ] Test OrderService:
-  - Order creation with price calculation
-  - Order status transitions
-  - Payment status updates
-  - Empty order validation
+- [x] Test CustomerService:
+  - [x] Phone number normalization and validation
+  - [x] Customer creation with duplicate check
+  - [x] Find customer by phone
+- [x] Test LaundryServiceService:
+  - [x] Service creation
+  - [x] Service soft delete
+  - [x] Find active services
+- [x] Test OrderService:
+  - [x] Order creation with price calculation
+  - [x] Order status transitions
+  - [x] Payment status updates
+  - [x] Empty order validation
 
 ### Key Files to Create
 
@@ -492,20 +492,20 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 - Phone number validation in `src/domain/PhoneNumber.ts`
 - Order number generator in `src/domain/OrderNumberGenerator.ts`
 - Order status validator in `src/domain/OrderStatusValidator.ts`
-- Domain services in `src/domain/{Entity}Service.ts`
+- Domain services in `src/application/{Entity}/{Entity}Service.ts`
 - Tests in `test/domain/`
 
 ### Verification Steps
 
-- [ ] All domain errors are defined
-- [ ] Phone number validation works for Indonesian numbers
-- [ ] Order number generation is unique and formatted correctly
-- [ ] Order status transitions are validated
-- [ ] CustomerService enforces business rules
-- [ ] LaundryServiceService implements soft delete
-- [ ] OrderService calculates prices correctly
-- [ ] OrderService validates order workflow
-- [ ] All domain service tests pass
+- [x] All domain errors are defined
+- [x] Phone number validation works for Indonesian numbers
+- [x] Order number generation is unique and formatted correctly
+- [x] Order status transitions are validated
+- [x] CustomerService enforces business rules
+- [x] LaundryServiceService implements soft delete
+- [x] OrderService calculates prices correctly
+- [x] OrderService validates order workflow
+- [x] All domain service tests pass
 
 ### Deliverable
 
