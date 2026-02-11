@@ -1,6 +1,6 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { User, UserId, UserWithoutPassword, UserBasicInfo } from '../../../domain/User'
+import { User, UserId, UserWithoutPassword, UserBasicInfo } from '../domain/User'
 
 export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {

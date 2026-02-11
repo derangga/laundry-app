@@ -1,8 +1,8 @@
 import { Effect, Option } from 'effect'
 import { HttpMiddleware, HttpServerRequest, HttpServerResponse } from '@effect/platform'
-import { JwtService } from '../../JwtService'
-import { CurrentUser, CurrentUserData } from '../../../domain/CurrentUser'
-import { InvalidTokenError } from '../../../domain/UserErrors'
+import { JwtService } from '@application/auth/JwtService'
+import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
+import { InvalidTokenError } from '@domain/UserErrors'
 
 const extractBearerToken = (authHeader: string | undefined): Option.Option<string> => {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

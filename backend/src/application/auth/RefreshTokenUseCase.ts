@@ -1,9 +1,9 @@
 import { Effect, Option } from 'effect'
 import { SqlError } from '@effect/sql'
-import { UserRepository } from '../../infrastructure/database/repositories/UserRepository'
-import { RefreshTokenRepository } from '../../infrastructure/database/repositories/RefreshTokenRepository'
-import { JwtService, JwtPayload } from '../../infrastructure/JwtService'
-import { TokenGenerator } from '../../infrastructure/TokenGenerator'
+import { UserRepository } from '@repositories/UserRepository'
+import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
+import { JwtService, JwtPayload } from './JwtService'
+import { TokenGenerator } from './TokenGenerator'
 import {
   InvalidTokenError,
   RefreshTokenNotFoundError,

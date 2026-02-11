@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest"
-import { Effect } from "effect"
-import { TokenGenerator, TokenGeneratorLive } from "@infrastructure/TokenGenerator"
+import { describe, it, expect } from 'vitest'
+import { Effect } from 'effect'
+import { TokenGenerator, TokenGeneratorLive } from '@application/auth/TokenGenerator'
 
-describe("TokenGenerator", () => {
+describe('TokenGenerator', () => {
   const runWithService = <A, E>(effect: Effect.Effect<A, E, TokenGenerator>) =>
     Effect.runPromise(Effect.provide(effect, TokenGeneratorLive))
 
-  describe("generate", () => {
-    it("should generate a random token", async () => {
+  describe('generate', () => {
+    it('should generate a random token', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
         return yield* service.generate()
@@ -15,11 +15,11 @@ describe("TokenGenerator", () => {
 
       const token = await runWithService(program)
       expect(token).toBeDefined()
-      expect(typeof token).toBe("string")
+      expect(typeof token).toBe('string')
       expect(token.length).toBe(64) // 32 bytes = 64 hex characters
     })
 
-    it("should generate unique tokens", async () => {
+    it('should generate unique tokens', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
         const token1 = yield* service.generate()
@@ -31,7 +31,7 @@ describe("TokenGenerator", () => {
       expect(token1).not.toBe(token2)
     })
 
-    it("should generate tokens of specified length", async () => {
+    it('should generate tokens of specified length', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
         return yield* service.generate(16)
@@ -42,11 +42,11 @@ describe("TokenGenerator", () => {
     })
   })
 
-  describe("hash", () => {
-    it("should hash a token with SHA-256", async () => {
+  describe('hash', () => {
+    it('should hash a token with SHA-256', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
-        return yield* service.hash("test-token")
+        return yield* service.hash('test-token')
       })
 
       const hash = await runWithService(program)
@@ -54,11 +54,11 @@ describe("TokenGenerator", () => {
       expect(hash.length).toBe(64) // SHA-256 = 64 hex characters
     })
 
-    it("should produce consistent hashes for the same input", async () => {
+    it('should produce consistent hashes for the same input', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
-        const hash1 = yield* service.hash("test-token")
-        const hash2 = yield* service.hash("test-token")
+        const hash1 = yield* service.hash('test-token')
+        const hash2 = yield* service.hash('test-token')
         return { hash1, hash2 }
       })
 
@@ -66,11 +66,11 @@ describe("TokenGenerator", () => {
       expect(hash1).toBe(hash2)
     })
 
-    it("should produce different hashes for different inputs", async () => {
+    it('should produce different hashes for different inputs', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
-        const hash1 = yield* service.hash("token-1")
-        const hash2 = yield* service.hash("token-2")
+        const hash1 = yield* service.hash('token-1')
+        const hash2 = yield* service.hash('token-2')
         return { hash1, hash2 }
       })
 
@@ -79,8 +79,8 @@ describe("TokenGenerator", () => {
     })
   })
 
-  describe("generateAndHash", () => {
-    it("should generate a token and its hash", async () => {
+  describe('generateAndHash', () => {
+    it('should generate a token and its hash', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
         return yield* service.generateAndHash()
@@ -92,7 +92,7 @@ describe("TokenGenerator", () => {
       expect(rawToken).not.toBe(hashedToken)
     })
 
-    it("should produce a hash that matches manually hashing the token", async () => {
+    it('should produce a hash that matches manually hashing the token', async () => {
       const program = Effect.gen(function* () {
         const service = yield* TokenGenerator
         const { rawToken, hashedToken } = yield* service.generateAndHash()

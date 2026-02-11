@@ -1,8 +1,8 @@
 import { Effect } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { OrderItem, OrderItemWithService } from '../../../domain/OrderItem'
-import { OrderId } from '../../../domain/Order'
-import { ServiceId } from '../../../domain/LaundryService'
+import { OrderItem, OrderItemWithService } from '../domain/OrderItem'
+import { OrderId } from '../domain/Order'
+import { ServiceId } from '../domain/LaundryService'
 
 export interface OrderItemInsertData {
   order_id: OrderId

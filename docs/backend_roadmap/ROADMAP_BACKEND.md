@@ -316,7 +316,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 **In Effect-TS**:
 
 ```typescript
-class Customer extends Model.Class<Customer>("Customer")({
+class Customer extends Model.Class<Customer>('Customer')({
   id: Model.Generated(Schema.String), // PostgreSQL generates UUID v7
   // ... other fields
 }) {}
@@ -474,61 +474,58 @@ bun run lint                 # Lint code with ESLint
 ### Pattern 1: Creating a New Repository
 
 ```typescript
-import { SqlClient, Model } from "@effect/sql";
-import { Effect, Option } from "effect";
-import { YourEntity } from "@domain/YourEntity";
+import { SqlClient, Model } from '@effect/sql'
+import { Effect, Option } from 'effect'
+import { YourEntity } from '@domain/YourEntity'
 
-export class YourRepository extends Effect.Service<YourRepository>()(
-  "YourRepository",
-  {
-    effect: Effect.gen(function* () {
-      const sql = yield* SqlClient.SqlClient;
-      const repo = yield* Model.makeRepository(YourEntity, {
-        tableName: "your_table",
-        spanPrefix: "YourRepository",
-        idColumn: "id",
-      });
+export class YourRepository extends Effect.Service<YourRepository>()('YourRepository', {
+  effect: Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient
+    const repo = yield* Model.makeRepository(YourEntity, {
+      tableName: 'your_table',
+      spanPrefix: 'YourRepository',
+      idColumn: 'id',
+    })
 
-      // Add custom methods
-      const findByField = (field: string) =>
-        sql<YourEntity>`SELECT * FROM your_table WHERE field = ${field}`;
+    // Add custom methods
+    const findByField = (field: string) =>
+      sql<YourEntity>`SELECT * FROM your_table WHERE field = ${field}`
 
-      return {
-        ...repo, // findById, insert, update, delete
-        findByField,
-      };
-    }),
-    dependencies: [],
-  },
-) {}
+    return {
+      ...repo, // findById, insert, update, delete
+      findByField,
+    }
+  }),
+  dependencies: [],
+}) {}
 ```
 
 ### Pattern 2: Creating a Domain Service
 
 ```typescript
-import { Effect, Option } from "effect";
-import { YourRepository } from "@infrastructure/database/repositories/YourRepository";
-import { YourError } from "./YourErrors";
+import { Effect, Option } from 'effect'
+import { YourRepository } from '@repositories/YourRepository'
+import { YourError } from './YourErrors'
 
-export class YourService extends Effect.Service<YourService>()("YourService", {
+export class YourService extends Effect.Service<YourService>()('YourService', {
   effect: Effect.gen(function* () {
-    const repo = yield* YourRepository;
+    const repo = yield* YourRepository
 
     const businessMethod = (input: string) =>
       Effect.gen(function* () {
         // Business logic here
-        const result = yield* repo.findByField(input);
+        const result = yield* repo.findByField(input)
 
         if (Option.isNone(result)) {
-          return yield* Effect.fail(new YourError({ input }));
+          return yield* Effect.fail(new YourError({ input }))
         }
 
-        return result.value;
-      });
+        return result.value
+      })
 
     return {
       businessMethod,
-    };
+    }
   }),
   dependencies: [YourRepository.Default],
 }) {}
@@ -537,65 +534,65 @@ export class YourService extends Effect.Service<YourService>()("YourService", {
 ### Pattern 3: Creating an API Route
 
 ```typescript
-import { HttpServerRequest, HttpServerResponse } from "@effect/platform";
-import { Effect } from "effect";
-import { parseBody } from "@infrastructure/http/RequestParser";
-import { YourService } from "@domain/YourService";
-import { YourRequestSchema, YourResponseSchema } from "./schemas";
+import { HttpServerRequest, HttpServerResponse } from '@effect/platform'
+import { Effect } from 'effect'
+import { parseBody } from '@infrastructure/http/RequestParser'
+import { YourService } from '@domain/YourService'
+import { YourRequestSchema, YourResponseSchema } from './schemas'
 
 export const yourRoute = Effect.gen(function* () {
-  const yourService = yield* YourService;
+  const yourService = yield* YourService
 
   // Parse and validate request
-  const request = yield* parseBody(YourRequestSchema);
+  const request = yield* parseBody(YourRequestSchema)
 
   // Call domain service
-  const result = yield* yourService.businessMethod(request.field);
+  const result = yield* yourService.businessMethod(request.field)
 
   // Return response
-  return yield* HttpServerResponse.json(result);
-});
+  return yield* HttpServerResponse.json(result)
+})
 ```
 
 ### Pattern 4: Error Handling
 
 ```typescript
 // Define typed errors
-export class YourError extends Data.TaggedError("YourError")<{
-  field: string;
-  reason?: string;
+export class YourError extends Data.TaggedError('YourError')<{
+  field: string
+  reason?: string
 }> {}
 
 // Use errors in service
 const service = Effect.gen(function* () {
-  const result = yield* someOperation();
+  const result = yield* someOperation()
 
   if (!result) {
-    return yield* Effect.fail(new YourError({ field: "value" }));
+    return yield* Effect.fail(new YourError({ field: 'value' }))
   }
 
-  return result;
-});
+  return result
+})
 
 // Handle errors in HTTP layer
 service.pipe(
-  Effect.catchTag("YourError", (error) =>
+  Effect.catchTag('YourError', (error) =>
     HttpServerResponse.json(
-      { error: { code: "YOUR_ERROR", message: error.reason } },
-      { status: 400 },
-    ),
-  ),
-);
+      { error: { code: 'YOUR_ERROR', message: error.reason } },
+      { status: 400 }
+    )
+  )
+)
 ```
 
 ### Pattern 5: Testing with Mock Layers
 
 ```typescript
-import { describe, test, expect } from "vitest";
-import { Effect, Layer } from "effect";
+import { describe, test, expect } from 'vitest'
+import { Effect, Layer } from 'effect'
 
-describe("YourService", () => {
-  test("should do something", async () => {
+describe('YourService', () => {
+  test('should do something', async () => {
     // Create mock repository
     const MockRepo = Layer.succeed(
       YourRepository,
@@ -603,19 +600,19 @@ describe("YourService", () => {
         findById: (id) => Effect.succeed(Option.some(mockData)),
         insert: (data) => Effect.succeed(mockData),
         // ... other methods
-      }),
-    );
+      })
+    )
 
     // Test program
     const program = Effect.gen(function* () {
-      const service = yield* YourService;
-      return yield* service.businessMethod("test");
-    }).pipe(Effect.provide(MockRepo), Effect.provide(YourService.Default));
+      const service = yield* YourService
+      return yield* service.businessMethod('test')
+    }).pipe(Effect.provide(MockRepo), Effect.provide(YourService.Default))
 
-    const result = await Effect.runPromise(program);
-    expect(result).toBeDefined();
-  });
-});
+    const result = await Effect.runPromise(program)
+    expect(result).toBeDefined()
+  })
+})
 ```
 
 ---

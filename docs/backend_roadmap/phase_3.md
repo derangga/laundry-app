@@ -16,26 +16,26 @@ All tasks completed with comprehensive test coverage (47 tests passing).
 
 ### Files Created
 
-| Task | File | Status |
-|------|------|--------|
-| P0 | `src/infrastructure/database/repositories/UserRepository.ts` | ✅ Complete |
-| P1 | `src/infrastructure/database/repositories/RefreshTokenRepository.ts` | ✅ Complete |
-| 3.1 | `src/domain/UserErrors.ts` | ✅ Complete |
-| 3.2 | `src/infrastructure/PasswordService.ts` | ✅ Complete |
-| 3.3 | `src/infrastructure/JwtService.ts` | ✅ Complete |
-| 3.4 | `src/infrastructure/TokenGenerator.ts` | ✅ Complete |
-| 3.5 | `src/domain/CurrentUser.ts` | ✅ Complete |
-| 3.6 | `src/application/auth/AuthorizationGuards.ts` | ✅ Complete |
-| 3.7 | `src/application/auth/LoginUseCase.ts` | ✅ Complete |
-| 3.8 | `src/application/auth/LogoutUseCase.ts` | ✅ Complete |
-| 3.9 | `src/application/auth/RefreshTokenUseCase.ts` | ✅ Complete |
-| 3.10 | `src/infrastructure/http/middleware/auth.ts` | ✅ Complete |
+| Task | File                                          | Status      |
+| ---- | --------------------------------------------- | ----------- |
+| P0   | `src/repositories/UserRepository.ts`          | ✅ Complete |
+| P1   | `src/repositories/RefreshTokenRepository.ts`  | ✅ Complete |
+| 3.1  | `src/domain/UserErrors.ts`                    | ✅ Complete |
+| 3.2  | `src/application/auth/PasswordService.ts`     | ✅ Complete |
+| 3.3  | `src/application/auth/JwtService.ts`          | ✅ Complete |
+| 3.4  | `src/application/auth/TokenGenerator.ts`      | ✅ Complete |
+| 3.5  | `src/domain/CurrentUser.ts`                   | ✅ Complete |
+| 3.6  | `src/application/auth/AuthorizationGuards.ts` | ✅ Complete |
+| 3.7  | `src/application/auth/LoginUseCase.ts`        | ✅ Complete |
+| 3.8  | `src/application/auth/LogoutUseCase.ts`       | ✅ Complete |
+| 3.9  | `src/application/auth/RefreshTokenUseCase.ts` | ✅ Complete |
+| 3.10 | `src/middleware/auth.ts`                      | ✅ Complete |
 
 ### Test Files Created
 
-- `test/infrastructure/PasswordService.test.ts` (5 tests)
-- `test/infrastructure/JwtService.test.ts` (7 tests)
-- `test/infrastructure/TokenGenerator.test.ts` (8 tests)
+- `test/application/auth/PasswordService.test.ts` (5 tests)
+- `test/application/auth/JwtService.test.ts` (7 tests)
+- `test/application/auth/TokenGenerator.test.ts` (8 tests)
 - `test/application/auth/AuthorizationGuards.test.ts` (13 tests)
 - `test/application/auth/LoginUseCase.test.ts` (3 tests)
 - `test/application/auth/LogoutUseCase.test.ts` (5 tests)
@@ -65,6 +65,7 @@ All tasks completed with comprehensive test coverage (47 tests passing).
 ### API Patterns
 
 **Login Response:**
+
 ```typescript
 {
   accessToken: string,
@@ -74,6 +75,7 @@ All tasks completed with comprehensive test coverage (47 tests passing).
 ```
 
 **Authentication Header:**
+
 ```
 Authorization: Bearer <access_token>
 ```
@@ -81,6 +83,7 @@ Authorization: Bearer <access_token>
 ### Environment Variables
 
 Required for production:
+
 ```
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 JWT_ACCESS_EXPIRY=15m

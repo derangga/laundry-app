@@ -1,7 +1,7 @@
 import { Effect, Config, Duration } from 'effect'
 import * as jose from 'jose'
-import { UserId, UserRole } from '../domain/User'
-import { InvalidTokenError } from '../domain/UserErrors'
+import { UserId, UserRole } from '../../domain/User'
+import { InvalidTokenError } from '../../domain/UserErrors'
 
 export interface JwtPayload {
   readonly sub: UserId

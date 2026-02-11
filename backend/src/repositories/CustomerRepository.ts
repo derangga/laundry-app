@@ -6,7 +6,7 @@ import {
   CustomerSummary,
   CreateCustomerInput,
   UpdateCustomerInput,
-} from '../../../domain/Customer'
+} from '../domain/Customer'
 
 export class CustomerRepository extends Effect.Service<CustomerRepository>()('CustomerRepository', {
   effect: Effect.gen(function* () {
