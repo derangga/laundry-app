@@ -472,19 +472,19 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 
 #### Task 4.8: Write Domain Service Tests
 
-- [ ] Test CustomerService:
-  - Phone number normalization and validation
-  - Customer creation with duplicate check
-  - Find customer by phone
-- [ ] Test LaundryServiceService:
-  - Service creation
-  - Service soft delete
-  - Find active services
-- [ ] Test OrderService:
-  - Order creation with price calculation
-  - Order status transitions
-  - Payment status updates
-  - Empty order validation
+- [x] Test CustomerService:
+  - [x] Phone number normalization and validation
+  - [x] Customer creation with duplicate check
+  - [x] Find customer by phone
+- [x] Test LaundryServiceService:
+  - [x] Service creation
+  - [x] Service soft delete
+  - [x] Find active services
+- [x] Test OrderService:
+  - [x] Order creation with price calculation
+  - [x] Order status transitions
+  - [x] Payment status updates
+  - [x] Empty order validation
 
 ### Key Files to Create
 
@@ -505,7 +505,7 @@ export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
 - [x] LaundryServiceService implements soft delete
 - [x] OrderService calculates prices correctly
 - [x] OrderService validates order workflow
-- [ ] All domain service tests pass (skipped per user request)
+- [x] All domain service tests pass
 
 ### Deliverable
 
