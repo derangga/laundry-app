@@ -1,6 +1,5 @@
 import { HttpServerRequest } from '@effect/platform'
-import { Schema } from '@effect/schema'
-import { Effect, Data } from 'effect'
+import { Effect, Data, Schema } from 'effect'
 
 export class ValidationError extends Data.TaggedError('ValidationError')<{
   errors: Array<{ field: string; message: string }>
