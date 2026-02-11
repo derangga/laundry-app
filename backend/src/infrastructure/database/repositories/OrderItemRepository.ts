@@ -1,8 +1,8 @@
-import { Effect, Option } from "effect"
-import { SqlClient, SqlError } from "@effect/sql"
-import { OrderItem, OrderItemId } from "../../../domain/OrderItem"
-import { OrderId } from "../../../domain/Order"
-import { ServiceId } from "../../../domain/LaundryService"
+import { Effect, Option } from 'effect'
+import { SqlClient, SqlError } from '@effect/sql'
+import { OrderItem, OrderItemId } from '../../../domain/OrderItem'
+import { OrderId } from '../../../domain/Order'
+import { ServiceId } from '../../../domain/LaundryService'
 
 export interface OrderItemInsertData {
   order_id: OrderId
@@ -13,7 +13,7 @@ export interface OrderItemInsertData {
 }
 
 export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
-  "OrderItemRepository",
+  'OrderItemRepository',
   {
     effect: Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient
@@ -37,9 +37,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           ORDER BY created_at ASC
         `.pipe(Effect.map((rows) => rows))
 
-      const insert = (
-        data: OrderItemInsertData
-      ): Effect.Effect<OrderItem, SqlError.SqlError> =>
+      const insert = (data: OrderItemInsertData): Effect.Effect<OrderItem, SqlError.SqlError> =>
         sql<OrderItem>`
           INSERT INTO order_items (order_id, service_id, quantity, price_at_order, subtotal)
           VALUES (${data.order_id}, ${data.service_id}, ${data.quantity}, ${data.price_at_order}, ${data.subtotal})
@@ -51,7 +49,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
               ? Effect.succeed(first)
               : Effect.fail(
                   new SqlError.SqlError({
-                    cause: new Error("Insert failed - no row returned"),
+                    cause: new Error('Insert failed - no row returned'),
                   })
                 )
           })
@@ -84,21 +82,15 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
 
         const query = `
           INSERT INTO order_items (order_id, service_id, quantity, price_at_order, subtotal)
-          VALUES ${values.join(", ")}
+          VALUES ${values.join(', ')}
           RETURNING *
         `
 
-        return sql.unsafe<OrderItem>(query, params).pipe(
-          Effect.map((rows) => rows)
-        )
+        return sql.unsafe<OrderItem>(query, params).pipe(Effect.map((rows) => rows))
       }
 
-      const deleteByOrderId = (
-        orderId: OrderId
-      ): Effect.Effect<void, SqlError.SqlError> =>
-        sql`DELETE FROM order_items WHERE order_id = ${orderId}`.pipe(
-          Effect.map(() => void 0)
-        )
+      const deleteByOrderId = (orderId: OrderId): Effect.Effect<void, SqlError.SqlError> =>
+        sql`DELETE FROM order_items WHERE order_id = ${orderId}`.pipe(Effect.map(() => void 0))
 
       return {
         findById,

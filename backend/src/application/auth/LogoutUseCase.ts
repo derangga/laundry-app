@@ -1,11 +1,11 @@
-import { Effect } from "effect"
-import { SqlError } from "@effect/sql"
-import { RefreshTokenRepository } from "../../infrastructure/database/repositories/RefreshTokenRepository"
-import { TokenGenerator } from "../../infrastructure/TokenGenerator"
-import { CurrentUser } from "../../domain/CurrentUser"
-import { UserId } from "../../domain/User"
-import { UnauthorizedError } from "../../domain/UserErrors"
-import { LogoutInput, LogoutResult } from "../../domain/Auth"
+import { Effect } from 'effect'
+import { SqlError } from '@effect/sql'
+import { RefreshTokenRepository } from '../../infrastructure/database/repositories/RefreshTokenRepository'
+import { TokenGenerator } from '../../infrastructure/TokenGenerator'
+import { CurrentUser } from '../../domain/CurrentUser'
+import { UserId } from '../../domain/User'
+import { UnauthorizedError } from '../../domain/UserErrors'
+import { LogoutInput, LogoutResult } from '../../domain/Auth'
 
 export { LogoutInput, LogoutResult }
 
@@ -21,7 +21,7 @@ export const logout = (
     const tokenGenerator = yield* TokenGenerator
 
     const userOption = yield* CurrentUser.getOption
-    if (userOption._tag === "None") {
+    if (userOption._tag === 'None') {
       return yield* Effect.fail(UnauthorizedError.make())
     }
     const currentUser = userOption.value
@@ -41,13 +41,13 @@ export const logout = (
       yield* refreshTokenRepo.revokeByTokenHash(hashedToken)
       return {
         success: true,
-        message: "Successfully logged out.",
+        message: 'Successfully logged out.',
       }
     }
 
     return {
       success: true,
-      message: "Logged out (no refresh token provided).",
+      message: 'Logged out (no refresh token provided).',
     }
   })
 
@@ -63,7 +63,7 @@ export const logoutAll = (
     }
   })
 
-export class LogoutUseCase extends Effect.Service<LogoutUseCase>()("LogoutUseCase", {
+export class LogoutUseCase extends Effect.Service<LogoutUseCase>()('LogoutUseCase', {
   effect: Effect.gen(function* () {
     return {
       execute: logout,

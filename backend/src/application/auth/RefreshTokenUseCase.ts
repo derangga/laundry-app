@@ -1,11 +1,15 @@
-import { Effect, Option } from "effect"
-import { SqlError } from "@effect/sql"
-import { UserRepository } from "../../infrastructure/database/repositories/UserRepository"
-import { RefreshTokenRepository } from "../../infrastructure/database/repositories/RefreshTokenRepository"
-import { JwtService, JwtPayload } from "../../infrastructure/JwtService"
-import { TokenGenerator } from "../../infrastructure/TokenGenerator"
-import { InvalidTokenError, RefreshTokenNotFoundError, UserNotFoundError } from "../../domain/UserErrors"
-import { RefreshTokenInput, AuthResponse } from "../../domain/Auth"
+import { Effect, Option } from 'effect'
+import { SqlError } from '@effect/sql'
+import { UserRepository } from '../../infrastructure/database/repositories/UserRepository'
+import { RefreshTokenRepository } from '../../infrastructure/database/repositories/RefreshTokenRepository'
+import { JwtService, JwtPayload } from '../../infrastructure/JwtService'
+import { TokenGenerator } from '../../infrastructure/TokenGenerator'
+import {
+  InvalidTokenError,
+  RefreshTokenNotFoundError,
+  UserNotFoundError,
+} from '../../domain/UserErrors'
+import { RefreshTokenInput, AuthResponse } from '../../domain/Auth'
 
 export { RefreshTokenInput }
 export type RefreshTokenResult = AuthResponse
@@ -76,7 +80,7 @@ export const refreshTokens = (
   })
 
 export class RefreshTokenUseCase extends Effect.Service<RefreshTokenUseCase>()(
-  "RefreshTokenUseCase",
+  'RefreshTokenUseCase',
   {
     effect: Effect.gen(function* () {
       return {

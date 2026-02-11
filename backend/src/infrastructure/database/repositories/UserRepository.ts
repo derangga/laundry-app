@@ -1,8 +1,8 @@
-import { Effect, Option } from "effect"
-import { SqlClient, SqlError } from "@effect/sql"
-import { User, UserId } from "../../../domain/User"
+import { Effect, Option } from 'effect'
+import { SqlClient, SqlError } from '@effect/sql'
+import { User, UserId } from '../../../domain/User'
 
-export class UserRepository extends Effect.Service<UserRepository>()("UserRepository", {
+export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
 
@@ -32,7 +32,9 @@ export class UserRepository extends Effect.Service<UserRepository>()("UserReposi
           const first = rows[0]
           return first !== undefined
             ? Effect.succeed(first)
-            : Effect.fail(new SqlError.SqlError({ cause: new Error("Insert failed - no row returned") }))
+            : Effect.fail(
+                new SqlError.SqlError({ cause: new Error('Insert failed - no row returned') })
+              )
         })
       )
 
@@ -68,7 +70,7 @@ export class UserRepository extends Effect.Service<UserRepository>()("UserReposi
       updates.push(`updated_at = NOW()`)
       params.push(id)
 
-      const query = `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`
 
       return sql.unsafe<User>(query, params).pipe(
         Effect.map((rows) => {

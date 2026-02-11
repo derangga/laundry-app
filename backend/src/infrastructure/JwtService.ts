@@ -1,7 +1,7 @@
-import { Effect, Config, Duration } from "effect"
-import * as jose from "jose"
-import { UserId, UserRole } from "../domain/User"
-import { InvalidTokenError } from "../domain/UserErrors"
+import { Effect, Config, Duration } from 'effect'
+import * as jose from 'jose'
+import { UserId, UserRole } from '../domain/User'
+import { InvalidTokenError } from '../domain/UserErrors'
 
 export interface JwtPayload {
   readonly sub: UserId
@@ -15,9 +15,11 @@ export interface TokenPair {
 }
 
 const JwtConfig = Config.all({
-  secret: Config.string("JWT_SECRET").pipe(Config.withDefault("your-super-secret-jwt-key-min-32-chars!!")),
-  accessExpiry: Config.string("JWT_ACCESS_EXPIRY").pipe(Config.withDefault("15m")),
-  refreshExpiry: Config.string("JWT_REFRESH_EXPIRY").pipe(Config.withDefault("7d")),
+  secret: Config.string('JWT_SECRET').pipe(
+    Config.withDefault('your-super-secret-jwt-key-min-32-chars!!')
+  ),
+  accessExpiry: Config.string('JWT_ACCESS_EXPIRY').pipe(Config.withDefault('15m')),
+  refreshExpiry: Config.string('JWT_REFRESH_EXPIRY').pipe(Config.withDefault('7d')),
 })
 
 const parseExpiry = (expiry: string): Duration.Duration => {
@@ -28,20 +30,20 @@ const parseExpiry = (expiry: string): Duration.Duration => {
   const value = parseInt(match[1], 10)
   const unit = match[2]
   switch (unit) {
-    case "s":
+    case 's':
       return Duration.seconds(value)
-    case "m":
+    case 'm':
       return Duration.minutes(value)
-    case "h":
+    case 'h':
       return Duration.hours(value)
-    case "d":
+    case 'd':
       return Duration.days(value)
     default:
       return Duration.minutes(15)
   }
 }
 
-export class JwtService extends Effect.Service<JwtService>()("JwtService", {
+export class JwtService extends Effect.Service<JwtService>()('JwtService', {
   effect: Effect.gen(function* () {
     const config = yield* JwtConfig
     const secretKey = new TextEncoder().encode(config.secret)
@@ -58,7 +60,7 @@ export class JwtService extends Effect.Service<JwtService>()("JwtService", {
             email: payload.email,
             role: payload.role,
           })
-            .setProtectedHeader({ alg: "HS256" })
+            .setProtectedHeader({ alg: 'HS256' })
             .setSubject(payload.sub)
             .setIssuedAt()
             .setExpirationTime(accessExpiryStr)
@@ -72,7 +74,7 @@ export class JwtService extends Effect.Service<JwtService>()("JwtService", {
       Effect.tryPromise({
         try: async () => {
           const jwt = await new jose.SignJWT({})
-            .setProtectedHeader({ alg: "HS256" })
+            .setProtectedHeader({ alg: 'HS256' })
             .setSubject(userId)
             .setIssuedAt()
             .setExpirationTime(refreshExpiryStr)
@@ -101,9 +103,7 @@ export class JwtService extends Effect.Service<JwtService>()("JwtService", {
           }
           return InvalidTokenError.malformed()
         },
-      }).pipe(
-        Effect.catchAll((error) => Effect.fail(error as InvalidTokenError))
-      )
+      }).pipe(Effect.catchAll((error) => Effect.fail(error as InvalidTokenError)))
 
     const verifyRefreshToken = (token: string): Effect.Effect<{ sub: UserId }, InvalidTokenError> =>
       Effect.tryPromise({
@@ -122,9 +122,7 @@ export class JwtService extends Effect.Service<JwtService>()("JwtService", {
           }
           return InvalidTokenError.malformed()
         },
-      }).pipe(
-        Effect.catchAll((error) => Effect.fail(error as InvalidTokenError))
-      )
+      }).pipe(Effect.catchAll((error) => Effect.fail(error as InvalidTokenError)))
 
     const getRefreshExpiryDate = (): Date => {
       const now = new Date()

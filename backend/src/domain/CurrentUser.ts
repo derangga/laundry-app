@@ -1,5 +1,5 @@
-import { Context, Effect, Layer } from "effect"
-import { UserId, UserRole } from "./User"
+import { Context, Effect, Layer } from 'effect'
+import { UserId, UserRole } from './User'
 
 export interface CurrentUserData {
   readonly id: UserId
@@ -7,12 +7,12 @@ export interface CurrentUserData {
   readonly role: UserRole
 }
 
-export class CurrentUser extends Context.Tag("CurrentUser")<CurrentUser, CurrentUserData>() {
+export class CurrentUser extends Context.Tag('CurrentUser')<CurrentUser, CurrentUserData>() {
   static readonly get = Effect.serviceOption(CurrentUser).pipe(
     Effect.flatMap((option) =>
-      option._tag === "Some"
+      option._tag === 'Some'
         ? Effect.succeed(option.value)
-        : Effect.fail(new Error("CurrentUser not available in context"))
+        : Effect.fail(new Error('CurrentUser not available in context'))
     )
   )
 
@@ -23,12 +23,12 @@ export class CurrentUser extends Context.Tag("CurrentUser")<CurrentUser, Current
 
   static readonly isAdmin = Effect.gen(function* () {
     const user = yield* CurrentUser.get
-    return user.role === "admin"
+    return user.role === 'admin'
   })
 
   static readonly isStaff = Effect.gen(function* () {
     const user = yield* CurrentUser.get
-    return user.role === "staff"
+    return user.role === 'staff'
   })
 
   static readonly hasRole = (role: UserRole) =>

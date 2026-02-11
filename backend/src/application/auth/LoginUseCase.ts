@@ -1,12 +1,12 @@
-import { Effect, Option } from "effect"
-import { SqlError } from "@effect/sql"
-import { UserRepository } from "../../infrastructure/database/repositories/UserRepository"
-import { RefreshTokenRepository } from "../../infrastructure/database/repositories/RefreshTokenRepository"
-import { PasswordService } from "../../infrastructure/PasswordService"
-import { JwtService, JwtPayload } from "../../infrastructure/JwtService"
-import { TokenGenerator } from "../../infrastructure/TokenGenerator"
-import { InvalidCredentialsError } from "../../domain/UserErrors"
-import { LoginInput, AuthResponse } from "../../domain/Auth"
+import { Effect, Option } from 'effect'
+import { SqlError } from '@effect/sql'
+import { UserRepository } from '../../infrastructure/database/repositories/UserRepository'
+import { RefreshTokenRepository } from '../../infrastructure/database/repositories/RefreshTokenRepository'
+import { PasswordService } from '../../infrastructure/PasswordService'
+import { JwtService, JwtPayload } from '../../infrastructure/JwtService'
+import { TokenGenerator } from '../../infrastructure/TokenGenerator'
+import { InvalidCredentialsError } from '../../domain/UserErrors'
+import { LoginInput, AuthResponse } from '../../domain/Auth'
 
 export { LoginInput }
 export type LoginResult = AuthResponse
@@ -69,7 +69,7 @@ export const login = (
     }
   })
 
-export class LoginUseCase extends Effect.Service<LoginUseCase>()("LoginUseCase", {
+export class LoginUseCase extends Effect.Service<LoginUseCase>()('LoginUseCase', {
   effect: Effect.gen(function* () {
     return {
       execute: login,

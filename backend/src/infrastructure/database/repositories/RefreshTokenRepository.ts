@@ -1,12 +1,12 @@
-import { Effect, Option, Schema } from "effect"
-import { SqlClient, SqlError } from "@effect/sql"
-import { Model } from "@effect/sql"
-import { UserId } from "../../../domain/User"
+import { Effect, Option, Schema } from 'effect'
+import { SqlClient, SqlError } from '@effect/sql'
+import { Model } from '@effect/sql'
+import { UserId } from '../../../domain/User'
 
-export const RefreshTokenId = Schema.String.pipe(Schema.brand("RefreshTokenId"))
+export const RefreshTokenId = Schema.String.pipe(Schema.brand('RefreshTokenId'))
 export type RefreshTokenId = typeof RefreshTokenId.Type
 
-export class RefreshToken extends Model.Class<RefreshToken>("RefreshToken")({
+export class RefreshToken extends Model.Class<RefreshToken>('RefreshToken')({
   id: Model.Generated(RefreshTokenId),
   user_id: UserId,
   token_hash: Schema.String,
@@ -16,7 +16,7 @@ export class RefreshToken extends Model.Class<RefreshToken>("RefreshToken")({
 }) {}
 
 export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepository>()(
-  "RefreshTokenRepository",
+  'RefreshTokenRepository',
   {
     effect: Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient
@@ -60,7 +60,9 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
             const first = rows[0]
             return first !== undefined
               ? Effect.succeed(first)
-              : Effect.fail(new SqlError.SqlError({ cause: new Error("Insert failed - no row returned") }))
+              : Effect.fail(
+                  new SqlError.SqlError({ cause: new Error('Insert failed - no row returned') })
+                )
           })
         )
 
