@@ -30,7 +30,9 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         WHERE id = ${id}
       `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
-    const findBasicInfo = (id: UserId): Effect.Effect<Option.Option<UserBasicInfo>, SqlError.SqlError> =>
+    const findBasicInfo = (
+      id: UserId
+    ): Effect.Effect<Option.Option<UserBasicInfo>, SqlError.SqlError> =>
       sql<UserBasicInfo>`
         SELECT id, name, email
         FROM users
