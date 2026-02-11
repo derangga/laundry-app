@@ -1,13 +1,14 @@
 import { Effect } from 'effect'
 import { hash, verify } from '@node-rs/bcrypt'
-
-const SALT_ROUNDS = 12
+import { BcryptConfig } from '../../configs/env'
 
 export class PasswordService extends Effect.Service<PasswordService>()('PasswordService', {
   effect: Effect.gen(function* () {
+    const config = yield* BcryptConfig
+
     const hashPassword = (password: string): Effect.Effect<string, Error> =>
       Effect.tryPromise({
-        try: () => hash(password, SALT_ROUNDS),
+        try: () => hash(password, config.saltRounds),
         catch: (error) => new Error(`Failed to hash password: ${error}`),
       })
 

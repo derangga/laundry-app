@@ -15,7 +15,7 @@ const TestConfig = Layer.setConfigProvider(TestConfigProvider)
 
 describe('JwtService', () => {
   const runWithService = <A, E>(effect: Effect.Effect<A, E, JwtService>) =>
-    Effect.runPromise(Effect.provide(effect, Layer.merge(JwtServiceLive, TestConfig)))
+    Effect.runPromise(Effect.provide(effect, JwtServiceLive.pipe(Layer.provide(TestConfig))))
 
   const testPayload: JwtPayload = {
     sub: 'user-123' as UserId,

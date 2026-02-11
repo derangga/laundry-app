@@ -1,7 +1,8 @@
-import { Effect, Config, Duration } from 'effect'
+import { Effect, Duration } from 'effect'
 import * as jose from 'jose'
 import { UserId, UserRole } from '../../domain/User'
 import { InvalidTokenError } from '../../domain/UserErrors'
+import { JwtConfig } from '../../configs/env'
 
 export interface JwtPayload {
   readonly sub: UserId
@@ -13,14 +14,6 @@ export interface TokenPair {
   readonly accessToken: string
   readonly refreshToken: string
 }
-
-const JwtConfig = Config.all({
-  secret: Config.string('JWT_SECRET').pipe(
-    Config.withDefault('your-super-secret-jwt-key-min-32-chars!!')
-  ),
-  accessExpiry: Config.string('JWT_ACCESS_EXPIRY').pipe(Config.withDefault('15m')),
-  refreshExpiry: Config.string('JWT_REFRESH_EXPIRY').pipe(Config.withDefault('7d')),
-})
 
 const parseExpiry = (expiry: string): Duration.Duration => {
   const match = expiry.match(/^(\d+)([smhd])$/)

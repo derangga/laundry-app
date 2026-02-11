@@ -13,6 +13,7 @@ const TestConfigProvider = ConfigProvider.fromMap(
     ['JWT_SECRET', 'test-secret-key-that-is-at-least-32-characters-long'],
     ['JWT_ACCESS_EXPIRY', '15m'],
     ['JWT_REFRESH_EXPIRY', '7d'],
+    ['BCRYPT_ROUNDS', '12'],
   ])
 )
 
@@ -72,7 +73,9 @@ describe('LoginUseCase', () => {
       const service = yield* PasswordService
       return yield* service.hash(validPassword)
     })
-    hashedPassword = await Effect.runPromise(Effect.provide(hashEffect, PasswordServiceLive))
+    hashedPassword = await Effect.runPromise(
+      Effect.provide(hashEffect, PasswordServiceLive.pipe(Layer.provide(TestConfig)))
+    )
   })
 
   it('should login successfully with valid credentials', async () => {
