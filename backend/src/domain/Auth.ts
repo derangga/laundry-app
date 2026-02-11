@@ -3,8 +3,14 @@ import { UserId, UserRole } from './User'
 
 // Login Input
 export class LoginInput extends Schema.Class<LoginInput>('LoginInput')({
-  email: Schema.String,
-  password: Schema.String,
+  email: Schema.String.pipe(
+    Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, {
+      message: () => 'Invalid email format',
+    })
+  ),
+  password: Schema.String.pipe(
+    Schema.minLength(8, { message: () => 'Password must be at least 8 characters' })
+  ),
 }) {}
 
 // Authenticated user data (subset of User for responses)
