@@ -92,9 +92,9 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
 
       const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, phone, address, created_at, updated_at`
 
-      return sql.unsafe<Customer>(query, params).pipe(
-        Effect.map((rows) => Option.fromNullable(rows[0]))
-      )
+      return sql
+        .unsafe<Customer>(query, params)
+        .pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
     }
 
     return {

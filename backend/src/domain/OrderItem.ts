@@ -23,7 +23,9 @@ export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>(
   quantity: Schema.Number,
 }) {}
 
-export class OrderItemWithService extends Schema.Class<OrderItemWithService>('OrderItemWithService')({
+export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
+  'OrderItemWithService'
+)({
   id: OrderItemId,
   order_id: OrderId,
   service_id: ServiceId,
