@@ -4,6 +4,7 @@ import { CustomerRepository } from "@infrastructure/database/repositories/Custom
 import {
   Customer,
   CustomerId,
+  CustomerSummary,
   CreateCustomerInput,
   UpdateCustomerInput,
 } from "@domain/Customer"
@@ -64,6 +65,14 @@ const createMockCustomerRepo = (
       )
     },
     delete: (_id: CustomerId) => Effect.succeed(true),
+    findSummaries: () =>
+      Effect.succeed(
+        customers.map((c) => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+        })) as CustomerSummary[]
+      ),
   } as unknown as CustomerRepository)
 
 describe("CustomerRepository", () => {
@@ -223,6 +232,29 @@ describe("CustomerRepository", () => {
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
       expect(result).toBe(true)
+    })
+  })
+
+  describe("findSummaries", () => {
+    it("should return customer summaries", async () => {
+      const customers = [
+        createMockCustomer({ id: "1" as CustomerId, name: "John Doe" }),
+        createMockCustomer({ id: "2" as CustomerId, name: "Jane Doe" }),
+      ]
+      const MockRepo = createMockCustomerRepo(customers)
+
+      const program = Effect.gen(function* () {
+        const repo = yield* CustomerRepository
+        return yield* repo.findSummaries()
+      })
+
+      const result = await Effect.runPromise(Effect.provide(program, MockRepo))
+      expect(result.length).toBe(2)
+      expect(result[0]).toHaveProperty("id")
+      expect(result[0]).toHaveProperty("name")
+      expect(result[0]).toHaveProperty("phone")
+      expect(result[0]).not.toHaveProperty("address")
+      expect(result[0]).not.toHaveProperty("created_at")
     })
   })
 })

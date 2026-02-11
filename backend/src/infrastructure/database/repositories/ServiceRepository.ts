@@ -1,48 +1,59 @@
 import { Effect, Option } from 'effect'
-import { SqlClient, SqlError } from '@effect/sql'
+import { SqlClient, SqlError, Model } from '@effect/sql'
 import {
   LaundryService,
   ServiceId,
+  ActiveServiceInfo,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
-  UnitType,
 } from '../../../domain/LaundryService'
 
 export class ServiceRepository extends Effect.Service<ServiceRepository>()('ServiceRepository', {
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
 
-    const findById = (
-      id: ServiceId
-    ): Effect.Effect<Option.Option<LaundryService>, SqlError.SqlError> =>
-      sql<LaundryService>`SELECT * FROM services WHERE id = ${id}`.pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
+    // Base CRUD from Model.makeRepository
+    const repo = yield* Model.makeRepository(LaundryService, {
+      tableName: 'services',
+      spanPrefix: 'ServiceRepository',
+      idColumn: 'id',
+    })
 
+    // Custom methods with explicit columns
     const findActive = (): Effect.Effect<readonly LaundryService[], SqlError.SqlError> =>
       sql<LaundryService>`
-          SELECT * FROM services
-          WHERE is_active = true
-          ORDER BY name ASC
-        `.pipe(Effect.map((rows) => rows))
+        SELECT id, name, price, unit_type, is_active, created_at, updated_at
+        FROM services
+        WHERE is_active = true
+        ORDER BY name ASC
+      `.pipe(Effect.map((rows) => rows))
 
     const findAll = (): Effect.Effect<readonly LaundryService[], SqlError.SqlError> =>
       sql<LaundryService>`
-          SELECT * FROM services
-          ORDER BY name ASC
-        `.pipe(Effect.map((rows) => rows))
+        SELECT id, name, price, unit_type, is_active, created_at, updated_at
+        FROM services
+        ORDER BY name ASC
+      `.pipe(Effect.map((rows) => rows))
+
+    const findActiveServiceInfo = (): Effect.Effect<
+      readonly ActiveServiceInfo[],
+      SqlError.SqlError
+    > =>
+      sql<ActiveServiceInfo>`
+        SELECT id, name, price, unit_type
+        FROM services
+        WHERE is_active = true
+        ORDER BY name ASC
+      `.pipe(Effect.map((rows) => rows))
 
     const insert = (
       data: CreateLaundryServiceInput
     ): Effect.Effect<LaundryService, SqlError.SqlError> =>
       sql<LaundryService>`
-          INSERT INTO services (name, price, unit_type, is_active)
-          VALUES (${data.name}, ${data.price}, ${data.unit_type}, true)
-          RETURNING *
-        `.pipe(
+        INSERT INTO services (name, price, unit_type, is_active)
+        VALUES (${data.name}, ${data.price}, ${data.unit_type}, true)
+        RETURNING id, name, price, unit_type, is_active, created_at, updated_at
+      `.pipe(
         Effect.flatMap((rows) => {
           const first = rows[0]
           return first !== undefined
@@ -73,7 +84,7 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       }
       if (data.unit_type !== undefined) {
         updates.push(`unit_type = $${paramIndex++}`)
-        params.push(data.unit_type as UnitType)
+        params.push(data.unit_type)
       }
       if (data.is_active !== undefined) {
         updates.push(`is_active = $${paramIndex++}`)
@@ -81,35 +92,36 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       }
 
       if (updates.length === 0) {
-        return findById(id)
+        return repo.findById(id)
       }
 
       updates.push(`updated_at = NOW()`)
       params.push(id)
 
-      const query = `UPDATE services SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`
+      const query = `UPDATE services SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, price, unit_type, is_active, created_at, updated_at`
 
       return sql.unsafe<LaundryService>(query, params).pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
+        Effect.map((rows) => Option.fromNullable(rows[0]))
       )
     }
 
     const softDelete = (id: ServiceId): Effect.Effect<void, SqlError.SqlError> =>
       sql`
-          UPDATE services
-          SET is_active = false, updated_at = NOW()
-          WHERE id = ${id}
-        `.pipe(Effect.map(() => void 0))
+        UPDATE services
+        SET is_active = false, updated_at = NOW()
+        WHERE id = ${id}
+      `.pipe(Effect.map(() => void 0))
 
     return {
-      findById,
-      findActive,
-      findAll,
+      // Base CRUD from makeRepository
+      findById: repo.findById,
+
+      // Custom methods
       insert,
       update,
+      findActive,
+      findAll,
+      findActiveServiceInfo,
       softDelete,
     } as const
   }),

@@ -1,8 +1,9 @@
 import { Effect, Option } from 'effect'
-import { SqlClient, SqlError } from '@effect/sql'
+import { SqlClient, SqlError, Model } from '@effect/sql'
 import {
   Customer,
   CustomerId,
+  CustomerSummary,
   CreateCustomerInput,
   UpdateCustomerInput,
 } from '../../../domain/Customer'
@@ -11,37 +12,44 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
 
-    const findById = (id: CustomerId): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
-      sql<Customer>`SELECT * FROM customers WHERE id = ${id}`.pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
+    // Base CRUD from Model.makeRepository
+    const repo = yield* Model.makeRepository(Customer, {
+      tableName: 'customers',
+      spanPrefix: 'CustomerRepository',
+      idColumn: 'id',
+    })
 
+    // Custom methods with explicit columns
     const findByPhone = (
       phone: string
     ): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
-      sql<Customer>`SELECT * FROM customers WHERE phone = ${phone}`.pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
+      sql<Customer>`
+        SELECT id, name, phone, address, created_at, updated_at
+        FROM customers
+        WHERE phone = ${phone}
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
     const searchByName = (name: string): Effect.Effect<readonly Customer[], SqlError.SqlError> =>
       sql<Customer>`
-          SELECT * FROM customers
-          WHERE name ILIKE ${'%' + name + '%'}
-          ORDER BY name ASC
-        `.pipe(Effect.map((rows) => rows))
+        SELECT id, name, phone, address, created_at, updated_at
+        FROM customers
+        WHERE name ILIKE ${'%' + name + '%'}
+        ORDER BY name ASC
+      `.pipe(Effect.map((rows) => rows))
+
+    const findSummaries = (): Effect.Effect<readonly CustomerSummary[], SqlError.SqlError> =>
+      sql<CustomerSummary>`
+        SELECT id, name, phone
+        FROM customers
+        ORDER BY name ASC
+      `.pipe(Effect.map((rows) => rows))
 
     const insert = (data: CreateCustomerInput): Effect.Effect<Customer, SqlError.SqlError> =>
       sql<Customer>`
-          INSERT INTO customers (name, phone, address)
-          VALUES (${data.name}, ${data.phone}, ${data.address})
-          RETURNING *
-        `.pipe(
+        INSERT INTO customers (name, phone, address)
+        VALUES (${data.name}, ${data.phone}, ${data.address})
+        RETURNING id, name, phone, address, created_at, updated_at
+      `.pipe(
         Effect.flatMap((rows) => {
           const first = rows[0]
           return first !== undefined
@@ -76,32 +84,30 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
       }
 
       if (updates.length === 0) {
-        return findById(id)
+        return repo.findById(id)
       }
 
       updates.push(`updated_at = NOW()`)
       params.push(id)
 
-      const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`
+      const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, phone, address, created_at, updated_at`
 
       return sql.unsafe<Customer>(query, params).pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
+        Effect.map((rows) => Option.fromNullable(rows[0]))
       )
     }
 
-    const deleteById = (id: CustomerId): Effect.Effect<boolean, SqlError.SqlError> =>
-      sql`DELETE FROM customers WHERE id = ${id}`.pipe(Effect.map(() => true))
-
     return {
-      findById,
-      findByPhone,
-      searchByName,
+      // Base CRUD from makeRepository
+      findById: repo.findById,
+      delete: repo.delete,
+
+      // Custom methods
       insert,
       update,
-      delete: deleteById,
+      findByPhone,
+      searchByName,
+      findSummaries,
     } as const
   }),
 }) {}

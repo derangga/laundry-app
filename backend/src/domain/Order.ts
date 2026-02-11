@@ -40,3 +40,26 @@ export class UpdatePaymentStatusInput extends Schema.Class<UpdatePaymentStatusIn
 )({
   payment_status: PaymentStatus,
 }) {}
+
+export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithDetails')({
+  id: OrderId,
+  order_number: Schema.String,
+  customer_id: CustomerId,
+  customer_name: Schema.String,
+  customer_phone: Schema.String,
+  status: OrderStatus,
+  payment_status: PaymentStatus,
+  total_price: Schema.Number,
+  created_by: UserId,
+  created_by_name: Schema.String,
+  created_at: Schema.DateTimeUtc,
+  updated_at: Schema.DateTimeUtc,
+}) {}
+
+export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
+  id: OrderId,
+  order_number: Schema.String,
+  total_price: Schema.Number,
+  payment_status: PaymentStatus,
+  created_at: Schema.DateTimeUtc,
+}) {}

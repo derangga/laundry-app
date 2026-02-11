@@ -24,3 +24,9 @@ export class UpdateCustomerInput extends Schema.Class<UpdateCustomerInput>('Upda
   phone: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
   address: Schema.optional(Schema.NullOr(Schema.String)),
 }) {}
+
+export class CustomerSummary extends Schema.Class<CustomerSummary>('CustomerSummary')({
+  id: CustomerId,
+  name: Schema.String,
+  phone: Schema.String,
+}) {}

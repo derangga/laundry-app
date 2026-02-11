@@ -10,6 +10,8 @@ import {
   OrderId,
   OrderStatus,
   PaymentStatus,
+  OrderWithDetails,
+  OrderSummary,
 } from "@domain/Order"
 import { CustomerId } from "@domain/Customer"
 import { UserId } from "@domain/User"
@@ -70,6 +72,41 @@ const createMockOrderRepo = (
           created_by: data.created_by,
         })
       ),
+    findWithDetails: (options: OrderFilterOptions = {}) => {
+      let filtered = [...orders]
+      if (options.status) {
+        filtered = filtered.filter((o) => o.status === options.status)
+      }
+      if (options.payment_status) {
+        filtered = filtered.filter((o) => o.payment_status === options.payment_status)
+      }
+      if (options.limit) {
+        filtered = filtered.slice(0, options.limit)
+      }
+      return Effect.succeed(
+        filtered.map((o) => ({
+          ...o,
+          customer_name: "Mock Customer",
+          customer_phone: "+628123456789",
+          created_by_name: "Mock User",
+        })) as OrderWithDetails[]
+      )
+    },
+    findSummaries: (options: Pick<OrderFilterOptions, 'payment_status' | 'start_date' | 'end_date'> = {}) => {
+      let filtered = [...orders]
+      if (options.payment_status) {
+        filtered = filtered.filter((o) => o.payment_status === options.payment_status)
+      }
+      return Effect.succeed(
+        filtered.map((o) => ({
+          id: o.id,
+          order_number: o.order_number,
+          total_price: o.total_price,
+          payment_status: o.payment_status,
+          created_at: o.created_at,
+        })) as OrderSummary[]
+      )
+    },
     updateStatus: (_id: OrderId, _status: OrderStatus) =>
       Effect.succeed(void 0),
     updatePaymentStatus: (_id: OrderId, _paymentStatus: PaymentStatus) =>
@@ -274,6 +311,53 @@ describe("OrderRepository", () => {
 
       // Should complete without throwing
       await Effect.runPromise(Effect.provide(program, MockRepo))
+    })
+  })
+
+  describe("findWithDetails", () => {
+    it("should return orders with customer and user details", async () => {
+      const orders = [
+        createMockOrder({ id: "1" as OrderId }),
+        createMockOrder({ id: "2" as OrderId }),
+      ]
+      const MockRepo = createMockOrderRepo(orders)
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderRepository
+        return yield* repo.findWithDetails()
+      })
+
+      const result = await Effect.runPromise(Effect.provide(program, MockRepo))
+      expect(result.length).toBe(2)
+      expect(result[0]).toHaveProperty("customer_name")
+      expect(result[0]).toHaveProperty("customer_phone")
+      expect(result[0]).toHaveProperty("created_by_name")
+    })
+  })
+
+  describe("findSummaries", () => {
+    it("should return order summaries for analytics", async () => {
+      const orders = [
+        createMockOrder({ id: "1" as OrderId, payment_status: "paid" as PaymentStatus }),
+        createMockOrder({ id: "2" as OrderId, payment_status: "unpaid" as PaymentStatus }),
+        createMockOrder({ id: "3" as OrderId, payment_status: "paid" as PaymentStatus }),
+      ]
+      const MockRepo = createMockOrderRepo(orders)
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderRepository
+        return yield* repo.findSummaries({ payment_status: "paid" as PaymentStatus })
+      })
+
+      const result = await Effect.runPromise(Effect.provide(program, MockRepo))
+      expect(result.length).toBe(2)
+      expect(result[0]).toHaveProperty("id")
+      expect(result[0]).toHaveProperty("order_number")
+      expect(result[0]).toHaveProperty("total_price")
+      expect(result[0]).toHaveProperty("payment_status")
+      expect(result[0]).toHaveProperty("created_at")
+      expect(result[0]).not.toHaveProperty("customer_id")
+      expect(result[0]).not.toHaveProperty("status")
     })
   })
 })

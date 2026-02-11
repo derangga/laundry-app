@@ -4,9 +4,9 @@ import {
   OrderItemRepository,
   OrderItemInsertData,
 } from "@infrastructure/database/repositories/OrderItemRepository"
-import { OrderItem, OrderItemId } from "@domain/OrderItem"
+import { OrderItem, OrderItemId, OrderItemWithService } from "@domain/OrderItem"
 import { OrderId } from "@domain/Order"
-import { ServiceId } from "@domain/LaundryService"
+import { ServiceId, UnitType } from "@domain/LaundryService"
 
 // Create a mock order item
 const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
@@ -59,6 +59,16 @@ const createMockOrderItemRepo = (
       ),
     deleteByOrderId: (_orderId: OrderId) =>
       Effect.succeed(void 0),
+    findByOrderIdWithService: (orderId: OrderId) =>
+      Effect.succeed(
+        items
+          .filter((i) => i.order_id === orderId)
+          .map((i) => ({
+            ...i,
+            service_name: "Mock Service",
+            unit_type: "kg" as UnitType,
+          })) as OrderItemWithService[]
+      ),
   } as unknown as OrderItemRepository)
 
 describe("OrderItemRepository", () => {
@@ -191,6 +201,26 @@ describe("OrderItemRepository", () => {
 
       const result = await Effect.runPromise(Effect.provide(program, MockRepo))
       expect(result.length).toBe(0)
+    })
+  })
+
+  describe("findByOrderIdWithService", () => {
+    it("should return order items with service details", async () => {
+      const items = [
+        createMockOrderItem({ id: "1" as OrderItemId, order_id: "order-123" as OrderId }),
+        createMockOrderItem({ id: "2" as OrderItemId, order_id: "order-123" as OrderId }),
+      ]
+      const MockRepo = createMockOrderItemRepo(items)
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderItemRepository
+        return yield* repo.findByOrderIdWithService("order-123" as OrderId)
+      })
+
+      const result = await Effect.runPromise(Effect.provide(program, MockRepo))
+      expect(result.length).toBe(2)
+      expect(result[0]).toHaveProperty("service_name")
+      expect(result[0]).toHaveProperty("unit_type")
     })
   })
 

@@ -1,6 +1,6 @@
-import { Effect, Option } from 'effect'
-import { SqlClient, SqlError } from '@effect/sql'
-import { OrderItem, OrderItemId } from '../../../domain/OrderItem'
+import { Effect } from 'effect'
+import { SqlClient, SqlError, Model } from '@effect/sql'
+import { OrderItem, OrderItemWithService } from '../../../domain/OrderItem'
 import { OrderId } from '../../../domain/Order'
 import { ServiceId } from '../../../domain/LaundryService'
 
@@ -18,30 +18,49 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
     effect: Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient
 
-      const findById = (
-        id: OrderItemId
-      ): Effect.Effect<Option.Option<OrderItem>, SqlError.SqlError> =>
-        sql<OrderItem>`SELECT * FROM order_items WHERE id = ${id}`.pipe(
-          Effect.map((rows) => {
-            const first = rows[0]
-            return first !== undefined ? Option.some(first) : Option.none()
-          })
-        )
+      // Base CRUD from Model.makeRepository
+      const repo = yield* Model.makeRepository(OrderItem, {
+        tableName: 'order_items',
+        spanPrefix: 'OrderItemRepository',
+        idColumn: 'id',
+      })
 
+      // Custom methods with explicit columns
       const findByOrderId = (
         orderId: OrderId
       ): Effect.Effect<readonly OrderItem[], SqlError.SqlError> =>
         sql<OrderItem>`
-          SELECT * FROM order_items
+          SELECT id, order_id, service_id, quantity, price_at_order, subtotal, created_at
+          FROM order_items
           WHERE order_id = ${orderId}
           ORDER BY created_at ASC
+        `.pipe(Effect.map((rows) => rows))
+
+      const findByOrderIdWithService = (
+        orderId: OrderId
+      ): Effect.Effect<readonly OrderItemWithService[], SqlError.SqlError> =>
+        sql<OrderItemWithService>`
+          SELECT
+            oi.id,
+            oi.order_id,
+            oi.service_id,
+            s.name AS service_name,
+            s.unit_type,
+            oi.quantity,
+            oi.price_at_order,
+            oi.subtotal,
+            oi.created_at
+          FROM order_items oi
+          JOIN services s ON oi.service_id = s.id
+          WHERE oi.order_id = ${orderId}
+          ORDER BY oi.created_at ASC
         `.pipe(Effect.map((rows) => rows))
 
       const insert = (data: OrderItemInsertData): Effect.Effect<OrderItem, SqlError.SqlError> =>
         sql<OrderItem>`
           INSERT INTO order_items (order_id, service_id, quantity, price_at_order, subtotal)
           VALUES (${data.order_id}, ${data.service_id}, ${data.quantity}, ${data.price_at_order}, ${data.subtotal})
-          RETURNING *
+          RETURNING id, order_id, service_id, quantity, price_at_order, subtotal, created_at
         `.pipe(
           Effect.flatMap((rows) => {
             const first = rows[0]
@@ -83,7 +102,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
         const query = `
           INSERT INTO order_items (order_id, service_id, quantity, price_at_order, subtotal)
           VALUES ${values.join(', ')}
-          RETURNING *
+          RETURNING id, order_id, service_id, quantity, price_at_order, subtotal, created_at
         `
 
         return sql.unsafe<OrderItem>(query, params).pipe(Effect.map((rows) => rows))
@@ -93,9 +112,13 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
         sql`DELETE FROM order_items WHERE order_id = ${orderId}`.pipe(Effect.map(() => void 0))
 
       return {
-        findById,
-        findByOrderId,
+        // Base CRUD from makeRepository
+        findById: repo.findById,
+
+        // Custom methods
         insert,
+        findByOrderId,
+        findByOrderIdWithService,
         insertMany,
         deleteByOrderId,
       } as const

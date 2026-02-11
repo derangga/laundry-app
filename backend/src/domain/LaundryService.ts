@@ -33,3 +33,10 @@ export class UpdateLaundryServiceInput extends Schema.Class<UpdateLaundryService
   unit_type: Schema.optional(UnitType),
   is_active: Schema.optional(Schema.Boolean),
 }) {}
+
+export class ActiveServiceInfo extends Schema.Class<ActiveServiceInfo>('ActiveServiceInfo')({
+  id: ServiceId,
+  name: Schema.String,
+  price: Schema.Number,
+  unit_type: UnitType,
+}) {}

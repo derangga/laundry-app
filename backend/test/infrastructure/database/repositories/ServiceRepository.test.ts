@@ -4,6 +4,7 @@ import { ServiceRepository } from "@infrastructure/database/repositories/Service
 import {
   LaundryService,
   ServiceId,
+  ActiveServiceInfo,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
   UnitType,
@@ -61,6 +62,17 @@ const createMockServiceRepo = (
       )
     },
     softDelete: (_id: ServiceId) => Effect.succeed(void 0),
+    findActiveServiceInfo: () =>
+      Effect.succeed(
+        services
+          .filter((s) => s.is_active)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            price: s.price,
+            unit_type: s.unit_type,
+          })) as ActiveServiceInfo[]
+      ),
   } as unknown as ServiceRepository)
 
 describe("ServiceRepository", () => {
@@ -200,6 +212,31 @@ describe("ServiceRepository", () => {
 
       // Should complete without throwing
       await Effect.runPromise(Effect.provide(program, MockRepo))
+    })
+  })
+
+  describe("findActiveServiceInfo", () => {
+    it("should return active service info without timestamps", async () => {
+      const services = [
+        createMockService({ id: "1" as ServiceId, is_active: true }),
+        createMockService({ id: "2" as ServiceId, is_active: false }),
+        createMockService({ id: "3" as ServiceId, is_active: true }),
+      ]
+      const MockRepo = createMockServiceRepo(services)
+
+      const program = Effect.gen(function* () {
+        const repo = yield* ServiceRepository
+        return yield* repo.findActiveServiceInfo()
+      })
+
+      const result = await Effect.runPromise(Effect.provide(program, MockRepo))
+      expect(result.length).toBe(2)
+      expect(result[0]).toHaveProperty("id")
+      expect(result[0]).toHaveProperty("name")
+      expect(result[0]).toHaveProperty("price")
+      expect(result[0]).toHaveProperty("unit_type")
+      expect(result[0]).not.toHaveProperty("is_active")
+      expect(result[0]).not.toHaveProperty("created_at")
     })
   })
 })

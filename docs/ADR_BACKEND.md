@@ -347,9 +347,13 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()(
         idColumn: "id",
       });
 
+      // CRITICAL: Always use explicit column lists, NEVER use SELECT *
       const findByPhone = (phone: string) =>
-          sql<Customer>`SELECT * FROM customers WHERE phone = ${phone}`
-            .pipe(
+          sql<Customer>`
+            SELECT id, name, phone, address, created_at, updated_at
+            FROM customers
+            WHERE phone = ${phone}
+          `.pipe(
               Effect.flatMap(rows =>
                 rows.length > 0
                   ? Effect.succeed(Option.some(rows[0]))
@@ -374,11 +378,36 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()(
 - `Model.makeRepository` generates CRUD operations automatically
 
 **Query Execution**:
-- Use sql template literal for custom queries
+- **CRITICAL: NEVER use `SELECT *` in queries - always specify explicit column lists**
+  - Improves performance by reducing data transfer
+  - Prevents accidentally exposing sensitive columns
+  - Makes schema changes more explicit and traceable
+  - Provides better type safety and clarity
+- Use sql template literal for custom queries with explicit columns
 - `Model.makeRepository` provides standard CRUD operations automatically
 - Parse results with @effect/schema (automatic with Model.Class)
 - Wrap in Effect for error handling
 - Use transactions for multi-step operations
+
+**Example - Correct vs Incorrect**:
+```typescript
+// ❌ WRONG - Never use SELECT *
+sql<Customer>`SELECT * FROM customers WHERE id = ${id}`
+
+// ✅ CORRECT - Always list explicit columns
+sql<Customer>`
+  SELECT id, name, phone, address, created_at, updated_at
+  FROM customers
+  WHERE id = ${id}
+`
+
+// ✅ CORRECT - Use specialized models for subsets
+sql<CustomerSummary>`
+  SELECT id, name, phone
+  FROM customers
+  ORDER BY name ASC
+`
+```
 
 **Important Patterns**:
 - Always use `Model.Class` for database entities (not `Schema.Struct`)

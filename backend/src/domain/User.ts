@@ -32,3 +32,9 @@ export class UserWithoutPassword extends Schema.Class<UserWithoutPassword>('User
   created_at: Schema.DateTimeUtc,
   updated_at: Schema.DateTimeUtc,
 }) {}
+
+export class UserBasicInfo extends Schema.Class<UserBasicInfo>('UserBasicInfo')({
+  id: UserId,
+  name: Schema.String,
+  email: Schema.String,
+}) {}

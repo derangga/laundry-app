@@ -1,19 +1,7 @@
-import { Effect, Option, Schema } from 'effect'
-import { SqlClient, SqlError } from '@effect/sql'
-import { Model } from '@effect/sql'
+import { Effect, Option } from 'effect'
+import { SqlClient, SqlError, Model } from '@effect/sql'
+import { RefreshToken, RefreshTokenId } from '../../../domain/RefreshToken'
 import { UserId } from '../../../domain/User'
-
-export const RefreshTokenId = Schema.String.pipe(Schema.brand('RefreshTokenId'))
-export type RefreshTokenId = typeof RefreshTokenId.Type
-
-export class RefreshToken extends Model.Class<RefreshToken>('RefreshToken')({
-  id: Model.Generated(RefreshTokenId),
-  user_id: UserId,
-  token_hash: Schema.String,
-  expires_at: Schema.DateTimeUtc,
-  created_at: Model.DateTimeInsert,
-  revoked_at: Schema.NullOr(Schema.DateTimeUtc),
-}) {}
 
 export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepository>()(
   'RefreshTokenRepository',
@@ -21,30 +9,24 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
     effect: Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient
 
+      // Base CRUD from Model.makeRepository
+      const repo = yield* Model.makeRepository(RefreshToken, {
+        tableName: 'refresh_tokens',
+        spanPrefix: 'RefreshTokenRepository',
+        idColumn: 'id',
+      })
+
+      // Custom methods with explicit columns
       const findByTokenHash = (
         tokenHash: string
       ): Effect.Effect<Option.Option<RefreshToken>, SqlError.SqlError> =>
         sql<RefreshToken>`
-          SELECT * FROM refresh_tokens
+          SELECT id, user_id, token_hash, expires_at, created_at, revoked_at
+          FROM refresh_tokens
           WHERE token_hash = ${tokenHash}
             AND revoked_at IS NULL
             AND expires_at > NOW()
-        `.pipe(
-          Effect.map((rows) => {
-            const first = rows[0]
-            return first !== undefined ? Option.some(first) : Option.none()
-          })
-        )
-
-      const findById = (
-        id: RefreshTokenId
-      ): Effect.Effect<Option.Option<RefreshToken>, SqlError.SqlError> =>
-        sql<RefreshToken>`SELECT * FROM refresh_tokens WHERE id = ${id}`.pipe(
-          Effect.map((rows) => {
-            const first = rows[0]
-            return first !== undefined ? Option.some(first) : Option.none()
-          })
-        )
+        `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
       const insert = (data: {
         user_id: UserId
@@ -54,7 +36,7 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
         sql<RefreshToken>`
           INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
           VALUES (${data.user_id}, ${data.token_hash}, ${data.expires_at})
-          RETURNING *
+          RETURNING id, user_id, token_hash, expires_at, created_at, revoked_at
         `.pipe(
           Effect.flatMap((rows) => {
             const first = rows[0]
@@ -94,9 +76,12 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
         `.pipe(Effect.map((result) => result.length))
 
       return {
-        findByTokenHash,
-        findById,
+        // Base CRUD from makeRepository
+        findById: repo.findById,
+
+        // Custom methods
         insert,
+        findByTokenHash,
         revoke,
         revokeByTokenHash,
         revokeAllForUser,

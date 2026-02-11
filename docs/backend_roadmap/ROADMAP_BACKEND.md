@@ -434,7 +434,7 @@ bun test
 bun test:watch
 
 # Specific file
-bun test src/domain/customer/__tests__/CustomerService.test.ts
+bun test src/domain/__tests__/CustomerService.test.ts
 ```
 
 ### Common Commands
@@ -476,7 +476,7 @@ bun run lint                 # Lint code with ESLint
 ```typescript
 import { SqlClient, Model } from "@effect/sql";
 import { Effect, Option } from "effect";
-import { YourEntity } from "@domain/your-entity/YourEntity";
+import { YourEntity } from "@domain/YourEntity";
 
 export class YourRepository extends Effect.Service<YourRepository>()(
   "YourRepository",
@@ -540,7 +540,7 @@ export class YourService extends Effect.Service<YourService>()("YourService", {
 import { HttpServerRequest, HttpServerResponse } from "@effect/platform";
 import { Effect } from "effect";
 import { parseBody } from "@infrastructure/http/RequestParser";
-import { YourService } from "@domain/your-entity/YourService";
+import { YourService } from "@domain/YourService";
 import { YourRequestSchema, YourResponseSchema } from "./schemas";
 
 export const yourRoute = Effect.gen(function* () {
