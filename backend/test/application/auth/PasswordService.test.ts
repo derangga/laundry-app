@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { Effect } from 'effect'
+import { Effect, Layer, ConfigProvider } from 'effect'
 import { PasswordService, PasswordServiceLive } from '@application/auth/PasswordService'
+
+const TestConfigProvider = ConfigProvider.fromMap(
+  new Map([['BCRYPT_ROUNDS', '12']])
+)
+
+const TestConfig = Layer.setConfigProvider(TestConfigProvider)
 
 describe('PasswordService', () => {
   const runWithService = <A, E>(effect: Effect.Effect<A, E, PasswordService>) =>
-    Effect.runPromise(Effect.provide(effect, PasswordServiceLive))
+    Effect.runPromise(Effect.provide(effect, Layer.merge(PasswordServiceLive, TestConfig)))
 
   describe('hash', () => {
     it('should hash a password', async () => {
