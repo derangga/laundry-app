@@ -1,12 +1,6 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import {
-  Customer,
-  CustomerId,
-  CustomerSummary,
-  CreateCustomerInput,
-  UpdateCustomerInput,
-} from '../domain/Customer'
+import { Customer, CustomerId, CustomerSummary, UpdateCustomerInput } from '../domain/Customer'
 
 export class CustomerRepository extends Effect.Service<CustomerRepository>()('CustomerRepository', {
   effect: Effect.gen(function* () {
@@ -43,24 +37,6 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
         FROM customers
         ORDER BY name ASC
       `.pipe(Effect.map((rows) => rows))
-
-    const insert = (data: CreateCustomerInput): Effect.Effect<Customer, SqlError.SqlError> =>
-      sql<Customer>`
-        INSERT INTO customers (name, phone, address)
-        VALUES (${data.name}, ${data.phone}, ${data.address})
-        RETURNING id, name, phone, address, created_at, updated_at
-      `.pipe(
-        Effect.flatMap((rows) => {
-          const first = rows[0]
-          return first !== undefined
-            ? Effect.succeed(first)
-            : Effect.fail(
-                new SqlError.SqlError({
-                  cause: new Error('Insert failed - no row returned'),
-                })
-              )
-        })
-      )
 
     const update = (
       id: CustomerId,
@@ -100,10 +76,10 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
     return {
       // Base CRUD from makeRepository
       findById: repo.findById,
+      insert: repo.insert,
       delete: repo.delete,
 
       // Custom methods
-      insert,
       update,
       findByPhone,
       searchByName,
