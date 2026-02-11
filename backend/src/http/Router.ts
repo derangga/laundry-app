@@ -2,9 +2,7 @@ import { HttpRouter, HttpServerResponse } from '@effect/platform'
 
 // Placeholder router for Phase 5 - actual routes added in Phase 6
 export const createAppRouter = () => {
-  return HttpRouter.empty.pipe(
-    HttpRouter.get('/health', HttpServerResponse.text('OK'))
-  )
+  return HttpRouter.empty.pipe(HttpRouter.get('/health', HttpServerResponse.text('OK')))
 }
 
 // Phase 6 will expand to:
