@@ -1,14 +1,14 @@
 import { HttpRouter, HttpServerResponse } from '@effect/platform'
+import { authRoutes } from '@api/auth/authRoutes'
 
-// Placeholder router for Phase 5 - actual routes added in Phase 6
 export const createAppRouter = () => {
-  return HttpRouter.empty.pipe(HttpRouter.get('/health', HttpServerResponse.text('OK')))
+  return HttpRouter.empty.pipe(
+    HttpRouter.get('/health', HttpServerResponse.text('OK')),
+    HttpRouter.mount('/api/auth', authRoutes)
+  )
 }
 
-// Phase 6 will expand to:
-// export const ApiRouter = HttpRouter.empty.pipe(
-//   HttpRouter.mount('/api/auth', authRoutes),
-//   HttpRouter.mount('/api/customers', customerRoutes),
-//   HttpRouter.mount('/api/orders', orderRoutes),
-//   HttpRouter.mount('/api/services', serviceRoutes)
-// )
+// Future phases will add:
+// HttpRouter.mount('/api/customers', customerRoutes),
+// HttpRouter.mount('/api/orders', orderRoutes),
+// HttpRouter.mount('/api/services', serviceRoutes)
