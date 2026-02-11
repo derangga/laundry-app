@@ -2,11 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest"
 import { Effect, Layer, Option, ConfigProvider } from "effect"
 import { refreshTokens } from "@application/auth/RefreshTokenUseCase"
 import { UserRepository } from "@infrastructure/database/repositories/UserRepository"
-import {
-  RefreshTokenRepository,
-  RefreshToken,
-  RefreshTokenId,
-} from "@infrastructure/database/repositories/RefreshTokenRepository"
+import { RefreshTokenRepository } from "@infrastructure/database/repositories/RefreshTokenRepository"
+import { RefreshToken, RefreshTokenId } from "@domain/RefreshToken"
 import { JwtServiceLive } from "@infrastructure/JwtService"
 import { TokenGenerator, TokenGeneratorLive } from "@infrastructure/TokenGenerator"
 import { User, UserId, UserRole } from "@domain/User"

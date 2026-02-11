@@ -221,7 +221,7 @@
 
 #### Task 1.10: Define Database Entities with Model.Class
 
-- [ ] Create `src/domain/user/User.ts`:
+- [ ] Create `src/domain/User.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";
@@ -239,7 +239,7 @@
   export type UserRole = "admin" | "staff";
   ```
 
-- [ ] Create `src/domain/customer/Customer.ts`:
+- [ ] Create `src/domain/Customer.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";
@@ -255,7 +255,7 @@
   }) {}
   ```
 
-- [ ] Create `src/domain/service/LaundryService.ts`:
+- [ ] Create `src/domain/LaundryService.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";
@@ -276,7 +276,7 @@
   export type UnitType = "kg" | "set";
   ```
 
-- [ ] Create `src/domain/order/Order.ts`:
+- [ ] Create `src/domain/Order.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";
@@ -298,7 +298,7 @@
   export type PaymentStatus = "paid" | "unpaid";
   ```
 
-- [ ] Create `src/domain/order/OrderItem.ts`:
+- [ ] Create `src/domain/OrderItem.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";

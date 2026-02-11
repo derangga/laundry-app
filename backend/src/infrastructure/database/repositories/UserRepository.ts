@@ -1,92 +1,53 @@
-import { Effect, Option } from "effect"
-import { SqlClient, SqlError } from "@effect/sql"
-import { User, UserId } from "../../../domain/User"
+import { Effect, Option } from 'effect'
+import { SqlClient, SqlError, Model } from '@effect/sql'
+import { User, UserId, UserWithoutPassword, UserBasicInfo } from '../../../domain/User'
 
-export class UserRepository extends Effect.Service<UserRepository>()("UserRepository", {
+export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
 
+    // Base CRUD from Model.makeRepository
+    const repo = yield* Model.makeRepository(User, {
+      tableName: 'users',
+      spanPrefix: 'UserRepository',
+      idColumn: 'id',
+    })
+
+    // Custom methods with explicit columns
     const findByEmail = (email: string): Effect.Effect<Option.Option<User>, SqlError.SqlError> =>
-      sql<User>`SELECT * FROM users WHERE email = ${email}`.pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
-
-    const findById = (id: UserId): Effect.Effect<Option.Option<User>, SqlError.SqlError> =>
-      sql<User>`SELECT * FROM users WHERE id = ${id}`.pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
-
-    const insert = (user: typeof User.insert.Type): Effect.Effect<User, SqlError.SqlError> =>
       sql<User>`
-        INSERT INTO users (email, password_hash, name, role)
-        VALUES (${user.email}, ${user.password_hash}, ${user.name}, ${user.role})
-        RETURNING *
-      `.pipe(
-        Effect.flatMap((rows) => {
-          const first = rows[0]
-          return first !== undefined
-            ? Effect.succeed(first)
-            : Effect.fail(new SqlError.SqlError({ cause: new Error("Insert failed - no row returned") }))
-        })
-      )
+        SELECT id, email, password_hash, name, role, created_at, updated_at
+        FROM users
+        WHERE email = ${email}
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
-    const update = (
-      id: UserId,
-      data: Partial<{ email: string; password_hash: string; name: string; role: string }>
-    ): Effect.Effect<Option.Option<User>, SqlError.SqlError> => {
-      const updates: string[] = []
-      const params: Array<string | UserId> = []
-      let paramIndex = 1
+    const findByIdWithoutPassword = (
+      id: UserId
+    ): Effect.Effect<Option.Option<UserWithoutPassword>, SqlError.SqlError> =>
+      sql<UserWithoutPassword>`
+        SELECT id, email, name, role, created_at, updated_at
+        FROM users
+        WHERE id = ${id}
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
-      if (data.email !== undefined) {
-        updates.push(`email = $${paramIndex++}`)
-        params.push(data.email)
-      }
-      if (data.password_hash !== undefined) {
-        updates.push(`password_hash = $${paramIndex++}`)
-        params.push(data.password_hash)
-      }
-      if (data.name !== undefined) {
-        updates.push(`name = $${paramIndex++}`)
-        params.push(data.name)
-      }
-      if (data.role !== undefined) {
-        updates.push(`role = $${paramIndex++}`)
-        params.push(data.role)
-      }
-
-      if (updates.length === 0) {
-        return findById(id)
-      }
-
-      updates.push(`updated_at = NOW()`)
-      params.push(id)
-
-      const query = `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`
-
-      return sql.unsafe<User>(query, params).pipe(
-        Effect.map((rows) => {
-          const first = rows[0]
-          return first !== undefined ? Option.some(first) : Option.none()
-        })
-      )
-    }
-
-    const deleteById = (id: UserId): Effect.Effect<boolean, SqlError.SqlError> =>
-      sql`DELETE FROM users WHERE id = ${id}`.pipe(Effect.map(() => true))
+    const findBasicInfo = (id: UserId): Effect.Effect<Option.Option<UserBasicInfo>, SqlError.SqlError> =>
+      sql<UserBasicInfo>`
+        SELECT id, name, email
+        FROM users
+        WHERE id = ${id}
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
     return {
+      // Base CRUD from makeRepository
+      findById: repo.findById,
+      insert: repo.insert,
+      update: repo.update,
+      delete: repo.delete,
+
+      // Custom domain-specific methods
       findByEmail,
-      findById,
-      insert,
-      update,
-      delete: deleteById,
+      findByIdWithoutPassword,
+      findBasicInfo,
     } as const
   }),
 }) {}

@@ -1,13 +1,13 @@
-import { Schema } from "effect"
-import { Model } from "@effect/sql"
+import { Schema } from 'effect'
+import { Model } from '@effect/sql'
 
-export const ServiceId = Schema.String.pipe(Schema.brand("ServiceId"))
+export const ServiceId = Schema.String.pipe(Schema.brand('ServiceId'))
 export type ServiceId = typeof ServiceId.Type
 
-export const UnitType = Schema.Literal("kg", "set")
+export const UnitType = Schema.Literal('kg', 'set')
 export type UnitType = typeof UnitType.Type
 
-export class LaundryService extends Model.Class<LaundryService>("LaundryService")({
+export class LaundryService extends Model.Class<LaundryService>('LaundryService')({
   id: Model.Generated(ServiceId),
   name: Schema.String,
   price: Schema.Number,
@@ -17,15 +17,26 @@ export class LaundryService extends Model.Class<LaundryService>("LaundryService"
   updated_at: Model.DateTimeUpdate,
 }) {}
 
-export class CreateLaundryServiceInput extends Schema.Class<CreateLaundryServiceInput>("CreateLaundryServiceInput")({
+export class CreateLaundryServiceInput extends Schema.Class<CreateLaundryServiceInput>(
+  'CreateLaundryServiceInput'
+)({
   name: Schema.String.pipe(Schema.nonEmptyString()),
   price: Schema.Number,
   unit_type: UnitType,
 }) {}
 
-export class UpdateLaundryServiceInput extends Schema.Class<UpdateLaundryServiceInput>("UpdateLaundryServiceInput")({
+export class UpdateLaundryServiceInput extends Schema.Class<UpdateLaundryServiceInput>(
+  'UpdateLaundryServiceInput'
+)({
   name: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
   price: Schema.optional(Schema.Number),
   unit_type: Schema.optional(UnitType),
   is_active: Schema.optional(Schema.Boolean),
+}) {}
+
+export class ActiveServiceInfo extends Schema.Class<ActiveServiceInfo>('ActiveServiceInfo')({
+  id: ServiceId,
+  name: Schema.String,
+  price: Schema.Number,
+  unit_type: UnitType,
 }) {}

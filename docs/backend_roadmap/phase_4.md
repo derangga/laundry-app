@@ -12,7 +12,7 @@
 
 #### Task 4.1: Define Domain Errors
 
-**Customer Errors** - Create `src/domain/customer/CustomerErrors.ts`:
+**Customer Errors** - Create `src/domain/CustomerErrors.ts`:
 
 ```typescript
 import { Data } from "effect";
@@ -33,7 +33,7 @@ export class InvalidPhoneNumber extends Data.TaggedError("InvalidPhoneNumber")<{
 }> {}
 ```
 
-**Service Errors** - Create `src/domain/service/ServiceErrors.ts`:
+**Service Errors** - Create `src/domain/ServiceErrors.ts`:
 
 ```typescript
 import { Data } from "effect";
@@ -53,7 +53,7 @@ export class InvalidServiceUnit extends Data.TaggedError("InvalidServiceUnit")<{
 }> {}
 ```
 
-**Order Errors** - Create `src/domain/order/OrderErrors.ts`:
+**Order Errors** - Create `src/domain/OrderErrors.ts`:
 
 ```typescript
 import { Data } from "effect";
@@ -88,7 +88,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.2: Create Phone Number Validation
 
-- [ ] Create `src/domain/customer/PhoneNumber.ts`:
+- [ ] Create `src/domain/PhoneNumber.ts`:
 
   ```typescript
   import { Schema } from "@effect/schema";
@@ -131,7 +131,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.3: Create Order Number Generator
 
-- [ ] Create `src/domain/order/OrderNumberGenerator.ts`:
+- [ ] Create `src/domain/OrderNumberGenerator.ts`:
 
   ```typescript
   import { Effect } from "effect";
@@ -150,7 +150,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.4: Create Order Status Validator
 
-- [ ] Create `src/domain/order/OrderStatusValidator.ts`:
+- [ ] Create `src/domain/OrderStatusValidator.ts`:
 
   ```typescript
   import { Effect } from "effect";
@@ -185,7 +185,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.5: Create CustomerService
 
-- [ ] Create `src/domain/customer/CustomerService.ts`:
+- [ ] Create `src/domain/CustomerService.ts`:
 
   ```typescript
   import { Effect, Option } from "effect";
@@ -255,7 +255,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.6: Create LaundryServiceService
 
-- [ ] Create `src/domain/service/LaundryServiceService.ts`:
+- [ ] Create `src/domain/LaundryServiceService.ts`:
 
   ```typescript
   import { Effect, Option } from "effect";
@@ -336,7 +336,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 #### Task 4.7: Create OrderService
 
-- [ ] Create `src/domain/order/OrderService.ts`:
+- [ ] Create `src/domain/OrderService.ts`:
 
   ```typescript
   import { Effect, Option } from "effect";
@@ -350,7 +350,7 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
     EmptyOrderError,
     InvalidOrderStatus,
   } from "./OrderErrors";
-  import { ServiceNotFound } from "@domain/service/ServiceErrors";
+  import { ServiceNotFound } from "@domain/ServiceErrors";
   import { OrderStatus, PaymentStatus } from "./Order";
 
   interface CreateOrderItem {
@@ -524,11 +524,11 @@ export class EmptyOrderError extends Data.TaggedError("EmptyOrderError")<{
 
 ### Key Files to Create
 
-- Domain errors in `src/domain/{entity}/{Entity}Errors.ts`
-- Phone number validation in `src/domain/customer/PhoneNumber.ts`
-- Order number generator in `src/domain/order/OrderNumberGenerator.ts`
-- Order status validator in `src/domain/order/OrderStatusValidator.ts`
-- Domain services in `src/domain/{entity}/{Entity}Service.ts`
+- Domain errors in `src/domain/{Entity}Errors.ts`
+- Phone number validation in `src/domain/PhoneNumber.ts`
+- Order number generator in `src/domain/OrderNumberGenerator.ts`
+- Order status validator in `src/domain/OrderStatusValidator.ts`
+- Domain services in `src/domain/{Entity}Service.ts`
 - Tests in `test/domain/`
 
 ### Verification Steps

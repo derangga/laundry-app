@@ -125,6 +125,52 @@ Use Effect-TS patterns for:
 - Use cases should only contain business logic, importing models from the domain layer
 - Group related domain models by feature (e.g., `Auth.ts`, `User.ts`, `Order.ts`, `Customer.ts`)
 
+### Database Query Guidelines
+
+**CRITICAL: NEVER use `SELECT *` in SQL queries**
+
+- **ALWAYS specify explicit column lists** in all queries
+- This is a strict architectural rule for performance, security, and maintainability
+
+**Rationale:**
+- **Performance**: Reduces data transfer by selecting only needed columns
+- **Security**: Prevents accidentally exposing sensitive data (e.g., password hashes)
+- **Maintainability**: Makes schema changes explicit and traceable
+- **Type Safety**: Provides clear mapping between database columns and TypeScript types
+- **Evolution**: Easier to track which queries are affected by schema changes
+
+**Examples:**
+```typescript
+// ❌ WRONG - Never use SELECT *
+sql<Customer>`SELECT * FROM customers WHERE phone = ${phone}`
+
+// ✅ CORRECT - Always list explicit columns
+sql<Customer>`
+  SELECT id, name, phone, address, created_at, updated_at
+  FROM customers
+  WHERE phone = ${phone}
+`
+
+// ✅ CORRECT - Create specialized models for column subsets
+sql<CustomerSummary>`
+  SELECT id, name, phone
+  FROM customers
+  ORDER BY name ASC
+`
+
+// ✅ CORRECT - Explicit RETURNING clauses for INSERT/UPDATE
+sql<Customer>`
+  INSERT INTO customers (name, phone, address)
+  VALUES (${name}, ${phone}, ${address})
+  RETURNING id, name, phone, address, created_at, updated_at
+`
+```
+
+**Specialized Models:**
+- Create dedicated domain models for queries returning column subsets
+- Examples: `UserBasicInfo`, `CustomerSummary`, `OrderSummary`, `ActiveServiceInfo`
+- Place these models in the appropriate domain file alongside the main entity
+
 ### Customer Phone Number Handling
 
 - Phone numbers must be validated and normalized before storage

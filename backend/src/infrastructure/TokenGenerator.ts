@@ -1,13 +1,13 @@
-import { Effect } from "effect"
-import { createHash, randomBytes } from "crypto"
+import { Effect } from 'effect'
+import { createHash, randomBytes } from 'crypto'
 
-export class TokenGenerator extends Effect.Service<TokenGenerator>()("TokenGenerator", {
+export class TokenGenerator extends Effect.Service<TokenGenerator>()('TokenGenerator', {
   effect: Effect.gen(function* () {
     const generateToken = (length = 32): Effect.Effect<string, Error> =>
-      Effect.sync(() => randomBytes(length).toString("hex"))
+      Effect.sync(() => randomBytes(length).toString('hex'))
 
     const hashToken = (token: string): Effect.Effect<string, never> =>
-      Effect.sync(() => createHash("sha256").update(token).digest("hex"))
+      Effect.sync(() => createHash('sha256').update(token).digest('hex'))
 
     const generateAndHash = (
       length = 32

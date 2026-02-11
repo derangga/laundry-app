@@ -1,11 +1,11 @@
-import { Effect, Option } from "effect"
-import { HttpMiddleware, HttpServerRequest, HttpServerResponse } from "@effect/platform"
-import { JwtService } from "../../JwtService"
-import { CurrentUser, CurrentUserData } from "../../../domain/CurrentUser"
-import { InvalidTokenError } from "../../../domain/UserErrors"
+import { Effect, Option } from 'effect'
+import { HttpMiddleware, HttpServerRequest, HttpServerResponse } from '@effect/platform'
+import { JwtService } from '../../JwtService'
+import { CurrentUser, CurrentUserData } from '../../../domain/CurrentUser'
+import { InvalidTokenError } from '../../../domain/UserErrors'
 
 const extractBearerToken = (authHeader: string | undefined): Option.Option<string> => {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return Option.none()
   }
   return Option.some(authHeader.slice(7))
@@ -16,7 +16,7 @@ export const authMiddleware = HttpMiddleware.make((app) =>
     const request = yield* HttpServerRequest.HttpServerRequest
     const jwtService = yield* JwtService
 
-    const authHeader = request.headers["authorization"]
+    const authHeader = request.headers['authorization']
     const tokenOption = extractBearerToken(authHeader)
 
     if (Option.isNone(tokenOption)) {
@@ -29,7 +29,7 @@ export const authMiddleware = HttpMiddleware.make((app) =>
     // Verify the token
     const payloadResult = yield* Effect.either(jwtService.verifyAccessToken(token))
 
-    if (payloadResult._tag === "Left") {
+    if (payloadResult._tag === 'Left') {
       // Invalid token, continue without user context
       // Route handlers can use requireAuth to enforce authentication
       return yield* app
@@ -52,12 +52,12 @@ export const requireAuthMiddleware = HttpMiddleware.make((app) =>
     const request = yield* HttpServerRequest.HttpServerRequest
     const jwtService = yield* JwtService
 
-    const authHeader = request.headers["authorization"]
+    const authHeader = request.headers['authorization']
     const tokenOption = extractBearerToken(authHeader)
 
     if (Option.isNone(tokenOption)) {
       return yield* HttpServerResponse.json(
-        { error: "Authentication required", code: "UNAUTHORIZED" },
+        { error: 'Authentication required', code: 'UNAUTHORIZED' },
         { status: 401 }
       )
     }
@@ -66,12 +66,12 @@ export const requireAuthMiddleware = HttpMiddleware.make((app) =>
 
     const payloadResult = yield* Effect.either(jwtService.verifyAccessToken(token))
 
-    if (payloadResult._tag === "Left") {
+    if (payloadResult._tag === 'Left') {
       const error = payloadResult.left
       return yield* HttpServerResponse.json(
         {
           error: error.message,
-          code: "INVALID_TOKEN",
+          code: 'INVALID_TOKEN',
           reason: error.reason,
         },
         { status: 401 }
@@ -94,12 +94,12 @@ export const requireAdminMiddleware = HttpMiddleware.make((app) =>
     const request = yield* HttpServerRequest.HttpServerRequest
     const jwtService = yield* JwtService
 
-    const authHeader = request.headers["authorization"]
+    const authHeader = request.headers['authorization']
     const tokenOption = extractBearerToken(authHeader)
 
     if (Option.isNone(tokenOption)) {
       return yield* HttpServerResponse.json(
-        { error: "Authentication required", code: "UNAUTHORIZED" },
+        { error: 'Authentication required', code: 'UNAUTHORIZED' },
         { status: 401 }
       )
     }
@@ -108,12 +108,12 @@ export const requireAdminMiddleware = HttpMiddleware.make((app) =>
 
     const payloadResult = yield* Effect.either(jwtService.verifyAccessToken(token))
 
-    if (payloadResult._tag === "Left") {
+    if (payloadResult._tag === 'Left') {
       const error = payloadResult.left
       return yield* HttpServerResponse.json(
         {
           error: error.message,
-          code: "INVALID_TOKEN",
+          code: 'INVALID_TOKEN',
           reason: error.reason,
         },
         { status: 401 }
@@ -122,9 +122,9 @@ export const requireAdminMiddleware = HttpMiddleware.make((app) =>
 
     const payload = payloadResult.right
 
-    if (payload.role !== "admin") {
+    if (payload.role !== 'admin') {
       return yield* HttpServerResponse.json(
-        { error: "Admin access required", code: "FORBIDDEN" },
+        { error: 'Admin access required', code: 'FORBIDDEN' },
         { status: 403 }
       )
     }
@@ -146,7 +146,7 @@ export const withOptionalAuth = <A, E, R>(
     const request = yield* HttpServerRequest.HttpServerRequest
     const jwtService = yield* JwtService
 
-    const authHeader = request.headers["authorization"]
+    const authHeader = request.headers['authorization']
     const tokenOption = extractBearerToken(authHeader)
 
     if (Option.isNone(tokenOption)) {

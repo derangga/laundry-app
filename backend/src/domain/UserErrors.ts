@@ -1,13 +1,12 @@
-import { Data } from "effect"
+import { Data } from 'effect'
 
-export class InvalidCredentialsError extends Data.TaggedError("InvalidCredentialsError")<{
+export class InvalidCredentialsError extends Data.TaggedError('InvalidCredentialsError')<{
   readonly message: string
 }> {
-  static readonly make = () =>
-    new InvalidCredentialsError({ message: "Invalid email or password" })
+  static readonly make = () => new InvalidCredentialsError({ message: 'Invalid email or password' })
 }
 
-export class UserNotFoundError extends Data.TaggedError("UserNotFoundError")<{
+export class UserNotFoundError extends Data.TaggedError('UserNotFoundError')<{
   readonly message: string
   readonly userId?: string
   readonly email?: string
@@ -19,7 +18,7 @@ export class UserNotFoundError extends Data.TaggedError("UserNotFoundError")<{
     new UserNotFoundError({ message: `User not found with email: ${email}`, email })
 }
 
-export class UserAlreadyExistsError extends Data.TaggedError("UserAlreadyExistsError")<{
+export class UserAlreadyExistsError extends Data.TaggedError('UserAlreadyExistsError')<{
   readonly message: string
   readonly email: string
 }> {
@@ -27,42 +26,41 @@ export class UserAlreadyExistsError extends Data.TaggedError("UserAlreadyExistsE
     new UserAlreadyExistsError({ message: `User already exists with email: ${email}`, email })
 }
 
-export class InvalidTokenError extends Data.TaggedError("InvalidTokenError")<{
+export class InvalidTokenError extends Data.TaggedError('InvalidTokenError')<{
   readonly message: string
   readonly reason?: string
 }> {
   static readonly expired = () =>
-    new InvalidTokenError({ message: "Token has expired", reason: "expired" })
+    new InvalidTokenError({ message: 'Token has expired', reason: 'expired' })
 
   static readonly invalid = () =>
-    new InvalidTokenError({ message: "Invalid token", reason: "invalid" })
+    new InvalidTokenError({ message: 'Invalid token', reason: 'invalid' })
 
   static readonly revoked = () =>
-    new InvalidTokenError({ message: "Token has been revoked", reason: "revoked" })
+    new InvalidTokenError({ message: 'Token has been revoked', reason: 'revoked' })
 
   static readonly malformed = () =>
-    new InvalidTokenError({ message: "Malformed token", reason: "malformed" })
+    new InvalidTokenError({ message: 'Malformed token', reason: 'malformed' })
 }
 
-export class RefreshTokenNotFoundError extends Data.TaggedError("RefreshTokenNotFoundError")<{
+export class RefreshTokenNotFoundError extends Data.TaggedError('RefreshTokenNotFoundError')<{
   readonly message: string
 }> {
   static readonly make = () =>
-    new RefreshTokenNotFoundError({ message: "Refresh token not found or expired" })
+    new RefreshTokenNotFoundError({ message: 'Refresh token not found or expired' })
 }
 
-export class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
+export class UnauthorizedError extends Data.TaggedError('UnauthorizedError')<{
   readonly message: string
 }> {
-  static readonly make = (message = "Authentication required") =>
-    new UnauthorizedError({ message })
+  static readonly make = (message = 'Authentication required') => new UnauthorizedError({ message })
 }
 
-export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
+export class ForbiddenError extends Data.TaggedError('ForbiddenError')<{
   readonly message: string
   readonly requiredRole?: string
 }> {
-  static readonly make = (message = "Access denied") => new ForbiddenError({ message })
+  static readonly make = (message = 'Access denied') => new ForbiddenError({ message })
 
   static readonly requiresRole = (role: string) =>
     new ForbiddenError({
