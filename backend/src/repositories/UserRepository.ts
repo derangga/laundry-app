@@ -14,6 +14,48 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
     })
 
     // Custom methods with explicit columns
+    const update = (
+      id: UserId,
+      data: Partial<{ email: string; password_hash: string; name: string; role: string }>
+    ): Effect.Effect<Option.Option<User>, SqlError.SqlError> => {
+      const updates: string[] = []
+      const params: Array<string | UserId> = []
+      let paramIndex = 1
+
+      if (data.email !== undefined) {
+        updates.push(`email = $${paramIndex++}`)
+        params.push(data.email)
+      }
+      if (data.password_hash !== undefined) {
+        updates.push(`password_hash = $${paramIndex++}`)
+        params.push(data.password_hash)
+      }
+      if (data.name !== undefined) {
+        updates.push(`name = $${paramIndex++}`)
+        params.push(data.name)
+      }
+      if (data.role !== undefined) {
+        updates.push(`role = $${paramIndex++}`)
+        params.push(data.role)
+      }
+
+      if (updates.length === 0) {
+        return repo.findById(id)
+      }
+
+      updates.push(`updated_at = NOW()`)
+      params.push(id)
+
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`
+
+      return sql.unsafe<User>(query, params).pipe(
+        Effect.map((rows) => {
+          const first = rows[0]
+          return first !== undefined ? Option.some(first) : Option.none()
+        })
+      )
+    }
+
     const findByEmail = (email: string): Effect.Effect<Option.Option<User>, SqlError.SqlError> =>
       sql<User>`
         SELECT id, email, password_hash, name, role, created_at, updated_at
@@ -43,10 +85,10 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       // Base CRUD from makeRepository
       findById: repo.findById,
       insert: repo.insert,
-      update: repo.update,
       delete: repo.delete,
 
       // Custom domain-specific methods
+      update,
       findByEmail,
       findByIdWithoutPassword,
       findBasicInfo,
