@@ -597,33 +597,30 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Project Structure
 
 ```
+
 /backend
 ├── src/
-│   ├── domain/                    # Business logic & entities
-│   │   ├── customer/
-│   │   │   ├── Customer.ts        # Entity type & schema
-│   │   │   ├── CustomerErrors.ts  # Domain errors
-│   │   │   └── CustomerService.ts # Business logic
-│   │   ├── order/
-│   │   │   ├── Order.ts
-│   │   │   ├── OrderItem.ts
-│   │   │   ├── OrderErrors.ts
-│   │   │   └── OrderService.ts
-│   │   ├── service/
-│   │   │   ├── LaundryService.ts  # (renamed to avoid confusion)
-│   │   │   ├── ServiceErrors.ts
-│   │   │   └── ServiceService.ts
-│   │   └── user/
-│   │       ├── User.ts
-│   │       ├── UserErrors.ts
-│   │       └── UserService.ts
+│   ├── configs/
+│   │   ├── Environment.ts     # Environment variable parsing
+│   │   └── AppConfig.ts       # Application configuration
 │   │
-│   ├── application/               # Use cases & orchestration
+│   ├── domain/
+│   │   ├── Customer.ts        # Entity type & schema
+│   │   ├── CustomerErrors.ts  # Domain errors
+│   │   ├── Order.ts
+│   │   ├── OrderItem.ts
+│   │   ├── OrderErrors.ts
+│   │   ├── ServiceErrors.ts
+│   │   ├── User.ts
+│   │   └── UserErrors.ts
+│   │
+│   ├── application/           # Use cases & orchestration & Business logic
 │   │   ├── auth/
 │   │   │   ├── LoginUseCase.ts
 │   │   │   ├── LogoutUseCase.ts
 │   │   │   └── RefreshTokenUseCase.ts
 │   │   ├── customer/
+│   │   │   ├── CustomerService.ts # Business logic
 │   │   │   ├── FindCustomerUseCase.ts
 │   │   │   ├── RegisterCustomerUseCase.ts
 │   │   │   └── GetCustomerUseCase.ts
@@ -632,32 +629,33 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 │   │   │   ├── UpdateOrderStatusUseCase.ts
 │   │   │   ├── UpdatePaymentStatusUseCase.ts
 │   │   │   └── GetOrdersUseCase.ts
+│   │   │   ├── OrderService.ts
+│   │   │   ├── LaundryService.ts  # (renamed to avoid confusion)
 │   │   ├── analytics/
 │   │   │   └── GetWeeklyAnalyticsUseCase.ts
 │   │   └── receipt/
 │   │       └── GenerateReceiptUseCase.ts
 │   │
+│   ├── http/
+│   │   ├── HttpServer.ts      # @effect/platform-bun server setup
+│   │   ├── middleware/
+│   │   │   ├── auth.ts        # Authentication middleware
+│   │   │   ├── cors.ts        # CORS middleware
+│   │   │   ├── errorHandler.ts # Error to HTTP response mapping
+│   │   │   └── logger.ts      # Request logging
+│   │   └── Router.ts          # Route registration
+│   │
 │   ├── infrastructure/            # External concerns
 │   │   ├── database/
 │   │   │   ├── SqlClient.ts       # Database connection setup
-│   │   │   ├── repositories/
-│   │   │   │   ├── CustomerRepository.ts
-│   │   │   │   ├── OrderRepository.ts
-│   │   │   │   ├── ServiceRepository.ts
-│   │   │   │   ├── UserRepository.ts
-│   │   │   │   └── RefreshTokenRepository.ts
 │   │   │   └── migrations/        # SQL migration files
-│   │   ├── http/
-│   │   │   ├── HttpServer.ts      # @effect/platform-bun server setup
-│   │   │   ├── middleware/
-│   │   │   │   ├── auth.ts        # Authentication middleware
-│   │   │   │   ├── cors.ts        # CORS middleware
-│   │   │   │   ├── errorHandler.ts # Error to HTTP response mapping
-│   │   │   │   └── logger.ts      # Request logging
-│   │   │   └── Router.ts          # Route registration
-│   │   └── config/
-│   │       ├── Environment.ts     # Environment variable parsing
-│   │       └── AppConfig.ts       # Application configuration
+│   │
+│   ├── repositories/
+│   │   ├── CustomerRepository.ts
+│   │   ├── OrderRepository.ts
+│   │   ├── ServiceRepository.ts
+│   │   ├── UserRepository.ts
+│   │   └── RefreshTokenRepository.ts
 │   │
 │   ├── api/                       # HTTP routes & controllers
 │   │   ├── auth/
