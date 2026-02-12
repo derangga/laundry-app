@@ -1,13 +1,6 @@
 # Project Context
 
-Quick reference guide for project documentation and resources.
-
-## Documentation
-
-- **[ADR_BACKEND.md](./ADR_BACKEND.md)** - Backend architectural decisions
-- **[backend_roadmap](./backend_roadmap/)** - Backend implementation task roadmaps
-- **[PRD.md](./PRD.md)** - Product Requirements Document
-- **[CLAUDE.md](../CLAUDE.md)** - Project overview and development guidelines
+Technical reference map for the laundry management application backend.
 
 ## External Resources
 
@@ -74,33 +67,30 @@ backend/
 └── package.json             # Dependencies and scripts
 ```
 
-## Key Patterns & Conventions
+## Key Patterns
 
 ### Effect Service Pattern
+Services use `Effect.Service` with dependency injection. Repositories and use cases extend this pattern.
 
-All repositories and use cases are Effect Services:
+### Domain Models
+All data models use `Schema.Class` from Effect for validation and serialization.
 
-```typescript
-export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
-  effect: Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
-    return { /* methods */ }
-  })
-}) {}
-```
+### Layer Composition
+Services are composed in `main.ts` using `Layer.mergeAll` and provided to HTTP server via `Layer.provide`.
 
-### Domain Models (Abstract Data Types)
+### Route Handlers
+Route handlers use `Effect.gen`, call use cases, and return HTTP responses. No error handling needed (middleware handles it).
 
-All data models use `Schema.Class` from Effect:
+### Middleware
+Middleware uses `HttpMiddleware.make` to wrap the application and inject context (e.g., CurrentUser).
 
-```typescript
-export class LoginInput extends Schema.Class<LoginInput>('LoginInput')({
-  email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
-  password: Schema.String.pipe(Schema.minLength(8)),
-}) {}
-```
+### Error Handling
+- Domain errors are custom classes (e.g., `InvalidCredentialsError`, `UserNotFoundError`)
+- `errorHandlerMiddleware` maps domain errors to HTTP responses
+- Use cases return `Effect<Result, Error, Requirements>`
+- Route handlers don't catch errors
 
-### Path Aliases (TypeScript)
+## Path Aliases
 
 ```typescript
 "@domain/*": ["src/domain/*"]
@@ -113,145 +103,15 @@ export class LoginInput extends Schema.Class<LoginInput>('LoginInput')({
 "@shared/*": ["src/shared/*"]
 ```
 
-### Layer Composition (main.ts)
-
-Services are composed in layers and provided to HTTP server:
-
-```typescript
-// Service layer (repositories, use cases, utilities)
-const ServicesLive = Layer.mergeAll(
-  UserRepository.Default,
-  LoginUseCase.Default,
-  // ... other services
-)
-
-// HTTP server with middleware
-const HttpLive = HttpServer.serve(appWithMiddleware).pipe(
-  Layer.provide(HttpServerLive),    // Server config
-  Layer.provide(ServicesLive),      // Business logic
-  Layer.provide(SqlClientLive)      // Database
-)
-```
-
-### Route Handler Pattern
-
-Route handlers use `Effect.gen` and call use cases:
-
-```typescript
-const loginHandler = Effect.gen(function* () {
-  const loginUseCase = yield* LoginUseCase
-  const request = yield* HttpServerRequest.HttpServerRequest
-  const body = yield* request.json
-  const input = yield* Schema.decodeUnknown(LoginInput)(body)
-  const result = yield* loginUseCase.execute(input)
-  return yield* HttpServerResponse.json(result)
-})
-```
-
-### Middleware Pattern
-
-Middleware uses `HttpMiddleware.make`:
-
-```typescript
-export const authMiddleware = HttpMiddleware.make((app) =>
-  Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest
-    // ... extract and verify token
-    return yield* Effect.provide(app, CurrentUser.layer(currentUser))
-  })
-)
-```
-
-### Error Handling
-
-- Domain errors are custom classes: `InvalidCredentialsError`, `UserNotFoundError`, etc.
-- Middleware (`errorHandlerMiddleware`) maps domain errors to HTTP responses
-- Use cases return `Effect<Result, Error, Requirements>`
-- Route handlers don't catch errors (middleware handles all)
-
 ## Database
 
 - **Client**: PostgreSQL via `@effect/sql-pg`
-- **Migrations**: Located in `src/infrastructure/database/migrations/`
-- **Connection**: Configured via environment variables (`DATABASE_HOST`, `DATABASE_PORT`, etc.)
-- **Important**: Always use explicit column lists in queries (NEVER `SELECT *`)
+- **Migrations**: `src/infrastructure/database/migrations/`
+- **Configuration**: Environment variables in `src/configs/env.ts`
 
 ## Authentication
 
-### Token Strategy
-- **Access Token**: JWT, 15-minute expiry, verified on each request
-- **Refresh Token**: Random cryptographic token, 7-day expiry, stored in database (hashed)
-- **Token Rotation**: New refresh token issued on each refresh, old token revoked
-
-### Cookie Configuration
-- **Access Token Cookie**: HttpOnly, 15min expiry, path=/
-- **Refresh Token Cookie**: HttpOnly, 7 days expiry, path=/api/auth/refresh
-- **Security**: Secure flag in production, SameSite=Strict
-
-### Endpoints
-- `POST /api/auth/login` - Email/password authentication
-- `POST /api/auth/refresh` - Token rotation (cookie or body)
-- `POST /api/auth/logout` - Session termination (protected)
-
-### Middleware
-- `authMiddleware` - Optional auth (provides CurrentUser if token present)
-- `requireAuthMiddleware` - Required auth (returns 401 if no valid token)
-- `requireAdminMiddleware` - Admin-only routes (returns 403 if not admin)
-
-## Development Workflow
-
-### Running the Server
-```bash
-bun run dev          # Development mode with hot reload
-bun run build        # Build for production
-bun run start        # Run production build
-```
-
-### Type Checking & Formatting
-```bash
-bun run typecheck    # TypeScript type checking
-bun run format       # Format code with Prettier
-bun run format:check # Check formatting
-```
-
-### Database Operations
-```bash
-bun run migrate        # Run pending migrations
-bun run migrate:create # Create new migration
-```
-
-### Git Workflow
-- **Never push to master** - Always create feature branches
-- Branch naming: `feature/`, `fix/`, `refactor/`, `docs/`, `chore/`
-- Target branch for PRs: `setup-backend`
-- Commit messages: Use conventional commits (feat:, fix:, docs:, etc.)
-
-## Environment Variables
-
-Required:
-- `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`
-- `JWT_SECRET`
-
-Optional (with defaults):
-- `PORT` (default: 3000)
-- `HOST` (default: 0.0.0.0)
-- `NODE_ENV` (default: development)
-- `JWT_ACCESS_EXPIRY` (default: 15m)
-- `JWT_REFRESH_EXPIRY` (default: 7d)
-- `BCRYPT_ROUNDS` (default: 12)
-
-## Completed Phases
-
-- ✅ **Phase 1**: Project setup and database schema
-- ✅ **Phase 2**: Repository layer implementation
-- ✅ **Phase 3**: Authentication domain logic (use cases)
-- ✅ **Phase 4**: Service layer (orders, customers, services)
-- ✅ **Phase 5**: HTTP server and middleware infrastructure
-- ✅ **Phase 6**: Authentication API routes
-
-## Next Phases
-
-- **Phase 7**: Customer API routes
-- **Phase 8**: Service API routes
-- **Phase 9**: Order API routes
-- **Phase 10**: Analytics API routes
+- **Access Token**: JWT, 15-minute expiry
+- **Refresh Token**: Hashed in database, 7-day expiry, token rotation on refresh
+- **Middleware**: `authMiddleware`, `requireAuthMiddleware`, `requireAdminMiddleware`
+- **Endpoints**: `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
