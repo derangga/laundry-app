@@ -3,7 +3,10 @@ import { Effect, Either, Option, Schema } from 'effect'
 import { LoginUseCase } from '@application/auth/LoginUseCase'
 import { RefreshTokenUseCase } from '@application/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from '@application/auth/LogoutUseCase'
-import { LoginInput, RefreshTokenInput, LogoutInput } from '@domain/Auth'
+import { RegisterUserUseCase } from '@application/auth/RegisterUserUseCase'
+import { BootstrapUseCase } from '@application/auth/BootstrapUseCase'
+import { LoginInput, RefreshTokenInput, LogoutInput, BootstrapInput } from '@domain/Auth'
+import { CreateUserInput } from '@domain/User'
 import { requireAuthMiddleware } from '@http/middleware/auth'
 import { setAuthCookies, clearAuthCookies, extractRefreshTokenFromCookie } from '@http/CookieHelper'
 
@@ -96,14 +99,54 @@ const logoutHandler = Effect.gen(function* () {
 })
 
 /**
+ * POST /api/auth/register
+ * Register new user account (requires authentication)
+ * Validates input, checks for duplicates, hashes password
+ * Returns user data WITHOUT password
+ */
+const registerHandler = Effect.gen(function* () {
+  const registerUseCase = yield* RegisterUserUseCase
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const body = yield* request.json
+
+  const input = yield* Schema.decodeUnknown(CreateUserInput)(body)
+
+  const user = yield* registerUseCase.execute(input)
+
+  return yield* HttpServerResponse.json(user, { status: 201 })
+})
+
+/**
+ * POST /api/auth/bootstrap
+ * Create first admin user (PUBLIC endpoint, no authentication required)
+ * Only works when no users exist in the database
+ * Automatically creates user with 'admin' role
+ */
+const bootstrapHandler = Effect.gen(function* () {
+  const bootstrapUseCase = yield* BootstrapUseCase
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const body = yield* request.json
+
+  const input = yield* Schema.decodeUnknown(BootstrapInput)(body)
+
+  const user = yield* bootstrapUseCase.execute(input)
+
+  return yield* HttpServerResponse.json(user, { status: 201 })
+})
+
+/**
  * Auth routes router
  * Mounts authentication endpoints:
  * - POST /login - Email/password authentication
  * - POST /refresh - Token rotation
  * - POST /logout - Session termination (protected)
+ * - POST /register - Create new user account (protected)
+ * - POST /bootstrap - Create first admin user (public)
  */
 export const authRoutes = HttpRouter.empty.pipe(
   HttpRouter.post('/login', loginHandler),
   HttpRouter.post('/refresh', refreshHandler),
-  HttpRouter.post('/logout', requireAuthMiddleware(logoutHandler))
+  HttpRouter.post('/logout', requireAuthMiddleware(logoutHandler)),
+  HttpRouter.post('/register', requireAuthMiddleware(registerHandler)),
+  HttpRouter.post('/bootstrap', bootstrapHandler)
 )

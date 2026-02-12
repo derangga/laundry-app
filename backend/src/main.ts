@@ -13,6 +13,8 @@ import { CustomerRepository } from '@repositories/CustomerRepository'
 import { LoginUseCase } from '@application/auth/LoginUseCase'
 import { RefreshTokenUseCase } from '@application/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from '@application/auth/LogoutUseCase'
+import { RegisterUserUseCase } from '@application/auth/RegisterUserUseCase'
+import { BootstrapUseCase } from '@application/auth/BootstrapUseCase'
 import { PasswordService } from '@application/auth/PasswordService'
 import { JwtService } from '@application/auth/JwtService'
 import { TokenGenerator } from '@application/auth/TokenGenerator'
@@ -36,7 +38,9 @@ const ServicesLive = Layer.mergeAll(
   CustomerService.Default,
   LoginUseCase.Default,
   RefreshTokenUseCase.Default,
-  LogoutUseCase.Default
+  LogoutUseCase.Default,
+  RegisterUserUseCase.Default,
+  BootstrapUseCase.Default
 )
 
 // Create the HTTP server layer that serves the app with middleware

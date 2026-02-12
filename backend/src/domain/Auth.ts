@@ -57,6 +57,14 @@ export class RefreshTokenInput extends Schema.Class<RefreshTokenInput>('RefreshT
   refreshToken: Schema.String,
 }) {}
 
+// Bootstrap Input - for creating first admin user
+// Note: role is fixed to 'admin' and not user-selectable
+export class BootstrapInput extends Schema.Class<BootstrapInput>('BootstrapInput')({
+  email: Schema.String.pipe(Schema.nonEmptyString()),
+  password: Schema.String.pipe(Schema.nonEmptyString()),
+  name: Schema.String.pipe(Schema.nonEmptyString()),
+}) {}
+
 // Type aliases for clarity
 export type LoginResult = AuthResponse
 export type RefreshTokenResult = AuthResponse
