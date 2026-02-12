@@ -9,12 +9,14 @@ import { loggingMiddleware } from './http/middleware/logger.js'
 import { errorHandlerMiddleware } from './http/middleware/errorHandler.js'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
+import { CustomerRepository } from '@repositories/CustomerRepository'
 import { LoginUseCase } from '@application/auth/LoginUseCase'
 import { RefreshTokenUseCase } from '@application/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from '@application/auth/LogoutUseCase'
 import { PasswordService } from '@application/auth/PasswordService'
 import { JwtService } from '@application/auth/JwtService'
 import { TokenGenerator } from '@application/auth/TokenGenerator'
+import { CustomerService } from '@application/customer/CustomerService'
 
 // Create the router
 const router = createAppRouter()
@@ -27,9 +29,11 @@ const appWithMiddleware = corsMiddleware(loggingMiddleware(errorHandlerMiddlewar
 const ServicesLive = Layer.mergeAll(
   UserRepository.Default,
   RefreshTokenRepository.Default,
+  CustomerRepository.Default,
   PasswordService.Default,
   JwtService.Default,
   TokenGenerator.Default,
+  CustomerService.Default,
   LoginUseCase.Default,
   RefreshTokenUseCase.Default,
   LogoutUseCase.Default

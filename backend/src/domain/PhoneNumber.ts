@@ -1,5 +1,4 @@
-import { Schema } from '@effect/schema'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { InvalidPhoneNumber } from './CustomerErrors.js'
 
 // Indonesian phone number format: +62XXXXXXXXX (9-13 digits after +62)
@@ -16,12 +15,21 @@ export const normalizePhoneNumber = (
   // Remove spaces, dashes, parentheses
   const cleaned = phone.replace(/[\s\-()]/g, '')
 
-  // Convert 08... to +628...
-  const withPrefix = cleaned.startsWith('0')
-    ? '+62' + cleaned.slice(1)
-    : cleaned.startsWith('+62')
-      ? cleaned
-      : '+62' + cleaned
+  // Normalize to +62XXXXXXXXX format
+  let withPrefix: string
+  if (cleaned.startsWith('+62')) {
+    // Already in correct format
+    withPrefix = cleaned
+  } else if (cleaned.startsWith('62')) {
+    // Missing + prefix (e.g., 628123456789)
+    withPrefix = '+' + cleaned
+  } else if (cleaned.startsWith('0')) {
+    // Local format (e.g., 08123456789)
+    withPrefix = '+62' + cleaned.slice(1)
+  } else {
+    // Assume it's just the number without country code
+    withPrefix = '+62' + cleaned
+  }
 
   return Schema.decode(PhoneNumberSchema)(withPrefix).pipe(
     Effect.mapError(

@@ -16,7 +16,7 @@ export class Customer extends Model.Class<Customer>('Customer')({
 export class CreateCustomerInput extends Schema.Class<CreateCustomerInput>('CreateCustomerInput')({
   name: Schema.String.pipe(Schema.nonEmptyString()),
   phone: Schema.String.pipe(Schema.nonEmptyString()),
-  address: Schema.NullOr(Schema.String),
+  address: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
 }) {}
 
 export class UpdateCustomerInput extends Schema.Class<UpdateCustomerInput>('UpdateCustomerInput')({
