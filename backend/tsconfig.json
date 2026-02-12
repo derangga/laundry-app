@@ -26,6 +26,8 @@
       "@infrastructure/*": ["src/infrastructure/*"],
       "@repositories/*": ["src/repositories/*"],
       "@api/*": ["src/api/*"],
+      "@http/*": ["src/http/*"],
+      "@configs/*": ["src/configs/*"],
       "@shared/*": ["src/shared/*"]
     },
     "types": ["bun-types", "node"]

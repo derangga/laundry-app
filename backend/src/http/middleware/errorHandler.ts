@@ -1,6 +1,7 @@
 import { HttpMiddleware, HttpServerResponse } from '@effect/platform'
 import { Effect } from 'effect'
 import { SqlError } from '@effect/sql'
+import { ValidationError } from '@http/RequestParser'
 
 // Domain errors
 import { CustomerNotFound, CustomerAlreadyExists, InvalidPhoneNumber } from '@domain/CustomerErrors'
@@ -169,6 +170,20 @@ export const errorHandlerMiddleware = HttpMiddleware.make((app) =>
               error: {
                 code: 'EMPTY_ORDER',
                 message: error.message,
+              },
+            } satisfies ErrorResponse,
+            { status: 400 }
+          )
+        }
+
+        // Validation errors
+        if (error instanceof ValidationError) {
+          return yield* HttpServerResponse.json(
+            {
+              error: {
+                code: 'VALIDATION_ERROR',
+                message: 'Request validation failed',
+                details: { errors: error.errors },
               },
             } satisfies ErrorResponse,
             { status: 400 }
