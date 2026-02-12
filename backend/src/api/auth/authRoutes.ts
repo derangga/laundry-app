@@ -1,5 +1,5 @@
 import { HttpRouter, HttpServerResponse, HttpServerRequest } from '@effect/platform'
-import { Effect, Option, Schema } from 'effect'
+import { Effect, Either, Option, Schema } from 'effect'
 import { LoginUseCase } from '@application/auth/LoginUseCase'
 import { RefreshTokenUseCase } from '@application/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from '@application/auth/LogoutUseCase'
@@ -81,7 +81,7 @@ const logoutHandler = Effect.gen(function* () {
 
   // Combine cookie and body inputs
   const refreshToken = Option.getOrUndefined(cookieToken)
-  const logoutAll = bodyResult._tag === 'Right' ? bodyResult.right.logoutAll : undefined
+  const logoutAll = Either.isRight(bodyResult) ? bodyResult.right.logoutAll : undefined
 
   const result = yield* logoutUseCase.execute({
     refreshToken,
