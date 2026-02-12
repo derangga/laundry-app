@@ -11,60 +11,87 @@ Technical reference map for the laundry management application backend.
 ## Backend Project Structure
 
 ```
-backend/
+/backend
 ├── src/
-│   ├── domain/              # Domain models (Abstract Data Types)
-│   │   ├── Auth.ts          # Auth request/response schemas (LoginInput, AuthResponse, etc.)
-│   │   ├── User.ts          # User entity and schemas (User, UserId, UserRole)
-│   │   ├── Customer.ts      # Customer entity and schemas
-│   │   ├── Service.ts       # Service entity and schemas
-│   │   ├── Order.ts         # Order entity and schemas
-│   │   ├── CurrentUser.ts   # Current user context for authenticated requests
-│   │   ├── *Errors.ts       # Domain-specific error types
-│   │   └── RefreshToken.ts  # Refresh token entity
+│   ├── configs/
+│   │   └── env.ts              # Environment variable parsing
 │   │
-│   ├── application/         # Business logic (Use Cases & Services)
-│   │   └── auth/
-│   │       ├── *UseCase.ts  # Use cases (LoginUseCase, LogoutUseCase, etc.)
-│   │       ├── JwtService.ts          # JWT token generation and verification
-│   │       ├── PasswordService.ts     # Password hashing and verification
-│   │       └── TokenGenerator.ts      # Refresh token generation
+│   ├── domain/                  # Business entities, errors, domain services
+│   │   ├── Auth.ts              # Auth-related schemas
+│   │   ├── Customer.ts          # Customer entity (Model.Class)
+│   │   ├── CustomerErrors.ts    # Customer domain errors
+│   │   ├── CurrentUser.ts       # Current user context
+│   │   ├── LaundryService.ts    # Service entity (Model.Class)
+│   │   ├── Order.ts             # Order entity (Model.Class)
+│   │   ├── OrderErrors.ts       # Order domain errors
+│   │   ├── OrderItem.ts         # OrderItem entity (Model.Class)
+│   │   ├── OrderStatusValidator.ts # Status transition validation
+│   │   ├── PhoneNumber.ts       # Phone number utilities
+│   │   ├── RefreshToken.ts      # Refresh token entity
+│   │   ├── ServiceErrors.ts    # Service domain errors
+│   │   ├── User.ts              # User entity (Model.Class)
+│   │   ├── UserErrors.ts        # User domain errors
+│   │   └── http/
+│   │       └── HttpErrors.ts    # HTTP error definitions
 │   │
-│   ├── repositories/        # Data access layer
-│   │   ├── UserRepository.ts
-│   │   ├── RefreshTokenRepository.ts
+│   ├── usecase/                 # Business logic (renamed from application)
+│   │   ├── auth/
+│   │   │   ├── AuthorizationGuards.ts
+│   │   │   ├── BootstrapUseCase.ts
+│   │   │   ├── JwtService.ts     # JWT signing/verification
+│   │   │   ├── LoginUseCase.ts
+│   │   │   ├── LogoutUseCase.ts
+│   │   │   ├── PasswordService.ts
+│   │   │   ├── RefreshTokenUseCase.ts
+│   │   │   ├── RegisterUserUseCase.ts
+│   │   │   └── TokenGenerator.ts
+│   │   ├── customer/
+│   │   │   └── CustomerService.ts
+│   │   └── order/
+│   │       ├── LaundryServiceService.ts
+│   │       └── OrderService.ts
+│   │
+│   ├── middleware/              # HTTP middleware (moved from http/middleware)
+│   │   └── AuthMiddleware.ts    # JWT authentication middleware
+│   │
+│   ├── http/                    # HTTP server configuration
+│   │   ├── CookieHelper.ts
+│   │   ├── HttpServer.ts        # Bun HTTP server setup
+│   │   ├── RequestParser.ts
+│   │   └── Router.ts            # Route composition
+│   │
+│   ├── repositories/            # Database repositories
 │   │   ├── CustomerRepository.ts
+│   │   ├── OrderItemRepository.ts
+│   │   ├── OrderRepository.ts
+│   │   ├── RefreshTokenRepository.ts
 │   │   ├── ServiceRepository.ts
-│   │   └── OrderRepository.ts
+│   │   └── UserRepository.ts
 │   │
-│   ├── infrastructure/      # External integrations
-│   │   └── database/
-│   │       ├── SqlClient.ts        # PostgreSQL client layer
-│   │       └── migrations/         # Database migrations
+│   ├── handlers/                # API handler implementations
+│   │   ├── AuthHandlers.ts
+│   │   └── CustomerHandlers.ts
 │   │
-│   ├── http/                # HTTP layer
-│   │   ├── HttpServer.ts           # HTTP server configuration
-│   │   ├── Router.ts               # Main router (mounts all route modules)
-│   │   ├── RequestParser.ts        # Request body/query parsing utilities
-│   │   ├── CookieHelper.ts         # Cookie management utilities
-│   │   └── middleware/
-│   │       ├── auth.ts             # Authentication middleware
-│   │       ├── cors.ts             # CORS middleware
-│   │       ├── logger.ts           # Request logging middleware
-│   │       └── errorHandler.ts     # Domain error to HTTP error mapping
+│   ├── api/                     # HttpApi definitions
+│   │   ├── AuthApi.ts
+│   │   └── CustomerApi.ts
 │   │
-│   ├── api/                 # HTTP route handlers
-│   │   └── auth/
-│   │       └── authRoutes.ts       # Auth endpoints (login, logout, refresh)
-│   │
-│   ├── configs/             # Configuration
-│   │   └── env.ts                  # Environment variable schemas
-│   │
-│   └── main.ts              # Application entry point (layer composition)
+│   └── main.ts                  # Application entry point
 │
-├── test/                    # Tests (unit and integration)
-├── tsconfig.json            # TypeScript configuration
-└── package.json             # Dependencies and scripts
+├── test/                        # Test files mirroring src/ structure
+│   ├── usecase/                 # (renamed from application)
+│   │   ├── auth/
+│   │   ├── customer/
+│   │   └── order/
+│   ├── repositories/
+│   ├── api/
+│   │   └── auth/
+│   └── setup.test.ts
+│
+├── migrations/                  # Database migrations
+├── package.json
+├── tsconfig.json
+└── vitest.config.ts
 ```
 
 ## Key Patterns
