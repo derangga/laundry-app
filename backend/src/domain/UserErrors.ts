@@ -69,6 +69,15 @@ export class ForbiddenError extends Data.TaggedError('ForbiddenError')<{
     })
 }
 
+export class BootstrapNotAllowedError extends Data.TaggedError('BootstrapNotAllowedError')<{
+  readonly message: string
+}> {
+  static readonly make = () =>
+    new BootstrapNotAllowedError({
+      message: 'Bootstrap is not allowed. Users already exist in the system.',
+    })
+}
+
 export type AuthError =
   | InvalidCredentialsError
   | UserNotFoundError
@@ -77,3 +86,4 @@ export type AuthError =
   | RefreshTokenNotFoundError
   | UnauthorizedError
   | ForbiddenError
+  | BootstrapNotAllowedError

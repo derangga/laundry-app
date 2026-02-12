@@ -96,29 +96,31 @@ Use `@effect/platform-bun` HTTP server directly without additional web framework
 #### Implementation Notes
 
 **Router Implementation**:
-- Use pattern matching or simple routing tables with Effect
+- Use `HttpApiBuilder` with `HttpApi.make()` for declarative endpoint definitions
 - Route handlers return `Effect<Response, HttpError, Dependencies>`
-- Compose routes using Effect combinators
+- Compose routes using `HttpApiBuilder.group()` for handler implementations
+- Layer composition with `Layer.provide()` for dependency injection
 
 **Middleware Composition**:
-- Middleware as functions that transform `Effect<Response, E, R>` → `Effect<Response, E2, R2>`
-- Common middleware: authentication, CORS, logging, error handling
-- Use Effect.provide for dependency injection
+- Use `HttpApiMiddleware.Tag<AuthMiddleware>` pattern for authentication
+- Middleware provides `CurrentUser` context to protected handlers
+- Bearer token verification via `HttpApiSecurity.bearer`
+- Use `Layer.effect()` to implement middleware with dependencies
 
 **Request Parsing**:
 - Parse JSON bodies using @effect/schema for validation
 - Extract path/query parameters with type safety
-- Handle multipart/form-data if needed (file uploads)
+- `HttpApiBuilder` handles automatic validation via `setPayload()` and `addSuccess()`/`addError()`
 
 **Response Building**:
 - Construct responses with proper status codes (200, 201, 400, 401, 404, 500)
-- JSON serialization with @effect/schema
-- Error responses with consistent structure
+- Use tagged errors for consistent error responses
+- Error mapping via `Effect.mapError()` in handlers
 
 **Security**:
-- CORS configuration for frontend origin
-- Security headers (CSP, X-Frame-Options, etc.)
-- Rate limiting (implement custom or use Effect-based solution)
+- CORS configuration via `HttpApiBuilder.middlewareCors()`
+- AuthMiddleware for JWT verification on protected routes
+- Role-based authorization via guards in use cases
 
 ---
 
@@ -179,36 +181,20 @@ Implement a REST API using standard HTTP semantics with Effect-TS for handlers a
 #### Implementation Notes
 
 **Endpoint Design**:
-```
-Authentication:
-POST   /api/auth/login
-POST   /api/auth/logout
-POST   /api/auth/refresh
-
-Customers:
-GET    /api/customers?phone={phone}
-POST   /api/customers
-GET    /api/customers/:id
-
-Services:
-GET    /api/services
-POST   /api/services (Admin only)
-PUT    /api/services/:id (Admin only)
-DELETE /api/services/:id (Admin only)
-
-Orders:
-GET    /api/orders
-GET    /api/orders/:id
-POST   /api/orders
-PUT    /api/orders/:id/status
-PUT    /api/orders/:id/payment
-
-Analytics:
-GET    /api/analytics/weekly?startDate={date}&status={paid|unpaid|all}
-
-Receipts:
-GET    /api/receipts/:orderId
-```
+export class CustomerApi extends HttpApi.make('CustomerApi').add(
+  HttpApiGroup.make('Customers').add(
+    HttpApiEndpoint.get('searchByPhone', '/api/customers')
+      .addSuccess(Customer)
+      .addError(CustomerNotFound),
+    HttpApiEndpoint.post('create', '/api/customers')
+      .setPayload(CreateCustomerInput)
+      .addSuccess(Customer)
+      .addError(CustomerAlreadyExists),
+    HttpApiEndpoint.get('getById', '/api/customers/:id')
+      .addSuccess(Customer)
+      .addError(CustomerNotFound)
+  )
+) {}
 
 **Resource-Based Routing**:
 - Nouns for resources (customers, orders, services)
@@ -464,7 +450,7 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 - **Roles**: Admin (full access) vs Staff (limited access)
 - **Role in JWT**: Role claim embedded in access token
 - **Permission Checks**: Route-level and operation-level guards
-- **Effect Context**: Current user/role available via Context.Tag
+- **Effect Context**: Current user/role available via `CurrentUser` provided by `AuthMiddleware`
 
 #### Alternatives Considered
 
@@ -535,29 +521,71 @@ CREATE TABLE refresh_tokens (
 
 **Authorization Implementation**:
 ```typescript
-// Effect Context for current user
-class CurrentUser extends Context.Tag("CurrentUser")<
-  CurrentUser,
-  { id: string; role: "admin" | "staff" }
->() {}
+// CurrentUser is provided by AuthMiddleware
+const currentUser = yield* CurrentUser
 
 // Authorization guard
 const requireAdmin = Effect.gen(function* () {
-  const user = yield* CurrentUser;
+  const user = yield* CurrentUser
   if (user.role !== "admin") {
-    return yield* Effect.fail(new ForbiddenError());
+    return yield* Effect.fail(new ForbiddenError())
   }
 })
-
-// Usage in route handler
-const deleteService = (serviceId: string) =>
-  Effect.gen(function* () {
-    yield* requireAdmin;
-    // ... delete logic
-  })
 ```
 
-**Note**: `CurrentUser` uses `Context.Tag` instead of `Effect.Service` because it represents request-scoped data (injected per request) rather than a singleton service.
+**AuthMiddleware using HttpApiMiddleware.Tag pattern**:
+```typescript
+import { HttpApiMiddleware, HttpApiSecurity } from '@effect/platform'
+import { Effect, Layer, Redacted } from 'effect'
+import { Unauthorized } from '@domain/http/HttpErrors'
+import { JwtService } from 'src/usecase/auth/JwtService'
+import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
+
+export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()(
+  'AuthMiddleware',
+  {
+    failure: Unauthorized,
+    provides: CurrentUser,
+    security: {
+      bearer: HttpApiSecurity.bearer,
+    },
+  }
+) {}
+
+export const AuthMiddlewareLive = Layer.effect(
+  AuthMiddleware,
+  Effect.gen(function* () {
+    const jwtService = yield* JwtService
+
+    return {
+      bearer: (token) =>
+        Effect.gen(function* () {
+          const tokenValue = Redacted.value(token)
+          const payload = yield* jwtService
+            .verifyAccessToken(tokenValue)
+            .pipe(Effect.mapError((error) => new Unauthorized({ message: error.message })))
+
+          return {
+            id: payload.sub,
+            email: payload.email,
+            role: payload.role,
+          } satisfies CurrentUserData
+        }),
+    }
+  })
+)
+```
+
+**Usage in API endpoints**:
+```typescript
+HttpApiEndpoint.post('logout', '/api/auth/logout')
+  .middleware(AuthMiddleware)  // Requires authentication
+```
+
+**Note**: `AuthMiddleware` uses `HttpApiMiddleware.Tag` pattern because it represents request-scoped security that:
+- Extracts and verifies bearer tokens from Authorization header
+- Provides `CurrentUser` context to downstream handlers
+- Is declared at the API/security level for type-safe security
 
 **Middleware**:
 - Authentication middleware extracts/verifies access token
@@ -597,94 +625,84 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Project Structure
 
 ```
-
 /backend
 ├── src/
 │   ├── configs/
-│   │   ├── Environment.ts     # Environment variable parsing
-│   │   └── AppConfig.ts       # Application configuration
+│   │   └── env.ts              # Environment variable parsing
 │   │
-│   ├── domain/
-│   │   ├── Customer.ts        # Entity type & schema
-│   │   ├── CustomerErrors.ts  # Domain errors
-│   │   ├── Order.ts
-│   │   ├── OrderItem.ts
-│   │   ├── OrderErrors.ts
-│   │   ├── ServiceErrors.ts
-│   │   ├── User.ts
-│   │   └── UserErrors.ts
+│   ├── domain/                  # Business entities, errors, domain services
+│   │   ├── Auth.ts              # Auth-related schemas
+│   │   ├── Customer.ts          # Customer entity (Model.Class)
+│   │   ├── CustomerErrors.ts    # Customer domain errors
+│   │   ├── CurrentUser.ts       # Current user context
+│   │   ├── LaundryService.ts    # Service entity (Model.Class)
+│   │   ├── Order.ts             # Order entity (Model.Class)
+│   │   ├── OrderErrors.ts       # Order domain errors
+│   │   ├── OrderItem.ts         # OrderItem entity (Model.Class)
+│   │   ├── OrderStatusValidator.ts # Status transition validation
+│   │   ├── PhoneNumber.ts       # Phone number utilities
+│   │   ├── RefreshToken.ts      # Refresh token entity
+│   │   ├── ServiceErrors.ts    # Service domain errors
+│   │   ├── User.ts              # User entity (Model.Class)
+│   │   ├── UserErrors.ts        # User domain errors
+│   │   └── http/
+│   │       └── HttpErrors.ts    # HTTP error definitions
 │   │
-│   ├── application/           # Use cases & orchestration & Business logic
+│   ├── usecase/                 # Business logic (renamed from application)
 │   │   ├── auth/
+│   │   │   ├── AuthorizationGuards.ts
+│   │   │   ├── BootstrapUseCase.ts
+│   │   │   ├── JwtService.ts     # JWT signing/verification
 │   │   │   ├── LoginUseCase.ts
 │   │   │   ├── LogoutUseCase.ts
-│   │   │   └── RefreshTokenUseCase.ts
+│   │   │   ├── PasswordService.ts
+│   │   │   ├── RefreshTokenUseCase.ts
+│   │   │   ├── RegisterUserUseCase.ts
+│   │   │   └── TokenGenerator.ts
 │   │   ├── customer/
-│   │   │   ├── CustomerService.ts # Business logic
-│   │   │   ├── FindCustomerUseCase.ts
-│   │   │   ├── RegisterCustomerUseCase.ts
-│   │   │   └── GetCustomerUseCase.ts
-│   │   ├── order/
-│   │   │   ├── CreateOrderUseCase.ts
-│   │   │   ├── UpdateOrderStatusUseCase.ts
-│   │   │   ├── UpdatePaymentStatusUseCase.ts
-│   │   │   └── GetOrdersUseCase.ts
-│   │   │   ├── OrderService.ts
-│   │   │   ├── LaundryService.ts  # (renamed to avoid confusion)
-│   │   ├── analytics/
-│   │   │   └── GetWeeklyAnalyticsUseCase.ts
-│   │   └── receipt/
-│   │       └── GenerateReceiptUseCase.ts
+│   │   │   └── CustomerService.ts
+│   │   └── order/
+│   │       ├── LaundryServiceService.ts
+│   │       └── OrderService.ts
 │   │
-│   ├── http/
-│   │   ├── HttpServer.ts      # @effect/platform-bun server setup
-│   │   ├── middleware/
-│   │   │   ├── auth.ts        # Authentication middleware
-│   │   │   ├── cors.ts        # CORS middleware
-│   │   │   ├── errorHandler.ts # Error to HTTP response mapping
-│   │   │   └── logger.ts      # Request logging
-│   │   └── Router.ts          # Route registration
+│   ├── middleware/              # HTTP middleware (moved from http/middleware)
+│   │   └── AuthMiddleware.ts    # JWT authentication middleware
 │   │
-│   ├── infrastructure/            # External concerns
-│   │   ├── database/
-│   │   │   ├── SqlClient.ts       # Database connection setup
-│   │   │   └── migrations/        # SQL migration files
+│   ├── http/                    # HTTP server configuration
+│   │   ├── CookieHelper.ts
+│   │   ├── HttpServer.ts        # Bun HTTP server setup
+│   │   ├── RequestParser.ts
+│   │   └── Router.ts            # Route composition
 │   │
-│   ├── repositories/
+│   ├── repositories/            # Database repositories
 │   │   ├── CustomerRepository.ts
+│   │   ├── OrderItemRepository.ts
 │   │   ├── OrderRepository.ts
+│   │   ├── RefreshTokenRepository.ts
 │   │   ├── ServiceRepository.ts
-│   │   ├── UserRepository.ts
-│   │   └── RefreshTokenRepository.ts
+│   │   └── UserRepository.ts
 │   │
-│   ├── api/                       # HTTP routes & controllers
+│   ├── handlers/                # API handler implementations
+│   │   ├── AuthHandlers.ts
+│   │   └── CustomerHandlers.ts
+│   │
+│   ├── api/                     # HttpApi definitions
+│   │   ├── AuthApi.ts
+│   │   └── CustomerApi.ts
+│   │
+│   └── main.ts                  # Application entry point
+│
+├── test/                        # Test files mirroring src/ structure
+│   ├── usecase/                 # (renamed from application)
 │   │   ├── auth/
-│   │   │   └── authRoutes.ts
-│   │   ├── customers/
-│   │   │   └── customerRoutes.ts
-│   │   ├── orders/
-│   │   │   └── orderRoutes.ts
-│   │   ├── services/
-│   │   │   └── serviceRoutes.ts
-│   │   ├── analytics/
-│   │   │   └── analyticsRoutes.ts
-│   │   └── receipts/
-│   │       └── receiptRoutes.ts
-│   │
-│   ├── shared/                    # Shared utilities
-│   │   ├── errors/
-│   │   │   └── HttpErrors.ts      # Common HTTP errors
-│   │   └── schemas/
-│   │       └── Common.ts          # Shared schemas (pagination, etc.)
-│   │
-│   └── main.ts                    # Application entry point
+│   │   ├── customer/
+│   │   └── order/
+│   ├── repositories/
+│   ├── api/
+│   │   └── auth/
+│   └── setup.test.ts
 │
-├── test/                          # Test files mirroring src/
-│   ├── domain/
-│   ├── application/
-│   └── infrastructure/
-│
-├── migrations/                    # Database migrations (if not in infrastructure)
+├── migrations/                  # Database migrations
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
@@ -694,38 +712,58 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 
 **Domain Layer** (`src/domain/`):
 - Business entities (using `Model.Class` for database entities)
-- Domain-specific errors
-- Business logic and rules
+- Domain-specific errors (`*Errors.ts`)
+- Domain services and utilities (PhoneNumber, OrderStatusValidator)
+- HTTP error definitions (`http/HttpErrors.ts`)
 - Pure functions (no infrastructure dependencies)
-- Effect Services defining domain operations (using `Effect.Service`)
 
-**Application Layer** (`src/application/`):
+**API Layer** (`src/api/`):
+- `HttpApi.make()` definitions with endpoints and groups
+- Request/response schemas
+- Error definitions per endpoint
+- Type-safe API contracts
+
+**Handlers Layer** (`src/handlers/`):
+- `HttpApiBuilder.group()` implementations for each API
+- Request parsing and parameter extraction
+- Error mapping from domain errors to HTTP errors
+- Calls use cases and maps results to responses
+- HTTP-specific concerns only
+
+**Usecase Layer** (`src/usecase/`):
 - Use cases orchestrating domain services
 - Application-specific business flows
 - Transaction boundaries
-- Depends on domain layer
+- Depends on domain layer and repositories
 - Independent of HTTP/database details
 
-**Infrastructure Layer** (`src/infrastructure/`):
-- Database repositories (using `Effect.Service` and `Model.makeRepository`)
-- HTTP server setup and middleware
-- External service integrations
-- Configuration management
-- Framework-specific code
+**Middleware Layer** (`src/middleware/`):
+- `AuthMiddleware` using `HttpApiMiddleware.Tag` pattern
+- JWT verification and CurrentUser provision
+- Request-scoped security
 
-**API Layer** (`src/api/`):
-- HTTP route definitions
-- Request/response DTOs
-- Route handler functions calling use cases
-- Input validation with @effect/schema
-- HTTP-specific concerns only
+**Repository Layer** (`src/repositories/`):
+- Database access using `Effect.Service` and `Model.makeRepository`
+- CRUD operations for entities
+- Custom queries with explicit column selection
+
+**HTTP Layer** (`src/http/`):
+- HTTP server setup (`HttpServer.ts`)
+- Router composition (`Router.ts`)
+- Request parsing utilities
+
+**Configuration Layer** (`src/configs/`):
+- Environment variable parsing (`env.ts`)
+- Application configuration
 
 #### Communication Rules
 
-- **API → Application**: Routes call use cases
-- **Application → Domain**: Use cases call domain services
-- **Application/Domain → Infrastructure**: Depend on abstractions (Effect Services), not implementations
-- **Infrastructure → Domain**: Repositories implement domain repository interfaces
+- **API → Handlers**: HttpApi definitions define contracts
+- **Handlers → Usecases**: Handler implementations call use cases
+- **Usecases → Domain**: Use cases call domain services
+- **Usecases → Repositories**: Use cases depend on repository abstractions
+- **Domain → Repository**: Repository interfaces defined in domain, implemented in infrastructure
+- **Middleware → Context**: AuthMiddleware provides CurrentUser to downstream handlers
 
 #### Consequences
 
@@ -748,51 +786,78 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 - Circular dependencies if not careful
 - Need to resist putting business logic in routes or repositories
 
-#### Implementation Notes
+#### Handler Pattern Example
 
-**Service Pattern Example**:
+**API Definition (src/api/CustomerApi.ts)**:
 ```typescript
-// Domain service using Effect.Service
-export class CustomerService extends Effect.Service<CustomerService>()(
-  "CustomerService",
-  {
-    effect: Effect.gen(function* () {
-      const repo = yield* CustomerRepository;
-      const findByPhone = (phone: string) =>
-          repo.findByPhone(phone).pipe(
-            Effect.mapError(dbError => new CustomerError({ ... }))
-          );
-      const create = (data: NewCustomer) =>
-          // Business logic here
-          repo.insert(data);
+import { HttpApi, HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
+import { Customer, CreateCustomerInput } from '@domain/Customer'
 
-      return {
-        findByPhone,
-        create,
-      };
-    }),
-    dependencies: [CustomerRepository.Default],
-  },
+export class CustomerApi extends HttpApi.make('CustomerApi').add(
+  HttpApiGroup.make('Customers').add(
+    HttpApiEndpoint.get('searchByPhone', '/api/customers')
+      .addSuccess(Customer)
+      .addError(CustomerNotFound),
+    HttpApiEndpoint.post('create', '/api/customers')
+      .setPayload(CreateCustomerInput)
+      .addSuccess(Customer)
+      .addError(CustomerAlreadyExists)
+  )
 ) {}
 ```
 
-**Note**: Use `Effect.Service` instead of `Context.Tag` for all service definitions.
-
-**Layer Composition**:
+**Handler Implementation (src/handlers/CustomerHandlers.ts)**:
 ```typescript
-// In main.ts
-const AppLive = Layer.mergeAll(
-  SqlClientLive,
-  CustomerRepository.Default,
-  OrderRepository.Default,
-  CustomerService.Default,
-  OrderService.Default
+import { HttpApiBuilder } from '@effect/platform'
+import { Effect, Option } from 'effect'
+import { CustomerApi } from '@api/CustomerApi'
+import { CustomerService } from 'src/usecase/customer/CustomerService'
+
+export const CustomerHandlersLive = HttpApiBuilder.group(
+  CustomerApi,
+  'Customers',
+  (handlers) =>
+    handlers
+      .handle('searchByPhone', () =>
+        Effect.gen(function* () {
+          const customerService = yield* CustomerService
+          // Handler logic
+        })
+      )
+      .handle('create', ({ payload }) =>
+        Effect.gen(function* () {
+          const customerService = yield* CustomerService
+          return yield* customerService.create(payload)
+        })
+      )
+)
+```
+
+**Router and Layer Composition (src/http/Router.ts)**:
+```typescript
+import { HttpApiBuilder } from '@effect/platform'
+import { Layer } from 'effect'
+import { CustomerApi } from '@api/CustomerApi'
+import { AuthApi } from '@api/AuthApi'
+import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
+import { AuthHandlersLive } from '@handlers/AuthHandlers'
+import { AuthMiddlewareLive } from '@middleware/AuthMiddleware'
+import { CustomerRepository } from '@repositories/CustomerRepository'
+import { CustomerService } from 'src/usecase/customer/CustomerService'
+
+const CustomerApiLive = HttpApiBuilder.api(CustomerApi).pipe(
+  Layer.provide(CustomerHandlersLive),
+  Layer.provide(CustomerRepository.Default),
+  Layer.provide(CustomerService.Default)
 )
 
-const program = Effect.gen(function* () {
-  const server = yield* HttpServer;
-  yield* server.listen();
-}).pipe(Effect.provide(AppLive))
+const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
+  Layer.provide(AuthHandlersLive),
+  Layer.provide(AuthMiddlewareLive),
+  // ... other dependencies
+)
+
+const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive)
 ```
 
 **Note**: Services defined with `Effect.Service` automatically provide a `.Default` layer.
@@ -1019,14 +1084,28 @@ Effect.gen(function* (_) {
 
 #### Implementation Notes
 
-**Error Middleware**:
+**Error Handling**:
 ```typescript
-const errorHandlingMiddleware = <R, E>(
-  handler: Effect.Effect<HttpResponse, E, R>
-): Effect.Effect<HttpResponse, never, R> =>
-  handler.pipe(
-    Effect.catchAll(error => Effect.succeed(errorToHttpResponse(error)))
-  )
+// HttpApiBuilder handles errors automatically via addError() declarations
+HttpApiEndpoint.post('create', '/api/customers')
+  .setPayload(CreateCustomerInput)
+  .addSuccess(Customer)
+  .addError(CustomerAlreadyExists)
+  .addError(ValidationError)
+
+// Error mapping is done in handlers using Effect.mapError()
+.handle('create', ({ payload }) =>
+  Effect.gen(function* () {
+    return yield* customerService.create(payload).pipe(
+      Effect.mapError((error) => {
+        if (error._tag === 'CustomerAlreadyExists') {
+          return new CustomerAlreadyExists({ ... })
+        }
+        return new ValidationError({ message: error.message })
+      })
+    )
+  })
+)
 ```
 
 **Validation Errors**:
@@ -1308,7 +1387,7 @@ parseResult.pipe(
 **Schema Organization**:
 - Domain entity schemas in `src/domain/{entity}/{Entity}.ts` (use `Model.Class` for database entities)
 - Request/response DTOs in `src/api/{resource}/schemas.ts` (use `Schema.Struct`)
-- Shared schemas in `src/shared/schemas/Common.ts` (use `Schema.Struct`)
+- Shared utility schemas in `src/domain/` (use `Schema.Struct`)
 - Database entities colocated with repositories (use `Model.Class`)
 
 **Best Practices**:
@@ -1373,14 +1452,21 @@ parseResult.pipe(
 ```
 /backend/
 ├── src/
-│   ├── domain/              # Business entities, logic, domain services
-│   ├── application/         # Use cases orchestrating domain
-│   ├── infrastructure/      # Database, HTTP, external concerns
-│   ├── api/                 # HTTP routes and controllers
-│   ├── shared/              # Cross-cutting utilities
-│   └── main.ts              # Application entry point
-├── test/                    # Tests mirroring src/ structure
-├── migrations/              # SQL migration files
+│   ├── configs/           # Configuration
+│   ├── domain/           # Business entities, errors, domain services
+│   ├── usecase/          # Business logic
+│   ├── middleware/       # AuthMiddleware
+│   ├── http/             # HTTP server and router
+│   ├── repositories/     # Database repositories
+│   ├── handlers/        # API handler implementations
+│   ├── api/             # HttpApi definitions
+│   └── main.ts          # Application entry point
+├── test/                 # Tests mirroring src/ structure
+│   ├── usecase/         # (renamed from application)
+│   ├── repositories/
+│   ├── api/
+│   └── setup.test.ts
+├── migrations/
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
@@ -1391,21 +1477,25 @@ parseResult.pipe(
 ```
 HTTP Request
      ↓
-[API Layer] - Validates request, calls use case
+[API Layer] - HttpApi definitions (src/api/)
      ↓
-[Application Layer] - Orchestrates domain services, manages transactions
+[Handlers Layer] - Handler implementations (src/handlers/)
      ↓
-[Domain Layer] - Business logic and rules
+[Usecase Layer] - Business logic (src/usecase/)
      ↓
-[Infrastructure Layer] - Database queries, external services
+[Domain Layer] - Business entities and rules (src/domain/)
+     ↓
+[Repository Layer] - Database access (src/repositories/)
 ```
 
 ### Dependency Flow
 
-- API depends on Application
-- Application depends on Domain
+- API depends on Handlers
+- Handlers depend on Usecases
+- Usecases depend on Domain and Repositories
 - Domain depends on nothing (pure business logic)
-- Infrastructure implements Domain interfaces
+- Repositories implement domain interfaces
+- AuthMiddleware provides CurrentUser context
 - Dependencies injected via Effect Layers
 
 ---

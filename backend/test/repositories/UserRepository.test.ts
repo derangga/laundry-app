@@ -11,8 +11,8 @@ const createMockUser = (overrides?: Partial<User>): User =>
     password_hash: 'hashed_password',
     name: 'Test User',
     role: 'staff' as UserRole,
-    created_at: '2024-01-01T00:00:00.000Z',
-    updated_at: '2024-01-01T00:00:00.000Z',
+    created_at: new Date('2024-01-01T00:00:00.000Z'),
+    updated_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as User
 

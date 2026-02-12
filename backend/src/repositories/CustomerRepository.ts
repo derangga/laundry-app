@@ -13,6 +13,14 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
       idColumn: 'id',
     })
 
+    // Custom findById using raw SQL (Model.makeRepository has issues)
+    const findById = (id: CustomerId): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
+      sql<Customer>`
+        SELECT id, name, phone, address, created_at, updated_at
+        FROM customers
+        WHERE id = ${id}
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+
     // Custom methods with explicit columns
     const findByPhone = (
       phone: string
@@ -75,11 +83,13 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
 
     return {
       // Base CRUD from makeRepository
-      findById: repo.findById,
       insert: repo.insert,
       delete: repo.delete,
 
-      // Custom methods
+      // Custom methods using raw SQL (Model.makeRepository has issues)
+      findById,
+
+      // Custom query methods
       update,
       findByPhone,
       searchByName,

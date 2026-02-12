@@ -1,6 +1,18 @@
 import { Schema } from 'effect'
 import { UserId, UserRole } from './User'
 
+export class JwtPayload extends Schema.Class<JwtPayload>('JwtPayload')({
+  sub: UserId,
+  email: Schema.String,
+  role: UserRole,
+}) {}
+
+// Token rotation
+export class TokenPair extends Schema.Class<TokenPair>('TokenPair')({
+  accessToken: Schema.String,
+  refreshToken: Schema.String,
+}) {}
+
 // Login Input
 export class LoginInput extends Schema.Class<LoginInput>('LoginInput')({
   email: Schema.String.pipe(
@@ -43,6 +55,14 @@ export class LogoutResult extends Schema.Class<LogoutResult>('LogoutResult')({
 // Refresh Token Input
 export class RefreshTokenInput extends Schema.Class<RefreshTokenInput>('RefreshTokenInput')({
   refreshToken: Schema.String,
+}) {}
+
+// Bootstrap Input - for creating first admin user
+// Note: role is fixed to 'admin' and not user-selectable
+export class BootstrapInput extends Schema.Class<BootstrapInput>('BootstrapInput')({
+  email: Schema.String.pipe(Schema.nonEmptyString()),
+  password: Schema.String.pipe(Schema.nonEmptyString()),
+  name: Schema.String.pipe(Schema.nonEmptyString()),
 }) {}
 
 // Type aliases for clarity

@@ -9,14 +9,14 @@ export class Customer extends Model.Class<Customer>('Customer')({
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
-  created_at: Model.DateTimeInsert,
-  updated_at: Model.DateTimeUpdate,
+  created_at: Model.DateTimeInsertFromDate,
+  updated_at: Model.DateTimeUpdateFromDate,
 }) {}
 
 export class CreateCustomerInput extends Schema.Class<CreateCustomerInput>('CreateCustomerInput')({
   name: Schema.String.pipe(Schema.nonEmptyString()),
   phone: Schema.String.pipe(Schema.nonEmptyString()),
-  address: Schema.NullOr(Schema.String),
+  address: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
 }) {}
 
 export class UpdateCustomerInput extends Schema.Class<UpdateCustomerInput>('UpdateCustomerInput')({

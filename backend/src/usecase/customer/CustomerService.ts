@@ -1,14 +1,8 @@
 import { Effect, Option } from 'effect'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { Customer } from '@domain/Customer'
+import { CreateCustomerInput, Customer } from '@domain/Customer'
 import { normalizePhoneNumber } from '@domain/PhoneNumber'
 import { CustomerNotFound, CustomerAlreadyExists } from '@domain/CustomerErrors'
-
-interface CreateCustomerData {
-  name: string
-  phone: string
-  address?: string
-}
 
 export class CustomerService extends Effect.Service<CustomerService>()('CustomerService', {
   effect: Effect.gen(function* () {
@@ -33,7 +27,7 @@ export class CustomerService extends Effect.Service<CustomerService>()('Customer
         return Option.isSome(customerOption)
       })
 
-    const create = (data: CreateCustomerData) =>
+    const create = (data: CreateCustomerInput) =>
       Effect.gen(function* () {
         const phone = yield* normalizePhoneNumber(data.phone)
 

@@ -3,17 +3,7 @@ import * as jose from 'jose'
 import { UserId, UserRole } from '../../domain/User'
 import { InvalidTokenError } from '../../domain/UserErrors'
 import { JwtConfig } from '../../configs/env'
-
-export interface JwtPayload {
-  readonly sub: UserId
-  readonly email: string
-  readonly role: UserRole
-}
-
-export interface TokenPair {
-  readonly accessToken: string
-  readonly refreshToken: string
-}
+import { JwtPayload } from '@domain/Auth'
 
 const parseExpiry = (expiry: string): Duration.Duration => {
   const match = expiry.match(/^(\d+)([smhd])$/)

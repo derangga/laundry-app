@@ -20,8 +20,8 @@ export class Order extends Model.Class<Order>('Order')({
   payment_status: PaymentStatus,
   total_price: Schema.Number,
   created_by: UserId,
-  created_at: Model.DateTimeInsert,
-  updated_at: Model.DateTimeUpdate,
+  created_at: Model.DateTimeInsertFromDate,
+  updated_at: Model.DateTimeUpdateFromDate,
 }) {}
 
 export class CreateOrderInput extends Schema.Class<CreateOrderInput>('CreateOrderInput')({

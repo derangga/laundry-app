@@ -10,8 +10,8 @@ const createMockRefreshToken = (overrides?: Partial<RefreshToken>): RefreshToken
     id: 'token-123' as RefreshTokenId,
     user_id: 'user-123' as UserId,
     token_hash: 'hashed_token',
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    created_at: new Date(),
     revoked_at: null,
     ...overrides,
   }) as unknown as RefreshToken

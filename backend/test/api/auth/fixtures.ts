@@ -1,5 +1,5 @@
 import { Effect, Layer, ConfigProvider } from 'effect'
-import { PasswordService, PasswordServiceLive } from '@application/auth/PasswordService'
+import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
 import { User, UserId, UserRole } from '@domain/User'
 
 export const TestConfigProvider = ConfigProvider.fromMap(

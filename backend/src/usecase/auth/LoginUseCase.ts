@@ -3,10 +3,10 @@ import { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordService } from './PasswordService'
-import { JwtService, JwtPayload } from './JwtService'
+import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
-import { InvalidCredentialsError } from '../../domain/UserErrors'
-import { LoginInput, AuthResponse } from '../../domain/Auth'
+import { InvalidCredentialsError } from '@domain/UserErrors'
+import { LoginInput, AuthResponse, JwtPayload } from '@domain/Auth'
 
 export { LoginInput }
 export type LoginResult = AuthResponse

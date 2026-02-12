@@ -13,8 +13,8 @@ export class User extends Model.Class<User>('User')({
   password_hash: Schema.String,
   name: Schema.String,
   role: UserRole,
-  created_at: Model.DateTimeInsert,
-  updated_at: Model.DateTimeUpdate,
+  created_at: Model.DateTimeInsertFromDate,
+  updated_at: Model.DateTimeUpdateFromDate,
 }) {}
 
 export class CreateUserInput extends Schema.Class<CreateUserInput>('CreateUserInput')({

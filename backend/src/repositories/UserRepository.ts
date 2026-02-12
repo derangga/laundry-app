@@ -81,6 +81,11 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         WHERE id = ${id}
       `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
 
+    const hasAnyUsers = (): Effect.Effect<boolean, SqlError.SqlError> =>
+      sql<{ exists: boolean }>`
+        SELECT EXISTS(SELECT 1 FROM users) as exists
+      `.pipe(Effect.map((rows) => rows[0]?.exists ?? false))
+
     return {
       // Base CRUD from makeRepository
       findById: repo.findById,
@@ -92,6 +97,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       findByEmail,
       findByIdWithoutPassword,
       findBasicInfo,
+      hasAnyUsers,
     } as const
   }),
 }) {}

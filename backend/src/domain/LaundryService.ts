@@ -13,8 +13,8 @@ export class LaundryService extends Model.Class<LaundryService>('LaundryService'
   price: Schema.Number,
   unit_type: UnitType,
   is_active: Schema.Boolean,
-  created_at: Model.DateTimeInsert,
-  updated_at: Model.DateTimeUpdate,
+  created_at: Model.DateTimeInsertFromDate,
+  updated_at: Model.DateTimeUpdateFromDate,
 }) {}
 
 export class CreateLaundryServiceInput extends Schema.Class<CreateLaundryServiceInput>(

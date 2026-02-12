@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { logout, logoutAll } from '@application/auth/LogoutUseCase'
+import { logout, logoutAll } from 'src/usecase/auth/LogoutUseCase'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
-import { TokenGeneratorLive } from '@application/auth/TokenGenerator'
+import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
 import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
 import { UserId, UserRole } from '@domain/User'
 
