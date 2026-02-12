@@ -6,15 +6,11 @@ export const RefreshTokenId = Schema.String.pipe(Schema.brand('RefreshTokenId'))
 export type RefreshTokenId = typeof RefreshTokenId.Type
 
 // Schema for DateTimeUtc that accepts JavaScript Date objects from PostgreSQL
-const DateTimeUtcFromDate = Schema.transform(
-  Schema.DateFromSelf,
-  Schema.DateTimeUtcFromSelf,
-  {
-    strict: true,
-    decode: (date) => DateTime.unsafeFromDate(date),
-    encode: (dt) => DateTime.toDate(dt),
-  }
-)
+const DateTimeUtcFromDate = Schema.transform(Schema.DateFromSelf, Schema.DateTimeUtcFromSelf, {
+  strict: true,
+  decode: (date) => DateTime.unsafeFromDate(date),
+  encode: (dt) => DateTime.toDate(dt),
+})
 
 export class RefreshToken extends Model.Class<RefreshToken>('RefreshToken')({
   id: Model.Generated(RefreshTokenId),

@@ -158,16 +158,9 @@ export class InternalServerError extends Schema.TaggedError<InternalServerError>
 // Error Union Types (for documentation and type safety)
 // ============================================================================
 
-export type AuthErrorTypes =
-  | InvalidCredentials
-  | Unauthorized
-  | Forbidden
-  | BootstrapNotAllowed
+export type AuthErrorTypes = InvalidCredentials | Unauthorized | Forbidden | BootstrapNotAllowed
 
-export type CustomerErrorTypes =
-  | CustomerNotFound
-  | CustomerAlreadyExists
-  | InvalidPhoneNumber
+export type CustomerErrorTypes = CustomerNotFound | CustomerAlreadyExists | InvalidPhoneNumber
 
 export type UserErrorTypes = UserNotFound | UserAlreadyExists
 
