@@ -1,6 +1,18 @@
 import { Schema } from 'effect'
 import { UserId, UserRole } from './User'
 
+export class JwtPayload extends Schema.Class<JwtPayload>('JwtPayload')({
+  sub: UserId,
+  email: Schema.String,
+  role: UserRole,
+}) {}
+
+// Token rotation
+export class TokenPair extends Schema.Class<TokenPair>('TokenPair')({
+  accessToken: Schema.String,
+  refreshToken: Schema.String,
+}) {}
+
 // Login Input
 export class LoginInput extends Schema.Class<LoginInput>('LoginInput')({
   email: Schema.String.pipe(

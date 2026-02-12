@@ -14,9 +14,7 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
     })
 
     // Custom findById using raw SQL (Model.makeRepository has issues)
-    const findById = (
-      id: CustomerId
-    ): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
+    const findById = (id: CustomerId): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
       sql<Customer>`
         SELECT id, name, phone, address, created_at, updated_at
         FROM customers
