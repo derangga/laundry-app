@@ -46,16 +46,6 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
         ORDER BY name ASC
       `.pipe(Effect.map((rows) => rows))
 
-    // Custom insert using raw SQL (Model.makeRepository insert has issues)
-    const insert = (
-      data: typeof Customer.insert.Type
-    ): Effect.Effect<Customer, SqlError.SqlError> =>
-      sql<Customer>`
-        INSERT INTO customers (id, name, phone, address)
-        VALUES (gen_random_uuid(), ${data.name}, ${data.phone}, ${data.address})
-        RETURNING id, name, phone, address, created_at, updated_at
-      `.pipe(Effect.map((rows) => rows[0]))
-
     const update = (
       id: CustomerId,
       data: UpdateCustomerInput
@@ -93,11 +83,11 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
 
     return {
       // Base CRUD from makeRepository
+      insert: repo.insert,
       delete: repo.delete,
 
       // Custom methods using raw SQL (Model.makeRepository has issues)
       findById,
-      insert,
 
       // Custom query methods
       update,

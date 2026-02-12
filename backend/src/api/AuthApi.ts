@@ -1,0 +1,74 @@
+import { HttpApi, HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
+import {
+  LoginInput,
+  RefreshTokenInput,
+  LogoutInput,
+  BootstrapInput,
+  AuthResponse,
+  LogoutResult,
+} from '@domain/Auth'
+import { CreateUserInput, UserWithoutPassword } from '@domain/User'
+import {
+  InvalidCredentials,
+  Unauthorized,
+  ValidationError,
+  BootstrapNotAllowed,
+  UserAlreadyExists,
+} from '@domain/http/HttpErrors'
+import { AuthMiddleware } from 'src/middleware/AuthMiddleware'
+
+/**
+ * Auth API Schema Definitions
+ *
+ * Defines the HTTP contract for authentication endpoints:
+ * - POST /login - Authenticate user with email/password
+ * - POST /refresh - Rotate access/refresh tokens
+ * - POST /logout - Revoke refresh token and logout (protected)
+ * - POST /register - Create new user account (protected)
+ * - POST /bootstrap - Create first admin user (public)
+ *
+ * Uses HttpApi.make() for type-safe, automatic validation and error handling.
+ * Replaces manual HttpRouter composition with declarative endpoint definitions.
+ */
+
+export class AuthApi extends HttpApi.make('AuthApi').add(
+  HttpApiGroup.make('Auth')
+    .add(
+      HttpApiEndpoint.post('login', '/api/auth/login')
+        .setPayload(LoginInput)
+        .addSuccess(AuthResponse)
+        .addError(InvalidCredentials)
+        .addError(ValidationError)
+    )
+    .add(
+      HttpApiEndpoint.post('refresh', '/api/auth/refresh')
+        .setPayload(RefreshTokenInput)
+        .addSuccess(AuthResponse)
+        .addError(Unauthorized)
+        .addError(ValidationError)
+    )
+    .add(
+      HttpApiEndpoint.post('logout', '/api/auth/logout')
+        .setPayload(LogoutInput)
+        .addSuccess(LogoutResult)
+        .addError(Unauthorized)
+        .addError(ValidationError)
+        .middleware(AuthMiddleware)
+    )
+    .add(
+      HttpApiEndpoint.post('register', '/api/auth/register')
+        .setPayload(CreateUserInput)
+        .addSuccess(UserWithoutPassword)
+        .addError(UserAlreadyExists)
+        .addError(ValidationError)
+        .addError(Unauthorized)
+        .middleware(AuthMiddleware)
+    )
+    .add(
+      HttpApiEndpoint.post('bootstrap', '/api/auth/bootstrap')
+        .setPayload(BootstrapInput)
+        .addSuccess(UserWithoutPassword)
+        .addError(ValidationError)
+        .addError(BootstrapNotAllowed)
+    )
+) {}

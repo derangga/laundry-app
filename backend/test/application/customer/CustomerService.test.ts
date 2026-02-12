@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { Effect, Layer, Option } from 'effect'
-import { CustomerService } from '@application/customer/CustomerService'
-import { CustomerRepository } from '@repositories/CustomerRepository'
-import { Customer, CustomerId } from '@domain/Customer'
-import { CustomerNotFound, CustomerAlreadyExists } from '@domain/CustomerErrors'
-import { normalizePhoneNumber } from '@domain/PhoneNumber'
+import { Effect, Layer } from 'effect'
+import { CustomerService } from 'src/usecase/customer/CustomerService'
+import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
+import { createMockSqlClient } from 'test/repositories/testUtils'
 
 describe('CustomerService', () => {
   // Test data factory
@@ -19,87 +17,20 @@ describe('CustomerService', () => {
       ...overrides,
     }) as unknown as Customer
 
-  // Create mock CustomerRepository layer
-  const createMockCustomerRepo = (customers: Customer[]) => {
-    const mockRepo = {
-      findByPhone: (phone: string) => {
-        const customer = customers.find((c) => c.phone === phone)
-        return Effect.succeed(customer ? Option.some(customer) : Option.none())
-      },
-      findById: (_id: CustomerId) => Effect.succeed(Option.none()),
-      insert: (data: typeof Customer.insert.Type) =>
-        Effect.succeed(
-          createTestCustomer('new-customer-id', data.phone, {
-            name: data.name,
-            address: data.address || null,
-          })
-        ),
-      update: (
-        _id: CustomerId,
-        _data: Partial<{ name: string; phone: string; address: string | null }>
-      ) => Effect.succeed(Option.none()),
-      delete: (_id: CustomerId) => Effect.succeed(true),
-    } as unknown as CustomerRepository
-
-    return Layer.succeed(CustomerRepository, mockRepo)
+  // Create CustomerService layer manually to avoid SQL dependencies
+  const createServiceLayer = (
+    customers: Customer[],
+    filterFn?: (customer: Customer) => boolean
+  ) => {
+    const mockSql = filterFn
+      ? createMockSqlClient({ rows: customers, filterFn })
+      : createMockSqlClient({ rows: customers })
+    return Layer.mergeAll(CustomerService.Default.pipe(Layer.provide(mockSql)))
   }
 
-  // Create CustomerService layer manually to avoid SQL dependencies
-  const createServiceLayer = (customers: Customer[]) => {
-    const mockRepoLayer = createMockCustomerRepo(customers)
-
-    // Build the service manually
-    const serviceEffect = Effect.gen(function* () {
-      const repo = yield* CustomerRepository
-
-      const findByPhone = (phoneInput: string) =>
-        Effect.gen(function* () {
-          const phone = yield* normalizePhoneNumber(phoneInput)
-          const customerOption = yield* repo.findByPhone(phone)
-
-          if (Option.isNone(customerOption)) {
-            return yield* Effect.fail(new CustomerNotFound({ phone }))
-          }
-
-          return customerOption.value
-        })
-
-      const checkExists = (phoneInput: string) =>
-        Effect.gen(function* () {
-          const phone = yield* normalizePhoneNumber(phoneInput)
-          const customerOption = yield* repo.findByPhone(phone)
-          return Option.isSome(customerOption)
-        })
-
-      const create = (data: { name: string; phone: string; address?: string }) =>
-        Effect.gen(function* () {
-          const phone = yield* normalizePhoneNumber(data.phone)
-
-          const existing = yield* repo.findByPhone(phone)
-          if (Option.isSome(existing)) {
-            return yield* Effect.fail(new CustomerAlreadyExists({ phone }))
-          }
-
-          return yield* repo.insert(
-            Customer.insert.make({
-              name: data.name,
-              phone: phone as string,
-              address: data.address || null,
-            })
-          )
-        })
-
-      return {
-        _tag: 'CustomerService' as const,
-        findByPhone,
-        checkExists,
-        create,
-      }
-    })
-
-    return Layer.effect(CustomerService, serviceEffect).pipe(
-      Layer.provide(mockRepoLayer)
-    )
+  const createServiceNewRowLayer = (customers: Customer[], newRow: Customer) => {
+    const mockSql = createMockSqlClient({ rows: customers, newRow })
+    return Layer.mergeAll(CustomerService.Default.pipe(Layer.provide(mockSql)))
   }
 
   // Test customers
@@ -108,14 +39,13 @@ describe('CustomerService', () => {
 
   describe('findByPhone', () => {
     it('should find customer successfully with valid phone number', async () => {
-      const serviceLayer = createServiceLayer(customers)
-
+      const service = createServiceLayer(customers)
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
         return yield* service.findByPhone('+6281234567890')
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
+      const result = await Effect.runPromise(Effect.provide(program, service))
 
       expect(result.id).toBe('customer-1')
       expect(result.name).toBe('John Doe')
@@ -123,11 +53,12 @@ describe('CustomerService', () => {
     })
 
     it('should fail with CustomerNotFound when phone not registered', async () => {
-      const serviceLayer = createServiceLayer(customers)
+      const phone = '+6289876543210'
+      const serviceLayer = createServiceLayer(customers, (c) => c.phone === phone)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.findByPhone('+6289876543210')
+        return yield* service.findByPhone(phone)
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))
@@ -151,11 +82,12 @@ describe('CustomerService', () => {
     })
 
     it('should return false when customer does not exist', async () => {
-      const serviceLayer = createServiceLayer(customers)
+      const phone = '+6289876543210'
+      const serviceLayer = createServiceLayer(customers, (c) => c.phone === phone)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.checkExists('+6289876543210')
+        return yield* service.checkExists(phone)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -167,18 +99,21 @@ describe('CustomerService', () => {
   describe('create', () => {
     it('should create customer successfully with valid data', async () => {
       const emptyCustomers: Customer[] = []
-      const serviceLayer = createServiceLayer(emptyCustomers)
+      const newCustomer = createTestCustomer('customer-1', '+6285555666777', { name: 'Jane Doe' })
+      const serviceLayer = createServiceNewRowLayer(emptyCustomers, newCustomer)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Jane Doe',
-          phone: '+6285555666777',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Jane Doe',
+            phone: '+6285555666777',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
-
+      console.log('new: ', result)
       expect(result.name).toBe('Jane Doe')
       expect(result.phone).toBe('+6285555666777')
       expect(result.address).toBeNull()
@@ -186,7 +121,11 @@ describe('CustomerService', () => {
 
     it('should create customer with address', async () => {
       const emptyCustomers: Customer[] = []
-      const serviceLayer = createServiceLayer(emptyCustomers)
+      const newCustomer = createTestCustomer('customer-2', '+6285555666888', {
+        name: 'Bob Smith',
+        address: '123 Main Street, Jakarta',
+      })
+      const serviceLayer = createServiceNewRowLayer(emptyCustomers, newCustomer)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
@@ -209,10 +148,12 @@ describe('CustomerService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Another User',
-          phone: '+6281234567890',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Another User',
+            phone: '+6281234567890',
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))
@@ -222,14 +163,19 @@ describe('CustomerService', () => {
 
     it('should normalize phone number from 08xx to +628xx format', async () => {
       const emptyCustomers: Customer[] = []
-      const serviceLayer = createServiceLayer(emptyCustomers)
+      const newCustomer = createTestCustomer('customer-3', '+6285551234567', {
+        name: 'Phone Normalized User',
+      })
+      const serviceLayer = createServiceNewRowLayer(emptyCustomers, newCustomer)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Phone Normalized User',
-          phone: '085551234567',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Phone Normalized User',
+            phone: '085551234567',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -240,14 +186,19 @@ describe('CustomerService', () => {
 
     it('should normalize phone number with dashes and spaces', async () => {
       const emptyCustomers: Customer[] = []
-      const serviceLayer = createServiceLayer(emptyCustomers)
+      const newCustomer = createTestCustomer('customer-4', '+628551234567890', {
+        name: 'Formatted Phone User',
+      })
+      const serviceLayer = createServiceNewRowLayer(emptyCustomers, newCustomer)
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Formatted Phone User',
-          phone: '+628-5512-3456-7890',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Formatted Phone User',
+            phone: '+628-5512-3456-7890',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -261,10 +212,12 @@ describe('CustomerService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Invalid Phone User',
-          phone: '12345', // Too short, Indonesian phones need 9-13 digits after +62
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Invalid Phone User',
+            phone: '12345', // Too short, Indonesian phones need 9-13 digits after +62
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))

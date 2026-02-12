@@ -13,7 +13,7 @@ export class OrderItem extends Model.Class<OrderItem>('OrderItem')({
   quantity: Schema.Number,
   price_at_order: Schema.Number,
   subtotal: Schema.Number,
-  created_at: Model.DateTimeInsert,
+  created_at: Model.DateTimeInsertFromDate,
 }) {}
 
 export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>(

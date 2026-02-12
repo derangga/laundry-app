@@ -22,15 +22,21 @@
     "baseUrl": ".",
     "paths": {
       "@domain/*": ["src/domain/*"],
-      "@application/*": ["src/application/*"],
-      "@infrastructure/*": ["src/infrastructure/*"],
+      "@usecase/*": ["src/usecase/*"],
       "@repositories/*": ["src/repositories/*"],
       "@api/*": ["src/api/*"],
       "@http/*": ["src/http/*"],
       "@configs/*": ["src/configs/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@middleware/*": ["src/middleware/*"],
+      "@handlers/*": ["src/handlers/*"]
     },
-    "types": ["bun-types", "node"]
+    "types": ["bun-types", "node"],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]

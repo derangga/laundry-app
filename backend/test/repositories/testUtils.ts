@@ -8,10 +8,14 @@ import { SqlClient, SqlError } from '@effect/sql'
  */
 export const createMockSqlClient = <T>(config: {
   rows?: T[]
+  newRow?: T
   shouldFail?: boolean
   filterFn?: (arg: T) => boolean
   error?: SqlError.SqlError
 }) => {
+  // Track if we've returned rows before (for insert scenarios)
+  let hasReturnedRows = false
+
   const mockQueryFn = (..._args: any[]): Effect.Effect<T[], SqlError.SqlError> => {
     if (config.shouldFail && config.error) {
       return Effect.fail(config.error)
@@ -20,12 +24,24 @@ export const createMockSqlClient = <T>(config: {
     if (config.filterFn) {
       return Effect.succeed(config.rows?.filter(config.filterFn) || [])
     }
+
+    // For insert scenarios: first call returns rows (for findByPhone check),
+    // subsequent calls return newRow (for the actual insert)
+    if (config.newRow && (!config.rows || config.rows.length === 0)) {
+      if (!hasReturnedRows) {
+        hasReturnedRows = true
+        return Effect.succeed([])
+      }
+      return Effect.succeed([config.newRow])
+    }
+
     return Effect.succeed(config.rows ?? [])
   }
 
   // Create insert builder that returns SQL fragments
+  const insertedRow = config.newRow ? [config.newRow] : config.rows || []
   const mockInsert = (_data: any) => ({
-    returning: (_columns: string) => Effect.succeed(config.rows ?? []),
+    returning: (_columns: string) => Effect.succeed(insertedRow),
   })
 
   // Mock SqlClient service with both tagged template and unsafe methods

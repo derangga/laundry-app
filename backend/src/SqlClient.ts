@@ -1,6 +1,6 @@
 import { Config, Effect, pipe } from 'effect'
 import { PgClient } from '@effect/sql-pg'
-import { DatabaseConfig } from '../../configs/env'
+import { DatabaseConfig } from './configs/env'
 
 export const SqlClientLive = PgClient.layerConfig({
   host: DatabaseConfig.pipe(Config.map((c) => c.host)),

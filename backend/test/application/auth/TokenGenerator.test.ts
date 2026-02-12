@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Effect } from 'effect'
-import { TokenGenerator, TokenGeneratorLive } from '@application/auth/TokenGenerator'
+import { TokenGenerator, TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
 
 describe('TokenGenerator', () => {
   const runWithService = <A, E>(effect: Effect.Effect<A, E, TokenGenerator>) =>

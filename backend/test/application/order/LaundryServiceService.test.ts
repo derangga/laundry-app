@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { LaundryServiceService } from '@application/order/LaundryServiceService'
+import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { ServiceNotFound } from '@domain/ServiceErrors'
 import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
@@ -20,7 +20,11 @@ describe('LaundryServiceService', () => {
     }) as LaundryService
 
   const service1 = createTestService('service-1', { name: 'Washing', price: 15000 })
-  const service2 = createTestService('service-2', { name: 'Ironing', price: 8000, unit_type: 'set' as UnitType })
+  const service2 = createTestService('service-2', {
+    name: 'Ironing',
+    price: 8000,
+    unit_type: 'set' as UnitType,
+  })
   const inactiveService = createTestService('service-3', { name: 'Dry Cleaning', is_active: false })
 
   // Create a complete mock repository layer
@@ -39,7 +43,10 @@ describe('LaundryServiceService', () => {
             unit_type: data.unit_type,
           })
         ),
-      update: (id: ServiceId, data: Partial<{ name: string; price: number; unit_type: UnitType; is_active: boolean }>) => {
+      update: (
+        id: ServiceId,
+        data: Partial<{ name: string; price: number; unit_type: UnitType; is_active: boolean }>
+      ) => {
         const service = services.find((s) => s.id === id)
         if (!service) {
           return Effect.succeed(Option.none())
@@ -61,7 +68,7 @@ describe('LaundryServiceService', () => {
   // Create service layer by building the service effect directly
   const createServiceLayer = (services: LaundryService[]) => {
     const mockRepoLayer = createMockServiceRepo(services)
-    
+
     // Build the service manually
     const serviceEffect = Effect.gen(function* () {
       const repo = yield* ServiceRepository
@@ -79,9 +86,13 @@ describe('LaundryServiceService', () => {
           return serviceOption.value
         })
 
-      const create = (data: { name: string; price: number; unit_type: UnitType }) => repo.insert(data)
+      const create = (data: { name: string; price: number; unit_type: UnitType }) =>
+        repo.insert(data)
 
-      const update = (id: string, data: Partial<{ name?: string; price?: number; unit_type?: UnitType }>) =>
+      const update = (
+        id: string,
+        data: Partial<{ name?: string; price?: number; unit_type?: UnitType }>
+      ) =>
         Effect.gen(function* () {
           yield* findById(id)
           yield* repo.update(id as ServiceId, data)
@@ -103,9 +114,7 @@ describe('LaundryServiceService', () => {
       }
     })
 
-    return Layer.effect(LaundryServiceService, serviceEffect).pipe(
-      Layer.provide(mockRepoLayer)
-    )
+    return Layer.effect(LaundryServiceService, serviceEffect).pipe(Layer.provide(mockRepoLayer))
   }
 
   describe('findActive', () => {
@@ -201,9 +210,7 @@ describe('LaundryServiceService', () => {
         return yield* service.findById('service-1')
       })
 
-      await expect(
-        Effect.runPromise(Effect.provide(program, serviceLayer))
-      ).resolves.toBeDefined()
+      await expect(Effect.runPromise(Effect.provide(program, serviceLayer))).resolves.toBeDefined()
     })
 
     it('should fail with ServiceNotFound when updating non-existent service', async () => {
@@ -228,9 +235,7 @@ describe('LaundryServiceService', () => {
         return yield* service.findById('service-1')
       })
 
-      await expect(
-        Effect.runPromise(Effect.provide(program, serviceLayer))
-      ).resolves.toBeDefined()
+      await expect(Effect.runPromise(Effect.provide(program, serviceLayer))).resolves.toBeDefined()
     })
   })
 

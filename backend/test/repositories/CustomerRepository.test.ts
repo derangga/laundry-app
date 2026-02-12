@@ -12,8 +12,8 @@ const createMockCustomer = (overrides: Partial<Customer> = {}): Customer =>
     name: 'John Doe',
     phone: '+628123456789',
     address: '123 Main St',
-    created_at: new Date().toString(),
-    updated_at: new Date().toString(),
+    created_at: new Date(),
+    updated_at: new Date(),
     ...overrides,
   }) as unknown as Customer
 

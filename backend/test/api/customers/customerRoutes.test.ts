@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { CustomerService } from '@application/customer/CustomerService'
+import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { Customer, CustomerId } from '@domain/Customer'
+import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
 import { CustomerNotFound, CustomerAlreadyExists } from '@domain/CustomerErrors'
 import { normalizePhoneNumber } from '@domain/PhoneNumber'
 import { CurrentUser } from '@domain/CurrentUser'
-import { createTestUsers, TestConfig } from '../auth/fixtures'
+import { UserId } from '@domain/User'
 
 const createMockCustomerRepo = (customers: Customer[]) => {
   const repo = {
@@ -81,34 +81,17 @@ const createMockCustomerService = (customers: Customer[]) => {
 }
 
 const createTestLayer = (customers: Customer[]) =>
-  Layer.mergeAll(
-    createMockCustomerRepo(customers),
-    createMockCustomerService(customers)
-  )
+  Layer.mergeAll(createMockCustomerRepo(customers), createMockCustomerService(customers))
 
 const provideCurrentUser = (user: Customer | null) =>
   Layer.succeed(CurrentUser, {
-    id: user?.id ?? 'anonymous',
+    id: UserId.make(user?.id ?? 'anonymous'),
     email: user?.name ?? 'anonymous@example.com',
     role: 'staff',
   })
 
-const buildAuthHeaders = (accessToken?: string): Record<string, string> => ({
-  'Content-Type': 'application/json',
-  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-})
-
 describe('GET /api/customers?phone={phone}', () => {
-  let testUsers: { admin: { email: string; password: string; hashedPassword: string; user: Customer }; staff: { email: string; password: string; hashedPassword: string; user: Customer } }
   let customers: Customer[]
-
-  beforeAll(async () => {
-    const testUsersResult = await createTestUsers()
-    testUsers = {
-      admin: { ...testUsersResult.admin, user: testUsersResult.admin.user as unknown as Customer },
-      staff: { ...testUsersResult.staff, user: testUsersResult.staff.user as unknown as Customer },
-    }
-  })
 
   beforeEach(() => {
     customers = []
@@ -227,16 +210,7 @@ describe('GET /api/customers?phone={phone}', () => {
 })
 
 describe('POST /api/customers', () => {
-  let testUsers: { admin: { email: string; password: string; hashedPassword: string; user: Customer }; staff: { email: string; password: string; hashedPassword: string; user: Customer } }
   let customers: Customer[]
-
-  beforeAll(async () => {
-    const testUsersResult = await createTestUsers()
-    testUsers = {
-      admin: { ...testUsersResult.admin, user: testUsersResult.admin.user as unknown as Customer },
-      staff: { ...testUsersResult.staff, user: testUsersResult.staff.user as unknown as Customer },
-    }
-  })
 
   beforeEach(() => {
     customers = []
@@ -268,10 +242,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Bob Wilson',
-          phone: '08555666777',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Bob Wilson',
+            phone: '08555666777',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -287,10 +263,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Phone Normalized',
-          phone: '08123456789',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Phone Normalized',
+            phone: '08123456789',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -305,10 +283,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'John Doe',
-          phone: 'invalid-phone',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'John Doe',
+            phone: 'invalid-phone',
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
@@ -333,10 +313,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Another Person',
-          phone: '08123456789',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Another Person',
+            phone: '08123456789',
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
@@ -359,10 +341,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Another Person',
-          phone: '+628123456789',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Another Person',
+            phone: '+628123456789',
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
@@ -384,10 +368,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Customer A',
-          phone: '08111222333',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Customer A',
+            phone: '08111222333',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -402,10 +388,12 @@ describe('POST /api/customers', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Customer B',
-          phone: '08222333444',
-        })
+        return yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Customer B',
+            phone: '08222333444',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -439,14 +427,15 @@ describe('GET /api/customers/:id', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
-        return yield* repo.findById('customer-1')
+        return yield* repo.findById(CustomerId.make('customer-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const customer = Option.getOrThrow(result)
 
       expect(Option.isSome(result)).toBe(true)
-      expect(result.value.id).toBe('customer-1')
-      expect(result.value.name).toBe('John Doe')
+      expect(customer.id).toBe('customer-1')
+      expect(customer.name).toBe('John Doe')
     })
   })
 
@@ -488,13 +477,14 @@ describe('GET /api/customers/:id', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
-        return yield* repo.findById('customer-1')
+        return yield* repo.findById(CustomerId.make('customer-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
+      const customer = Option.getOrThrow(result)
 
       expect(Option.isSome(result)).toBe(true)
-      expect(result.value.id).toBe('customer-1')
+      expect(customer.id).toBe('customer-1')
     })
 
     it('should allow admin to access customer by ID', async () => {
@@ -513,13 +503,14 @@ describe('GET /api/customers/:id', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
-        return yield* repo.findById('customer-2')
+        return yield* repo.findById(CustomerId.make('customer-2'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
+      const customer = Option.getOrThrow(result)
 
       expect(Option.isSome(result)).toBe(true)
-      expect(result.value.id).toBe('customer-2')
+      expect(customer.id).toBe('customer-2')
     })
   })
 })
@@ -537,12 +528,15 @@ describe('Integration Flow Tests', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
-        const repo = yield* CustomerRepository
 
         const searchBefore = yield* Effect.succeed(
-          Option.isSome(yield* Effect.succeed(customers.find(c => c.phone === '+628123456789')
-            ? Option.some(customers.find(c => c.phone === '+628123456789')!)
-            : Option.none<Customer>()))
+          Option.isSome(
+            yield* Effect.succeed(
+              customers.find((c) => c.phone === '+628123456789')
+                ? Option.some(customers.find((c) => c.phone === '+628123456789')!)
+                : Option.none<Customer>()
+            )
+          )
         )
 
         const created = yield* service.create({
@@ -579,10 +573,12 @@ describe('Integration Flow Tests', () => {
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
 
-        const created = yield* service.create({
-          name: 'Phone Test',
-          phone: '08123456789',
-        })
+        const created = yield* service.create(
+          CreateCustomerInput.make({
+            name: 'Phone Test',
+            phone: '08123456789',
+          })
+        )
 
         const find1 = yield* service.findByPhone('08123456789')
         const find2 = yield* service.findByPhone('+628123456789')
@@ -612,16 +608,20 @@ describe('Integration Flow Tests', () => {
       const program = Effect.gen(function* () {
         const service = yield* CustomerService
 
-        const create1 = yield* service.create({
-          name: 'First Customer',
-          phone: '08111111111',
-        })
-
-        const create2Exit = yield* Effect.exit(
-          service.create({
-            name: 'Second Customer',
+        const create1 = yield* service.create(
+          CreateCustomerInput.make({
+            name: 'First Customer',
             phone: '08111111111',
           })
+        )
+
+        const create2Exit = yield* Effect.exit(
+          service.create(
+            CreateCustomerInput.make({
+              name: 'Second Customer',
+              phone: '08111111111',
+            })
+          )
         )
 
         return { create1, create2Exit }

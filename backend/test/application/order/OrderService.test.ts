@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { OrderService } from '@application/order/OrderService'
+import { OrderService } from 'src/usecase/order/OrderService'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
@@ -55,9 +55,16 @@ describe('OrderService', () => {
     }) as OrderItem
 
   const order1 = createTestOrder('order-1')
-  const order2 = createTestOrder('order-2', { status: 'in_progress' as OrderStatus, total_price: 50000 })
+  const order2 = createTestOrder('order-2', {
+    status: 'in_progress' as OrderStatus,
+    total_price: 50000,
+  })
   const service1 = createTestService('service-1', { name: 'Washing', price: 15000 })
-  const service2 = createTestService('service-2', { name: 'Ironing', price: 8000, unit_type: 'set' as UnitType })
+  const service2 = createTestService('service-2', {
+    name: 'Ironing',
+    price: 8000,
+    unit_type: 'set' as UnitType,
+  })
 
   // Create mock repository layers
   const createMockOrderRepo = (orders: Order[]) =>
@@ -93,13 +100,15 @@ describe('OrderService', () => {
   const createMockOrderItemRepo = () =>
     Layer.succeed(OrderItemRepository, {
       findById: (_id: OrderItemId) => Effect.succeed(Option.none()),
-      insertMany: (items: Array<{
-        order_id: OrderId
-        service_id: ServiceId
-        quantity: number
-        price_at_order: number
-        subtotal: number
-      }>) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item))),
+      insertMany: (
+        items: Array<{
+          order_id: OrderId
+          service_id: ServiceId
+          quantity: number
+          price_at_order: number
+          subtotal: number
+        }>
+      ) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item))),
     } as unknown as OrderItemRepository)
 
   const createMockServiceRepo = (services: LaundryService[]) =>
@@ -372,9 +381,7 @@ describe('OrderService', () => {
         return yield* orderService.findById('order-1')
       })
 
-      await expect(
-        Effect.runPromise(Effect.provide(program, orderLayer))
-      ).resolves.toBeDefined()
+      await expect(Effect.runPromise(Effect.provide(program, orderLayer))).resolves.toBeDefined()
     })
 
     it('should fail with InvalidOrderTransition for invalid transition', async () => {
@@ -415,9 +422,7 @@ describe('OrderService', () => {
         return yield* orderService.findById('order-1')
       })
 
-      await expect(
-        Effect.runPromise(Effect.provide(program, orderLayer))
-      ).resolves.toBeDefined()
+      await expect(Effect.runPromise(Effect.provide(program, orderLayer))).resolves.toBeDefined()
     })
 
     it('should fail with OrderNotFound when order does not exist', async () => {

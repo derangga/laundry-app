@@ -2,14 +2,14 @@ import { Effect, Option } from 'effect'
 import { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
-import { JwtService, JwtPayload } from './JwtService'
+import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
 import {
   InvalidTokenError,
   RefreshTokenNotFoundError,
   UserNotFoundError,
 } from '../../domain/UserErrors'
-import { RefreshTokenInput, AuthResponse } from '../../domain/Auth'
+import { RefreshTokenInput, AuthResponse, JwtPayload } from '../../domain/Auth'
 
 export { RefreshTokenInput }
 export type RefreshTokenResult = AuthResponse

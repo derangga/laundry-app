@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Layer, ConfigProvider } from 'effect'
-import { JwtService, JwtServiceLive, JwtPayload } from '@application/auth/JwtService'
+import { JwtService, JwtServiceLive } from 'src/usecase/auth/JwtService'
 import { UserId, UserRole } from '@domain/User'
+import { JwtPayload } from '@domain/Auth'
 
 const TestConfigProvider = ConfigProvider.fromMap(
   new Map([

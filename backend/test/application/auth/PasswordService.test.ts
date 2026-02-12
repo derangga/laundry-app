@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Layer, ConfigProvider } from 'effect'
-import { PasswordService, PasswordServiceLive } from '@application/auth/PasswordService'
+import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
 
-const TestConfigProvider = ConfigProvider.fromMap(
-  new Map([['BCRYPT_ROUNDS', '12']])
-)
+const TestConfigProvider = ConfigProvider.fromMap(new Map([['BCRYPT_ROUNDS', '12']]))
 
 const TestConfig = Layer.setConfigProvider(TestConfigProvider)
 

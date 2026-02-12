@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option, ConfigProvider } from 'effect'
-import { login } from '@application/auth/LoginUseCase'
+import { login } from 'src/usecase/auth/LoginUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
-import { PasswordService, PasswordServiceLive } from '@application/auth/PasswordService'
-import { JwtServiceLive } from '@application/auth/JwtService'
-import { TokenGeneratorLive } from '@application/auth/TokenGenerator'
+import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
+import { JwtServiceLive } from 'src/usecase/auth/JwtService'
+import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
 import { User, UserId, UserRole } from '@domain/User'
 
 const TestConfigProvider = ConfigProvider.fromMap(
