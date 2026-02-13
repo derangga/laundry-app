@@ -7,8 +7,6 @@ import { UserId } from '../../domain/User'
 import { UnauthorizedError } from '../../domain/UserErrors'
 import { LogoutInput, LogoutResult } from '../../domain/Auth'
 
-export { LogoutInput, LogoutResult }
-
 export const logout = (
   input: LogoutInput
 ): Effect.Effect<

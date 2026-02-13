@@ -6,7 +6,7 @@ import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
+import { CreateOrderInput, Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
 import { OrderItem, OrderItemId } from '@domain/OrderItem'
 import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
@@ -135,12 +135,7 @@ describe('OrderService', () => {
         return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
       }
 
-      const create = (data: {
-        customerId: string
-        items: Array<{ serviceId: string; quantity: number }>
-        createdBy: string
-        paymentStatus?: PaymentStatus
-      }) =>
+      const create = (data: CreateOrderInput) =>
         Effect.gen(function* () {
           if (data.items.length === 0) {
             return yield* Effect.fail(
@@ -156,10 +151,10 @@ describe('OrderService', () => {
             data.items,
             (item) =>
               Effect.gen(function* () {
-                const serviceOption = yield* serviceRepo.findById(item.serviceId as ServiceId)
+                const serviceOption = yield* serviceRepo.findById(item.service_id as ServiceId)
 
                 if (Option.isNone(serviceOption)) {
-                  return yield* Effect.fail(new ServiceNotFound({ serviceId: item.serviceId }))
+                  return yield* Effect.fail(new ServiceNotFound({ serviceId: item.service_id }))
                 }
 
                 const service = serviceOption.value
@@ -167,7 +162,7 @@ describe('OrderService', () => {
                 const subtotal = item.quantity * priceAtOrder
 
                 return {
-                  serviceId: item.serviceId,
+                  serviceId: item.service_id,
                   quantity: item.quantity,
                   priceAtOrder,
                   subtotal,
@@ -180,11 +175,11 @@ describe('OrderService', () => {
 
           const order = yield* orderRepo.insert({
             order_number: orderNumber,
-            customer_id: data.customerId as CustomerId,
+            customer_id: CustomerId.make(data.customer_id),
             status: 'received',
-            payment_status: data.paymentStatus || 'unpaid',
+            payment_status: data.payment_status || 'unpaid',
             total_price: totalPrice,
-            created_by: data.createdBy as UserId,
+            created_by: UserId.make(data.created_by),
           })
 
           yield* orderItemRepo.insertMany(
@@ -200,9 +195,9 @@ describe('OrderService', () => {
           return order
         })
 
-      const findById = (id: string) =>
+      const findById = (id: OrderId) =>
         Effect.gen(function* () {
-          const orderOption = yield* orderRepo.findById(id as OrderId)
+          const orderOption = yield* orderRepo.findById(id)
 
           if (Option.isNone(orderOption)) {
             return yield* Effect.fail(new OrderNotFound({ orderId: id }))
@@ -211,21 +206,20 @@ describe('OrderService', () => {
           return orderOption.value
         })
 
-      const updateStatus = (id: string, newStatus: OrderStatus) =>
+      const updateStatus = (id: OrderId, newStatus: OrderStatus) =>
         Effect.gen(function* () {
           const order = yield* findById(id)
           yield* validateStatusTransition(order.status, newStatus)
           yield* orderRepo.updateStatus(id as OrderId, newStatus)
         })
 
-      const updatePaymentStatus = (id: string, paymentStatus: PaymentStatus) =>
+      const updatePaymentStatus = (id: OrderId, paymentStatus: PaymentStatus) =>
         Effect.gen(function* () {
           yield* findById(id)
-          yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
+          yield* orderRepo.updatePaymentStatus(id, paymentStatus)
         })
 
-      const findByCustomerId = (customerId: string) =>
-        orderRepo.findByCustomerId(customerId as CustomerId)
+      const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(id)
 
       return {
         _tag: 'OrderService' as const,
@@ -250,14 +244,16 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.create({
-          customerId: 'customer-1',
-          items: [
-            { serviceId: 'service-1', quantity: 2 },
-            { serviceId: 'service-2', quantity: 1 },
-          ],
-          createdBy: 'user-1',
-        })
+        return yield* orderService.create(
+          CreateOrderInput.make({
+            customer_id: CustomerId.make('customer-1'),
+            items: [
+              { service_id: ServiceId.make('service-1'), quantity: 2 },
+              { service_id: ServiceId.make('service-2'), quantity: 1 },
+            ],
+            created_by: UserId.make('user-1'),
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))
@@ -273,11 +269,13 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.create({
-          customerId: 'customer-1',
-          items: [],
-          createdBy: 'user-1',
-        })
+        return yield* orderService.create(
+          CreateOrderInput.make({
+            customer_id: CustomerId.make('customer-1'),
+            items: [],
+            created_by: UserId.make('user-1'),
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -290,11 +288,13 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.create({
-          customerId: 'customer-1',
-          items: [{ serviceId: 'non-existent-service', quantity: 1 }],
-          createdBy: 'user-1',
-        })
+        return yield* orderService.create(
+          CreateOrderInput.make({
+            customer_id: CustomerId.make('customer-1'),
+            items: [{ service_id: ServiceId.make('non-existent-service'), quantity: 1 }],
+            created_by: UserId.make('user-1'),
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -307,12 +307,14 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.create({
-          customerId: 'customer-1',
-          items: [{ serviceId: 'service-1', quantity: 1 }],
-          createdBy: 'user-1',
-          paymentStatus: 'paid' as PaymentStatus,
-        })
+        return yield* orderService.create(
+          CreateOrderInput.make({
+            customer_id: CustomerId.make('customer-1'),
+            items: [{ service_id: ServiceId.make('service-1'), quantity: 1 }],
+            created_by: UserId.make('user-1'),
+            payment_status: 'paid',
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))
@@ -325,14 +327,16 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.create({
-          customerId: 'customer-1',
-          items: [
-            { serviceId: 'service-1', quantity: 3 },
-            { serviceId: 'service-1', quantity: 2 },
-          ],
-          createdBy: 'user-1',
-        })
+        return yield* orderService.create(
+          CreateOrderInput.make({
+            customer_id: CustomerId.make('customer-1'),
+            items: [
+              { service_id: ServiceId.make('service-1'), quantity: 3 },
+              { service_id: ServiceId.make('service-1'), quantity: 2 },
+            ],
+            created_by: UserId.make('user-1'),
+          })
+        )
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))
@@ -347,7 +351,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.findById('order-1')
+        return yield* orderService.findById(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))
@@ -362,7 +366,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.findById('non-existent-order')
+        return yield* orderService.findById(OrderId.make('non-existent-order'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -377,8 +381,8 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        yield* orderService.updateStatus('order-1', 'in_progress')
-        return yield* orderService.findById('order-1')
+        yield* orderService.updateStatus(OrderId.make('order-1'), 'in_progress')
+        return yield* orderService.findById(OrderId.make('order-1'))
       })
 
       await expect(Effect.runPromise(Effect.provide(program, orderLayer))).resolves.toBeDefined()
@@ -390,7 +394,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.updateStatus('order-3', 'in_progress')
+        return yield* orderService.updateStatus(OrderId.make('order-3'), 'in_progress')
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -403,7 +407,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.updateStatus('non-existent-order', 'in_progress')
+        return yield* orderService.updateStatus(OrderId.make('non-existent-order'), 'in_progress')
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -418,8 +422,8 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        yield* orderService.updatePaymentStatus('order-1', 'paid')
-        return yield* orderService.findById('order-1')
+        yield* orderService.updatePaymentStatus(OrderId.make('order-1'), 'paid')
+        return yield* orderService.findById(OrderId.make('order-1'))
       })
 
       await expect(Effect.runPromise(Effect.provide(program, orderLayer))).resolves.toBeDefined()
@@ -430,7 +434,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.updatePaymentStatus('non-existent-order', 'paid')
+        return yield* orderService.updatePaymentStatus(OrderId.make('non-existent-order'), 'paid')
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, orderLayer))
@@ -453,7 +457,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.findByCustomerId('customer-1')
+        return yield* orderService.findByCustomerId(CustomerId.make('customer-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))
@@ -467,7 +471,7 @@ describe('OrderService', () => {
 
       const program = Effect.gen(function* () {
         const orderService = yield* OrderService
-        return yield* orderService.findByCustomerId('customer-with-no-orders')
+        return yield* orderService.findByCustomerId(CustomerId.make('customer-with-no-orders'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, orderLayer))

@@ -2,6 +2,7 @@ import { Schema } from 'effect'
 import { Model } from '@effect/sql'
 import { CustomerId } from './Customer.js'
 import { UserId } from './User.js'
+import { CreateOrderItemInput } from './OrderItem.js'
 
 export const OrderId = Schema.String.pipe(Schema.brand('OrderId'))
 export type OrderId = typeof OrderId.Type
@@ -26,6 +27,8 @@ export class Order extends Model.Class<Order>('Order')({
 
 export class CreateOrderInput extends Schema.Class<CreateOrderInput>('CreateOrderInput')({
   customer_id: CustomerId,
+  items: Schema.Array(CreateOrderItemInput),
+  created_by: UserId,
   payment_status: Schema.optionalWith(PaymentStatus, { default: () => 'unpaid' as const }),
 }) {}
 

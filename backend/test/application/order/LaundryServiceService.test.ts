@@ -3,7 +3,13 @@ import { Effect, Layer, Option } from 'effect'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
+import {
+  CreateLaundryServiceInput,
+  LaundryService,
+  ServiceId,
+  UnitType,
+  UpdateLaundryServiceInput,
+} from '@domain/LaundryService'
 
 describe('LaundryServiceService', () => {
   // Test data
@@ -75,7 +81,7 @@ describe('LaundryServiceService', () => {
 
       const findActive = () => repo.findActive()
 
-      const findById = (id: string) =>
+      const findById = (id: ServiceId) =>
         Effect.gen(function* () {
           const serviceOption = yield* repo.findById(id as ServiceId)
 
@@ -86,22 +92,18 @@ describe('LaundryServiceService', () => {
           return serviceOption.value
         })
 
-      const create = (data: { name: string; price: number; unit_type: UnitType }) =>
-        repo.insert(data)
+      const create = (data: CreateLaundryServiceInput) => repo.insert(data)
 
-      const update = (
-        id: string,
-        data: Partial<{ name?: string; price?: number; unit_type?: UnitType }>
-      ) =>
+      const update = (id: ServiceId, data: UpdateLaundryServiceInput) =>
         Effect.gen(function* () {
           yield* findById(id)
-          yield* repo.update(id as ServiceId, data)
+          yield* repo.update(id, data)
         })
 
-      const softDelete = (id: string) =>
+      const softDelete = (id: ServiceId) =>
         Effect.gen(function* () {
           yield* findById(id)
-          yield* repo.softDelete(id as ServiceId)
+          yield* repo.softDelete(id)
         })
 
       return {
@@ -154,7 +156,7 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        return yield* service.findById('service-1')
+        return yield* service.findById(ServiceId.make('service-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -169,7 +171,7 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        return yield* service.findById('non-existent-id')
+        return yield* service.findById(ServiceId.make('non-existent-id'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))
@@ -206,8 +208,11 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        yield* service.update('service-1', { name: 'Updated Washing', price: 18000 })
-        return yield* service.findById('service-1')
+        yield* service.update(ServiceId.make('service-1'), {
+          name: 'Updated Washing',
+          price: 18000,
+        })
+        return yield* service.findById(ServiceId.make('service-1'))
       })
 
       await expect(Effect.runPromise(Effect.provide(program, serviceLayer))).resolves.toBeDefined()
@@ -218,7 +223,7 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        return yield* service.update('non-existent-id', { name: 'Updated' })
+        return yield* service.update(ServiceId.make('non-existent-id'), { name: 'Updated' })
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))
@@ -231,8 +236,8 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        yield* service.update('service-1', { price: 25000 })
-        return yield* service.findById('service-1')
+        yield* service.update(ServiceId.make('service-1'), { price: 25000 })
+        return yield* service.findById(ServiceId.make('service-1'))
       })
 
       await expect(Effect.runPromise(Effect.provide(program, serviceLayer))).resolves.toBeDefined()
@@ -245,7 +250,7 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        return yield* service.softDelete('service-1')
+        return yield* service.softDelete(ServiceId.make('service-1'))
       })
 
       await expect(
@@ -258,7 +263,7 @@ describe('LaundryServiceService', () => {
 
       const program = Effect.gen(function* () {
         const service = yield* LaundryServiceService
-        return yield* service.softDelete('non-existent-id')
+        return yield* service.softDelete(ServiceId.make('non-existent-id'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { Customer, CustomerId, CustomerSummary, UpdateCustomerInput } from '@domain/Customer'
-import { createMockSqlClient } from './testUtils'
+import { createMockSqlClient } from '../testUtils'
 import { faker } from '@faker-js/faker'
 
 // Create a mock customer

@@ -108,7 +108,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(CustomerApi, 'Customers
         // Extract ID from path parameter
         const url = new URL(request.url, 'http://localhost')
         const pathParts = url.pathname.split('/').filter(Boolean)
-        const id = pathParts[pathParts.length - 1] as CustomerId
+        const id = pathParts[pathParts.length - 1]
 
         if (!id) {
           return yield* Effect.fail(
@@ -120,7 +120,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(CustomerApi, 'Customers
         }
 
         // Find customer, handle all errors by converting to CustomerNotFound or ValidationError
-        return yield* repo.findById(id).pipe(
+        return yield* repo.findById(CustomerId.make(id)).pipe(
           Effect.andThen((customerOption) => {
             if (Option.isNone(customerOption)) {
               return Effect.fail(

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
 import { UserRepository } from '@repositories/UserRepository'
 import { User, UserId, UserRole } from '@domain/User'
-import { createMockSqlClient, createSqlError } from './testUtils'
+import { createMockSqlClient, createSqlError } from '../testUtils'
 
 const createMockUser = (overrides?: Partial<User>): User =>
   ({

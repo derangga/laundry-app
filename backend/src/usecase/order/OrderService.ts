@@ -6,22 +6,10 @@ import { generateOrderNumber } from '@domain/OrderNumberGenerator'
 import { validateStatusTransition } from '@domain/OrderStatusValidator'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { OrderStatus, PaymentStatus, OrderId } from '@domain/Order'
+import { OrderStatus, PaymentStatus, OrderId, CreateOrderInput } from '@domain/Order'
 import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
-
-interface CreateOrderItem {
-  serviceId: string
-  quantity: number
-}
-
-interface CreateOrderData {
-  customerId: string
-  items: CreateOrderItem[]
-  createdBy: string
-  paymentStatus?: PaymentStatus
-}
 
 export class OrderService extends Effect.Service<OrderService>()('OrderService', {
   effect: Effect.gen(function* () {
@@ -33,7 +21,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
       return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
     }
 
-    const create = (data: CreateOrderData) =>
+    const create = (data: CreateOrderInput) =>
       Effect.gen(function* () {
         // Validate: must have at least one item
         if (data.items.length === 0) {
@@ -52,10 +40,10 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
           data.items,
           (item) =>
             Effect.gen(function* () {
-              const serviceOption = yield* serviceRepo.findById(item.serviceId as ServiceId)
+              const serviceOption = yield* serviceRepo.findById(item.service_id as ServiceId)
 
               if (Option.isNone(serviceOption)) {
-                return yield* Effect.fail(new ServiceNotFound({ serviceId: item.serviceId }))
+                return yield* Effect.fail(new ServiceNotFound({ serviceId: item.service_id }))
               }
 
               const service = serviceOption.value
@@ -63,7 +51,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
               const subtotal = item.quantity * priceAtOrder
 
               return {
-                serviceId: item.serviceId,
+                serviceId: item.service_id,
                 quantity: item.quantity,
                 priceAtOrder,
                 subtotal,
@@ -78,11 +66,11 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         // Create order (wrap in transaction if needed)
         const order = yield* orderRepo.insert({
           order_number: orderNumber,
-          customer_id: data.customerId as CustomerId,
+          customer_id: data.customer_id as CustomerId,
           status: 'received',
-          payment_status: data.paymentStatus || 'unpaid',
+          payment_status: data.payment_status || 'unpaid',
           total_price: totalPrice,
-          created_by: data.createdBy as UserId,
+          created_by: data.created_by as UserId,
         })
 
         // Create order items
@@ -99,9 +87,9 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         return order
       })
 
-    const findById = (id: string) =>
+    const findById = (id: OrderId) =>
       Effect.gen(function* () {
-        const orderOption = yield* orderRepo.findById(id as OrderId)
+        const orderOption = yield* orderRepo.findById(id)
 
         if (Option.isNone(orderOption)) {
           return yield* Effect.fail(new OrderNotFound({ orderId: id }))
@@ -110,7 +98,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         return orderOption.value
       })
 
-    const updateStatus = (id: string, newStatus: OrderStatus) =>
+    const updateStatus = (id: OrderId, newStatus: OrderStatus) =>
       Effect.gen(function* () {
         const order = yield* findById(id)
 
@@ -118,10 +106,10 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* validateStatusTransition(order.status, newStatus)
 
         // Update status
-        yield* orderRepo.updateStatus(id as OrderId, newStatus)
+        yield* orderRepo.updateStatus(id, newStatus)
       })
 
-    const updatePaymentStatus = (id: string, paymentStatus: PaymentStatus) =>
+    const updatePaymentStatus = (id: OrderId, paymentStatus: PaymentStatus) =>
       Effect.gen(function* () {
         // Check if order exists
         yield* findById(id)
@@ -130,8 +118,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
       })
 
-    const findByCustomerId = (customerId: string) =>
-      orderRepo.findByCustomerId(customerId as CustomerId)
+    const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id))
 
     return {
       create,

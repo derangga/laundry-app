@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Effect, Layer } from 'effect'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
-import { createMockSqlClient } from 'test/repositories/testUtils'
+import { createMockSqlClient } from 'test/testUtils'
 
 describe('CustomerService', () => {
   // Test data factory
