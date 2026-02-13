@@ -52,7 +52,6 @@ const CustomerApiLive = HttpApiBuilder.api(CustomerApi).pipe(
 const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
   Layer.provide(AuthHandlersLive),
   Layer.provide(AuthMiddlewareLive),
-  Layer.provide(AuthAdminMiddlewareLive),
   Layer.provide(LoginUseCase.Default),
   Layer.provide(RefreshTokenUseCase.Default),
   Layer.provide(LogoutUseCase.Default),
@@ -67,6 +66,8 @@ const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
 
 const ServiceApiLive = HttpApiBuilder.api(ServiceApi).pipe(
   Layer.provide(ServiceHandlersLive),
+  Layer.provide(AuthAdminMiddlewareLive),
+  Layer.provide(JwtService.Default),
   Layer.provide(LaundryServiceService.Default),
   Layer.provide(ServiceRepository.Default)
 )

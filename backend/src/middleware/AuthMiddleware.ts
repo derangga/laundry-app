@@ -31,13 +31,16 @@ export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('Aut
   },
 }) {}
 
-export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('AuthMiddleware', {
-  failure: Schema.Union(Unauthorized, Forbidden),
-  provides: CurrentUser,
-  security: {
-    bearer: HttpApiSecurity.bearer,
-  },
-}) {}
+export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthAdminMiddleware>()(
+  'AuthAdminMiddleware',
+  {
+    failure: Schema.Union(Unauthorized, Forbidden),
+    provides: CurrentUser,
+    security: {
+      bearer: HttpApiSecurity.bearer,
+    },
+  }
+) {}
 
 /**
  * AuthMiddleware implementation
