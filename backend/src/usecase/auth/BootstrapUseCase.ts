@@ -7,7 +7,7 @@ import { BootstrapInput } from '@domain/Auth'
 import { User, UserWithoutPassword } from '@domain/User'
 
 export { BootstrapInput }
-export type BootstrapResult = UserWithoutPassword
+type BootstrapResult = UserWithoutPassword
 
 export const bootstrap = (
   input: BootstrapInput

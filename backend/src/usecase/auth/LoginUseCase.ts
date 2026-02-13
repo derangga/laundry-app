@@ -6,10 +6,9 @@ import { PasswordService } from './PasswordService'
 import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
 import { InvalidCredentialsError } from '@domain/UserErrors'
-import { LoginInput, AuthResponse, JwtPayload } from '@domain/Auth'
+import { LoginInput, JwtPayload, LoginResult, AuthResponse, AuthenticatedUser } from '@domain/Auth'
 
 export { LoginInput }
-export type LoginResult = AuthResponse
 
 export const login = (
   input: LoginInput
@@ -57,16 +56,16 @@ export const login = (
       expires_at: expiresAt,
     })
 
-    return {
+    return AuthResponse.make({
       accessToken,
       refreshToken: rawToken,
-      user: {
+      user: AuthenticatedUser.make({
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-      },
-    }
+      }),
+    })
   })
 
 export class LoginUseCase extends Effect.Service<LoginUseCase>()('LoginUseCase', {

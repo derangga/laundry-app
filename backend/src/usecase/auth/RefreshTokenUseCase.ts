@@ -9,7 +9,7 @@ import {
   RefreshTokenNotFoundError,
   UserNotFoundError,
 } from '../../domain/UserErrors'
-import { RefreshTokenInput, AuthResponse, JwtPayload } from '../../domain/Auth'
+import { RefreshTokenInput, AuthResponse, JwtPayload, AuthenticatedUser } from '../../domain/Auth'
 
 export { RefreshTokenInput }
 export type RefreshTokenResult = AuthResponse
@@ -67,16 +67,16 @@ export const refreshTokens = (
       expires_at: expiresAt,
     })
 
-    return {
+    return AuthResponse.make({
       accessToken,
       refreshToken: newRawToken,
-      user: {
+      user: AuthenticatedUser.make({
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-      },
-    }
+      }),
+    })
   })
 
 export class RefreshTokenUseCase extends Effect.Service<RefreshTokenUseCase>()(

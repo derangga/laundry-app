@@ -6,7 +6,7 @@ import { UserAlreadyExistsError } from '@domain/UserErrors'
 import { CreateUserInput, User, UserWithoutPassword } from '@domain/User'
 
 export { CreateUserInput }
-export type RegisterResult = UserWithoutPassword
+type RegisterResult = UserWithoutPassword
 
 export const register = (
   input: CreateUserInput
