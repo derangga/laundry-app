@@ -141,6 +141,22 @@ export class ValidationError extends Schema.TaggedError<ValidationError>()(
   HttpApiSchema.annotations({ status: 400 })
 ) {}
 
+export class RetrieveDataEror extends Schema.TaggedError<RetrieveDataEror>()(
+  'RetrieveDataEror',
+  {
+    message: Schema.String,
+  },
+  HttpApiSchema.annotations({ status: 422 })
+) {}
+
+export class UpdateDataEror extends Schema.TaggedError<UpdateDataEror>()(
+  'UpdateDataEror',
+  {
+    message: Schema.String,
+  },
+  HttpApiSchema.annotations({ status: 422 })
+) {}
+
 // ============================================================================
 // Server Errors (500)
 // ============================================================================
@@ -173,3 +189,16 @@ export type ApiErrorTypes =
   | TokenErrorTypes
   | ValidationError
   | InternalServerError
+
+// ============================================================================
+// Service Errors (404)
+// ============================================================================
+
+export class ServiceNotFound extends Schema.TaggedError<ServiceNotFound>()(
+  'ServiceNotFound',
+  {
+    message: Schema.String,
+    serviceId: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 404 })
+) {}

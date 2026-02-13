@@ -40,3 +40,9 @@ export class ActiveServiceInfo extends Schema.Class<ActiveServiceInfo>('ActiveSe
   price: Schema.Number,
   unit_type: UnitType,
 }) {}
+
+export class SuccessDeleteService extends Schema.Class<SuccessDeleteService>(
+  'SuccessDeleteService'
+)({
+  message: Schema.String,
+}) {}

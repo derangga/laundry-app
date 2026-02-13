@@ -34,7 +34,7 @@ export class LaundryServiceService extends Effect.Service<LaundryServiceService>
           yield* findById(id)
 
           // Update service
-          yield* repo.update(id, data)
+          return yield* repo.update(id, data)
         })
 
       const softDelete = (id: ServiceId) =>

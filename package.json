@@ -3,9 +3,20 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "backend": "bun --cwd ./backend",
-    "backend:dev": "bun --cwd ./backend dev",
-    "backend:test": "bun --cwd ./backend test"
+    "dev": "bun run --parallel dev:backend dev:frontend",
+    "dev:backend": "bun --cwd ./backend dev",
+    "dev:frontend": "bun --cwd ./frontend dev",
+    "build": "bun run --parallel build:backend build:frontend",
+    "build:backend": "bun --cwd ./backend build",
+    "build:frontend": "bun --cwd ./frontend build",
+    "typecheck": "bun run --parallel typecheck:backend typecheck:frontend",
+    "typecheck:backend": "bun --cwd ./backend typecheck",
+    "typecheck:frontend": "bun --cwd ./frontend check",
+    "lint": "bun run --parallel lint:frontend",
+    "lint:frontend": "bun --cwd ./frontend lint",
+    "format": "bun run --parallel format:backend format:frontend",
+    "format:backend": "bun --cwd ./backend format",
+    "format:frontend": "bun --cwd ./frontend format"
   },
   "workspaces": [
     "backend"

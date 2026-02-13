@@ -2,9 +2,11 @@ import { HttpApiBuilder } from '@effect/platform'
 import { Layer } from 'effect'
 import { CustomerApi } from '@api/CustomerApi'
 import { AuthApi } from '@api/AuthApi'
+import { ServiceApi } from '@api/ServiceApi'
 import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
 import { AuthHandlersLive } from '@handlers/AuthHandlers'
-import { AuthMiddlewareLive } from '@middleware/AuthMiddleware'
+import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
+import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { UserRepository } from '@repositories/UserRepository'
@@ -17,6 +19,8 @@ import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
+import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
+import { ServiceRepository } from '@repositories/ServiceRepository'
 
 /**
  * HTTP Router Configuration with HttpApiBuilder
@@ -48,6 +52,7 @@ const CustomerApiLive = HttpApiBuilder.api(CustomerApi).pipe(
 const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
   Layer.provide(AuthHandlersLive),
   Layer.provide(AuthMiddlewareLive),
+  Layer.provide(AuthAdminMiddlewareLive),
   Layer.provide(LoginUseCase.Default),
   Layer.provide(RefreshTokenUseCase.Default),
   Layer.provide(LogoutUseCase.Default),
@@ -60,10 +65,16 @@ const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
   Layer.provide(RefreshTokenRepository.Default)
 )
 
+const ServiceApiLive = HttpApiBuilder.api(ServiceApi).pipe(
+  Layer.provide(ServiceHandlersLive),
+  Layer.provide(LaundryServiceService.Default),
+  Layer.provide(ServiceRepository.Default)
+)
+
 /**
  * Combine all APIs into a single HTTP app
  */
-const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive)
+const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive, ServiceApiLive)
 
 /**
  * Create app with all APIs
