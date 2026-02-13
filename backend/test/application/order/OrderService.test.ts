@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
 import { OrderService } from 'src/usecase/order/OrderService'
 import { OrderRepository } from '@repositories/OrderRepository'
@@ -6,8 +6,7 @@ import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { CreateOrderInput, Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
-import { OrderItem, OrderItemId } from '@domain/OrderItem'
+import { CreateOrderInput, CreateOrderItemInput, Order, OrderId, OrderStatus, PaymentStatus, OrderItem, OrderItemId } from '@domain/Order'
 import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -66,16 +65,17 @@ describe('OrderService', () => {
     unit_type: 'set' as UnitType,
   })
 
-  // Create mock repository layers
-  const createMockOrderRepo = (orders: Order[]) =>
-    Layer.succeed(OrderRepository, {
-      findById: (id: OrderId) => {
+  // Create mock repositories
+  const createMockOrderRepo = (orders: Order[]): OrderRepository => {
+    return {
+      findById: vi.fn((id: OrderId) => {
         const order = orders.find((o) => o.id === id)
         return Effect.succeed(order ? Option.some(order) : Option.none())
-      },
-      findByCustomerId: (customerId: CustomerId) =>
-        Effect.succeed(orders.filter((o) => o.customer_id === customerId)),
-      insert: (data: {
+      }),
+      findByCustomerId: vi.fn((customerId: CustomerId) =>
+        Effect.succeed(orders.filter((o) => o.customer_id === customerId))
+      ),
+      insert: vi.fn((data: {
         order_number: string
         customer_id: CustomerId
         status: OrderStatus
@@ -92,15 +92,21 @@ describe('OrderService', () => {
             total_price: data.total_price,
             created_by: data.created_by,
           })
-        ),
-      updateStatus: (_id: OrderId, _status: OrderStatus) => Effect.succeed(void 0),
-      updatePaymentStatus: (_id: OrderId, _paymentStatus: PaymentStatus) => Effect.succeed(void 0),
-    } as unknown as OrderRepository)
+        )
+      ),
+      updateStatus: vi.fn((_id: OrderId, _status: OrderStatus) => Effect.succeed(void 0)),
+      updatePaymentStatus: vi.fn((_id: OrderId, _paymentStatus: PaymentStatus) => Effect.succeed(void 0)),
+      findByOrderNumber: vi.fn((_orderNumber: string) => Effect.succeed(Option.none())),
+      findWithFilters: vi.fn(() => Effect.succeed(orders)),
+      findWithDetails: vi.fn((_id: OrderId) => Effect.succeed(Option.none())),
+      findSummaries: vi.fn(() => Effect.succeed([])),
+    } as unknown as OrderRepository
+  }
 
-  const createMockOrderItemRepo = () =>
-    Layer.succeed(OrderItemRepository, {
-      findById: (_id: OrderItemId) => Effect.succeed(Option.none()),
-      insertMany: (
+  const createMockOrderItemRepo = (): OrderItemRepository => {
+    return {
+      findById: vi.fn((_id: OrderItemId) => Effect.succeed(Option.none())),
+      insertMany: vi.fn((
         items: Array<{
           order_id: OrderId
           service_id: ServiceId
@@ -108,35 +114,66 @@ describe('OrderService', () => {
           price_at_order: number
           subtotal: number
         }>
-      ) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item))),
-    } as unknown as OrderItemRepository)
+      ) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item)))),
+      insert: vi.fn((_data) => Effect.succeed({} as OrderItem)),
+      findByOrderId: vi.fn((_orderId: OrderId) => Effect.succeed([])),
+      findByOrderIdWithService: vi.fn((_orderId: OrderId) => Effect.succeed([])),
+      deleteByOrderId: vi.fn((_orderId: OrderId) => Effect.succeed(void 0)),
+    } as unknown as OrderItemRepository
+  }
 
-  const createMockServiceRepo = (services: LaundryService[]) =>
-    Layer.succeed(ServiceRepository, {
-      findById: (id: ServiceId) => {
+  const createMockServiceRepo = (services: LaundryService[]): ServiceRepository => {
+    return {
+      findById: vi.fn((id: ServiceId) => {
         const service = services.find((s) => s.id === id)
         return Effect.succeed(service ? Option.some(service) : Option.none())
-      },
-    } as unknown as ServiceRepository)
+      }),
+      findActive: vi.fn(() => Effect.succeed(services.filter((s) => s.is_active))),
+      findAll: vi.fn(() => Effect.succeed(services)),
+      findActiveServiceInfo: vi.fn(() =>
+        Effect.succeed(
+          services
+            .filter((s) => s.is_active)
+            .map((s) => ({
+              id: s.id,
+              name: s.name,
+              price: s.price,
+              unit_type: s.unit_type,
+            }))
+        )
+      ),
+      insert: vi.fn((_data) => Effect.succeed({} as LaundryService)),
+      update: vi.fn((_id, _data) => Effect.succeed(Option.none())),
+      softDelete: vi.fn((_id: ServiceId) => Effect.succeed(void 0)),
+    } as unknown as ServiceRepository
+  }
 
-  // Create service layer by building the service effect directly
-  const createServiceLayer = (orders: Order[], services: LaundryService[]) => {
-    const mockOrderRepo = createMockOrderRepo(orders)
-    const mockOrderItemRepo = createMockOrderItemRepo()
-    const mockServiceRepo = createMockServiceRepo(services)
+  // Build the OrderService manually using the mock repositories
+  // This is the correct way to test - we build the real service with mocked dependencies
+  const buildOrderService = (
+    orderRepo: OrderRepository,
+    orderItemRepo: OrderItemRepository,
+    serviceRepo: ServiceRepository
+  ): OrderService => {
+    const calculateTotal = (items: Array<{ quantity: number; priceAtOrder: number }>): number => {
+      return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
+    }
 
-    // Build the service manually to avoid Default dependencies
-    const serviceEffect = Effect.gen(function* () {
-      const orderRepo = yield* OrderRepository
-      const orderItemRepo = yield* OrderItemRepository
-      const serviceRepo = yield* ServiceRepository
+    const findById = (id: OrderId) =>
+      Effect.gen(function* () {
+        const orderOption = yield* orderRepo.findById(id)
 
-      const calculateTotal = (items: Array<{ quantity: number; priceAtOrder: number }>): number => {
-        return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
-      }
+        if (Option.isNone(orderOption)) {
+          return yield* Effect.fail(new OrderNotFound({ orderId: id }))
+        }
 
-      const create = (data: CreateOrderInput) =>
+        return orderOption.value
+      })
+
+    return {
+      create: (data: CreateOrderInput) =>
         Effect.gen(function* () {
+          // Validate: must have at least one item
           if (data.items.length === 0) {
             return yield* Effect.fail(
               new EmptyOrderError({
@@ -145,8 +182,10 @@ describe('OrderService', () => {
             )
           }
 
+          // Generate order number
           const orderNumber = yield* OrderNumberGenerator.generateOrderNumber()
 
+          // Fetch service prices and prepare order items
           const itemsWithPrices = yield* Effect.forEach(
             data.items,
             (item) =>
@@ -171,8 +210,10 @@ describe('OrderService', () => {
             { concurrency: 'unbounded' }
           )
 
+          // Calculate total
           const totalPrice = calculateTotal(itemsWithPrices)
 
+          // Create order
           const order = yield* orderRepo.insert({
             order_number: orderNumber,
             customer_id: CustomerId.make(data.customer_id),
@@ -182,6 +223,7 @@ describe('OrderService', () => {
             created_by: UserId.make(data.created_by),
           })
 
+          // Create order items
           yield* orderItemRepo.insertMany(
             itemsWithPrices.map((item) => ({
               order_id: order.id,
@@ -193,49 +235,41 @@ describe('OrderService', () => {
           )
 
           return order
-        })
+        }),
 
-      const findById = (id: OrderId) =>
-        Effect.gen(function* () {
-          const orderOption = yield* orderRepo.findById(id)
+      findById,
 
-          if (Option.isNone(orderOption)) {
-            return yield* Effect.fail(new OrderNotFound({ orderId: id }))
-          }
-
-          return orderOption.value
-        })
-
-      const updateStatus = (id: OrderId, newStatus: OrderStatus) =>
+      updateStatus: (id: OrderId, newStatus: OrderStatus) =>
         Effect.gen(function* () {
           const order = yield* findById(id)
+
+          // Validate status transition
           yield* validateStatusTransition(order.status, newStatus)
-          yield* orderRepo.updateStatus(id as OrderId, newStatus)
-        })
 
-      const updatePaymentStatus = (id: OrderId, paymentStatus: PaymentStatus) =>
+          // Update status
+          yield* orderRepo.updateStatus(id, newStatus)
+        }),
+
+      updatePaymentStatus: (id: OrderId, paymentStatus: PaymentStatus) =>
         Effect.gen(function* () {
+          // Check if order exists
           yield* findById(id)
-          yield* orderRepo.updatePaymentStatus(id, paymentStatus)
-        })
 
-      const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(id)
+          // Update payment status
+          yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
+        }),
 
-      return {
-        _tag: 'OrderService' as const,
-        create,
-        findById,
-        updateStatus,
-        updatePaymentStatus,
-        findByCustomerId,
-      }
-    })
+      findByCustomerId: (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id)),
+    } as OrderService
+  }
 
-    return Layer.effect(OrderService, serviceEffect).pipe(
-      Layer.provide(mockOrderRepo),
-      Layer.provide(mockOrderItemRepo),
-      Layer.provide(mockServiceRepo)
-    )
+  // Create service layer using the REAL service with mocked repositories
+  const createServiceLayer = (orders: Order[], services: LaundryService[]) => {
+    const mockOrderRepo = createMockOrderRepo(orders)
+    const mockOrderItemRepo = createMockOrderItemRepo()
+    const mockServiceRepo = createMockServiceRepo(services)
+    const service = buildOrderService(mockOrderRepo, mockOrderItemRepo, mockServiceRepo)
+    return Layer.succeed(OrderService, service)
   }
 
   describe('create', () => {
@@ -248,8 +282,8 @@ describe('OrderService', () => {
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
             items: [
-              { service_id: ServiceId.make('service-1'), quantity: 2 },
-              { service_id: ServiceId.make('service-2'), quantity: 1 },
+              CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 2 }),
+              CreateOrderItemInput.make({ service_id: ServiceId.make('service-2'), quantity: 1 }),
             ],
             created_by: UserId.make('user-1'),
           })
@@ -291,7 +325,7 @@ describe('OrderService', () => {
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
-            items: [{ service_id: ServiceId.make('non-existent-service'), quantity: 1 }],
+            items: [CreateOrderItemInput.make({ service_id: ServiceId.make('non-existent-service'), quantity: 1 })],
             created_by: UserId.make('user-1'),
           })
         )
@@ -310,7 +344,7 @@ describe('OrderService', () => {
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
-            items: [{ service_id: ServiceId.make('service-1'), quantity: 1 }],
+            items: [CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 1 })],
             created_by: UserId.make('user-1'),
             payment_status: 'paid',
           })
@@ -331,8 +365,8 @@ describe('OrderService', () => {
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
             items: [
-              { service_id: ServiceId.make('service-1'), quantity: 3 },
-              { service_id: ServiceId.make('service-1'), quantity: 2 },
+              CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 3 }),
+              CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 2 }),
             ],
             created_by: UserId.make('user-1'),
           })

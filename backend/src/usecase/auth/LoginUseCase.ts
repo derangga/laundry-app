@@ -6,7 +6,7 @@ import { PasswordService } from './PasswordService'
 import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
 import { InvalidCredentialsError } from '@domain/UserErrors'
-import { LoginInput, JwtPayload, LoginResult, AuthResponse } from '@domain/Auth'
+import { LoginInput, JwtPayload, LoginResult, AuthResponse, AuthenticatedUser } from '@domain/Auth'
 
 export { LoginInput }
 
@@ -59,12 +59,12 @@ export const login = (
     return AuthResponse.make({
       accessToken,
       refreshToken: rawToken,
-      user: {
+      user: AuthenticatedUser.make({
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-      },
+      }),
     })
   })
 

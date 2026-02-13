@@ -1,6 +1,7 @@
-import { Effect, Layer, ConfigProvider } from 'effect'
+import { Effect, Layer, ConfigProvider, Schema } from 'effect'
 import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
 import { User, UserId, UserRole } from '@domain/User'
+import { RefreshTokenId } from '@domain/RefreshToken'
 
 export const TestConfigProvider = ConfigProvider.fromMap(
   new Map([
@@ -32,21 +33,21 @@ export const createTestUsers = async (): Promise<{ admin: TestUser; staff: TestU
   )
 
   const adminUser = {
-    id: 'test-admin-id' as UserId,
+    id: UserId.make('test-admin-id'),
     email: 'admin@example.com',
     password_hash: hashedPassword,
     name: 'Admin User',
-    role: 'admin' as UserRole,
+    role: Schema.encodeSync(UserRole)('admin') as UserRole,
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   } as unknown as User
 
   const staffUser = {
-    id: 'test-staff-id' as UserId,
+    id: UserId.make('test-staff-id'),
     email: 'staff@example.com',
     password_hash: hashedPassword,
     name: 'Staff User',
-    role: 'staff' as UserRole,
+    role: Schema.encodeSync(UserRole)('staff') as UserRole,
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   } as unknown as User
@@ -58,8 +59,8 @@ export const createTestUsers = async (): Promise<{ admin: TestUser; staff: TestU
 }
 
 export const expiredRefreshToken = {
-  id: 'expired-token-id' as const,
-  user_id: 'test-admin-id' as UserId,
+  id: RefreshTokenId.make('expired-token-id'),
+  user_id: UserId.make('test-admin-id'),
   token_hash: 'expired-token-hash',
   expires_at: new Date('2020-01-01'),
   created_at: new Date('2020-01-01'),
@@ -71,7 +72,7 @@ export const createRefreshTokenRecord = (
   tokenHash: string,
   expiresAt: Date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 ) => ({
-  id: `token-${Date.now()}-${Math.random().toString(36).slice(2)}` as const,
+  id: RefreshTokenId.make(`token-${Date.now()}-${Math.random().toString(36).slice(2)}`),
   user_id: userId,
   token_hash: tokenHash,
   expires_at: expiresAt,

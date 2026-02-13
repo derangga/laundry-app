@@ -36,7 +36,7 @@ const createMockRefreshTokenRepo = (tokens: RefreshToken[]) => {
     findById: (_id: RefreshTokenId) => Effect.succeed(Option.none()),
     insert: (_data: typeof RefreshToken.insert.Type) => {
       const newToken = {
-        id: `token-${Date.now()}-${Math.random().toString(36).slice(2)}` as RefreshTokenId,
+        id: RefreshTokenId.make(`token-${Date.now()}-${Math.random().toString(36).slice(2)}`),
         user_id: _data.user_id,
         token_hash: _data.token_hash,
         expires_at: _data.expires_at,
