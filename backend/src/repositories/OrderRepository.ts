@@ -1,4 +1,4 @@
-import { Effect, Option } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
 import {
   Order,
@@ -10,6 +10,12 @@ import {
 } from '../domain/Order'
 import { CustomerId } from '../domain/Customer'
 import { UserId } from '../domain/User'
+
+// Helper to decode SQL results through the schema
+const decodeOrders = Schema.decodeUnknown(Schema.Array(Order))
+const decodeOrder = Schema.decodeUnknown(Order)
+const decodeOrdersWithDetails = Schema.decodeUnknown(Schema.Array(OrderWithDetails))
+const decodeOrderSummaries = Schema.decodeUnknown(Schema.Array(OrderSummary))
 
 export interface OrderInsertData {
   order_number: string
@@ -44,21 +50,32 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     const findByOrderNumber = (
       orderNumber: string
     ): Effect.Effect<Option.Option<Order>, SqlError.SqlError> =>
-      sql<Order>`
+      sql`
         SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
         FROM orders
         WHERE order_number = ${orderNumber}
-      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+      `.pipe(
+        Effect.flatMap((rows) => {
+          const first = rows[0]
+          return first !== undefined
+            ? decodeOrder(first).pipe(Effect.map(Option.some))
+            : Effect.succeed(Option.none())
+        }),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
 
     const findByCustomerId = (
       customerId: CustomerId
     ): Effect.Effect<readonly Order[], SqlError.SqlError> =>
-      sql<Order>`
+      sql`
         SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
         FROM orders
         WHERE customer_id = ${customerId}
         ORDER BY created_at DESC
-      `.pipe(Effect.map((rows) => rows))
+      `.pipe(
+        Effect.flatMap((rows) => decodeOrders(rows)),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
 
     const findWithFilters = (
       options: OrderFilterOptions
@@ -100,7 +117,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         params.push(options.offset)
       }
 
-      return sql.unsafe<Order>(query, params).pipe(Effect.map((rows) => rows))
+      return sql.unsafe(query, params).pipe(
+        Effect.flatMap((rows) => decodeOrders(rows)),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
     }
 
     const findWithDetails = (
@@ -160,7 +180,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         params.push(options.offset)
       }
 
-      return sql.unsafe<OrderWithDetails>(query, params).pipe(Effect.map((rows) => rows))
+      return sql.unsafe(query, params).pipe(
+        Effect.flatMap((rows) => decodeOrdersWithDetails(rows)),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
     }
 
     const findSummaries = (
@@ -189,7 +212,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY created_at DESC'
 
-      return sql.unsafe<OrderSummary>(query, params).pipe(Effect.map((rows) => rows))
+      return sql.unsafe(query, params).pipe(
+        Effect.flatMap((rows) => decodeOrderSummaries(rows)),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
     }
 
     const updateStatus = (
@@ -223,7 +249,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       `.pipe(Effect.map(() => void 0))
 
     const insert = (data: OrderInsertData): Effect.Effect<Order, SqlError.SqlError> =>
-      sql<Order>`
+      sql`
         INSERT INTO orders (order_number, customer_id, status, payment_status, total_price, created_by)
         VALUES (${data.order_number}, ${data.customer_id}, ${data.status}, ${data.payment_status}, ${data.total_price}, ${data.created_by})
         RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
@@ -231,13 +257,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         Effect.flatMap((rows) => {
           const first = rows[0]
           return first !== undefined
-            ? Effect.succeed(first)
-            : Effect.fail(
-                new SqlError.SqlError({
-                  cause: new Error('Insert failed - no row returned'),
-                })
-              )
-        })
+            ? decodeOrder(first)
+            : Effect.fail(new Error('Insert failed - no row returned'))
+        }),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
       )
 
     return {
