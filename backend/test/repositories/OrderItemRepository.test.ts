@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { DateTime, Effect, Option } from 'effect'
+import { Effect, Option } from 'effect'
 import { OrderItemRepository, OrderItemInsertData } from '@repositories/OrderItemRepository'
-import { ServiceId, UnitType } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 import { createMockSqlClient, createSqlError } from '../testUtils'
-import { OrderId, OrderItem, OrderItemId, OrderItemWithService } from '@domain/Order'
+import { OrderId, OrderItem, OrderItemId } from '@domain/Order'
 
 const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
   ({
@@ -16,6 +16,34 @@ const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
     created_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as OrderItem
+
+// Raw database row type for OrderItemWithService (before schema decoding)
+interface OrderItemWithServiceRow {
+  id: string
+  order_id: string
+  service_id: string
+  service_name: string
+  unit_type: string
+  quantity: number
+  price_at_order: number
+  subtotal: number
+  created_at: string
+}
+
+const createMockOrderItemWithService = (
+  overrides: Partial<OrderItemWithServiceRow> = {}
+): OrderItemWithServiceRow => ({
+  id: 'item-123',
+  order_id: 'order-123',
+  service_id: 'service-123',
+  service_name: 'Regular Wash',
+  unit_type: 'kg',
+  quantity: 5,
+  price_at_order: 10000,
+  subtotal: 50000,
+  created_at: '2024-01-01T00:00:00.000Z',
+  ...overrides,
+})
 
 describe('OrderItemRepository', () => {
   describe('findById', () => {
@@ -298,30 +326,24 @@ describe('OrderItemRepository', () => {
   describe('findByOrderIdWithService', () => {
     it('should return order items with service details', async () => {
       const items = [
-        OrderItemWithService.make({
-          id: '1' as OrderItemId,
-          order_id: 'order-123' as OrderId,
-          service_id: 'service-1' as ServiceId,
+        createMockOrderItemWithService({
+          id: '1',
+          order_id: 'order-123',
+          service_id: 'service-1',
           service_name: 'Regular Wash',
-          unit_type: 'kg' as UnitType,
-          quantity: 5,
-          price_at_order: 10000,
-          subtotal: 50000,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
+          unit_type: 'kg',
         }),
-        OrderItemWithService.make({
-          id: '2' as OrderItemId,
-          order_id: 'order-123' as OrderId,
-          service_id: 'service-2' as ServiceId,
+        createMockOrderItemWithService({
+          id: '2',
+          order_id: 'order-123',
+          service_id: 'service-2',
           service_name: 'Express Wash',
-          unit_type: 'set' as UnitType,
+          unit_type: 'set',
           quantity: 2,
           price_at_order: 25000,
-          subtotal: 50000,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
       ]
-      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({ rows: items })
+      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({ rows: items })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderItemRepository
@@ -340,7 +362,7 @@ describe('OrderItemRepository', () => {
     })
 
     it('should return empty array when no items for order', async () => {
-      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({ rows: [] })
+      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({ rows: [] })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderItemRepository
@@ -356,7 +378,7 @@ describe('OrderItemRepository', () => {
 
     it('should handle SQL errors', async () => {
       const sqlError = createSqlError('Join query failed')
-      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({
+      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({
         shouldFail: true,
         error: sqlError,
       })
