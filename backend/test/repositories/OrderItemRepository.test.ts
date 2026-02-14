@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect'
 import { OrderItemRepository, OrderItemInsertData } from '@repositories/OrderItemRepository'
 import { ServiceId } from '@domain/LaundryService'
 import { createMockSqlClient, createSqlError } from '../testUtils'
-import { OrderId, OrderItem, OrderItemId } from '@domain/Order'
+import { OrderId, OrderItem, OrderItemId, OrderItemWithService } from '@domain/Order'
 
 const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
   ({
@@ -17,33 +17,21 @@ const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
     ...overrides,
   }) as unknown as OrderItem
 
-// Raw database row type for OrderItemWithService (before schema decoding)
-interface OrderItemWithServiceRow {
-  id: string
-  order_id: string
-  service_id: string
-  service_name: string
-  unit_type: string
-  quantity: number
-  price_at_order: number
-  subtotal: number
-  created_at: string
-}
-
 const createMockOrderItemWithService = (
-  overrides: Partial<OrderItemWithServiceRow> = {}
-): OrderItemWithServiceRow => ({
-  id: 'item-123',
-  order_id: 'order-123',
-  service_id: 'service-123',
-  service_name: 'Regular Wash',
-  unit_type: 'kg',
-  quantity: 5,
-  price_at_order: 10000,
-  subtotal: 50000,
-  created_at: '2024-01-01T00:00:00.000Z',
-  ...overrides,
-})
+  overrides: Partial<OrderItemWithService> = {}
+): OrderItemWithService =>
+  ({
+    id: 'item-123',
+    order_id: 'order-123',
+    service_id: 'service-123',
+    service_name: 'Regular Wash',
+    unit_type: 'kg',
+    quantity: 5,
+    price_at_order: 10000,
+    subtotal: 50000,
+    created_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  }) as unknown as OrderItemWithService
 
 describe('OrderItemRepository', () => {
   describe('findById', () => {
@@ -327,23 +315,23 @@ describe('OrderItemRepository', () => {
     it('should return order items with service details', async () => {
       const items = [
         createMockOrderItemWithService({
-          id: '1',
-          order_id: 'order-123',
-          service_id: 'service-1',
+          id: OrderItemId.make('1'),
+          order_id: OrderId.make('order-123'),
+          service_id: ServiceId.make('service-1'),
           service_name: 'Regular Wash',
           unit_type: 'kg',
         }),
         createMockOrderItemWithService({
-          id: '2',
-          order_id: 'order-123',
-          service_id: 'service-2',
+          id: OrderItemId.make('2'),
+          order_id: OrderId.make('order-123'),
+          service_id: ServiceId.make('service-2'),
           service_name: 'Express Wash',
           unit_type: 'set',
           quantity: 2,
           price_at_order: 25000,
         }),
       ]
-      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({ rows: items })
+      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({ rows: items })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderItemRepository
@@ -362,7 +350,7 @@ describe('OrderItemRepository', () => {
     })
 
     it('should return empty array when no items for order', async () => {
-      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({ rows: [] })
+      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({ rows: [] })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderItemRepository
@@ -378,7 +366,7 @@ describe('OrderItemRepository', () => {
 
     it('should handle SQL errors', async () => {
       const sqlError = createSqlError('Join query failed')
-      const mockSqlLayer = createMockSqlClient<OrderItemWithServiceRow>({
+      const mockSqlLayer = createMockSqlClient<OrderItemWithService>({
         shouldFail: true,
         error: sqlError,
       })
