@@ -1,6 +1,6 @@
 import { HttpApiMiddleware, HttpApiSecurity } from '@effect/platform'
-import { Effect, Layer, Redacted } from 'effect'
-import { Unauthorized } from '@domain/http/HttpErrors'
+import { Effect, Layer, Redacted, Schema } from 'effect'
+import { Forbidden, Unauthorized } from '@domain/http/HttpErrors'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
 
@@ -31,6 +31,17 @@ export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('Aut
   },
 }) {}
 
+export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthAdminMiddleware>()(
+  'AuthAdminMiddleware',
+  {
+    failure: Schema.Union(Unauthorized, Forbidden),
+    provides: CurrentUser,
+    security: {
+      bearer: HttpApiSecurity.bearer,
+    },
+  }
+) {}
+
 /**
  * AuthMiddleware implementation
  *
@@ -55,6 +66,34 @@ export const AuthMiddlewareLive = Layer.effect(
             .pipe(Effect.mapError((error) => new Unauthorized({ message: error.message })))
 
           // Return CurrentUserData matching domain interface
+          return {
+            id: payload.sub,
+            email: payload.email,
+            role: payload.role,
+          } satisfies CurrentUserData
+        }),
+    }
+  })
+)
+
+export const AuthAdminMiddlewareLive = Layer.effect(
+  AuthAdminMiddleware,
+  Effect.gen(function* () {
+    const jwtService = yield* JwtService
+
+    return {
+      bearer: (token) =>
+        Effect.gen(function* () {
+          const tokenValue = Redacted.value(token)
+
+          const payload = yield* jwtService
+            .verifyAccessToken(tokenValue)
+            .pipe(Effect.mapError((error) => new Unauthorized({ message: error.message })))
+
+          if (payload.role !== 'admin') {
+            yield* new Forbidden({ message: "You don't have any access to this endpoint" })
+          }
+
           return {
             id: payload.sub,
             email: payload.email,

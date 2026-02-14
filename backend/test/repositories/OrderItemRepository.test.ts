@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { DateTime, Effect, Option } from 'effect'
+import { Effect, Option } from 'effect'
 import { OrderItemRepository, OrderItemInsertData } from '@repositories/OrderItemRepository'
-import { ServiceId, UnitType } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 import { createMockSqlClient, createSqlError } from '../testUtils'
 import { OrderId, OrderItem, OrderItemId, OrderItemWithService } from '@domain/Order'
 
@@ -16,6 +16,22 @@ const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
     created_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as OrderItem
+
+const createMockOrderItemWithService = (
+  overrides: Partial<OrderItemWithService> = {}
+): OrderItemWithService =>
+  ({
+    id: 'item-123',
+    order_id: 'order-123',
+    service_id: 'service-123',
+    service_name: 'Regular Wash',
+    unit_type: 'kg',
+    quantity: 5,
+    price_at_order: 10000,
+    subtotal: 50000,
+    created_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  }) as unknown as OrderItemWithService
 
 describe('OrderItemRepository', () => {
   describe('findById', () => {
@@ -298,27 +314,21 @@ describe('OrderItemRepository', () => {
   describe('findByOrderIdWithService', () => {
     it('should return order items with service details', async () => {
       const items = [
-        OrderItemWithService.make({
-          id: '1' as OrderItemId,
-          order_id: 'order-123' as OrderId,
-          service_id: 'service-1' as ServiceId,
+        createMockOrderItemWithService({
+          id: OrderItemId.make('1'),
+          order_id: OrderId.make('order-123'),
+          service_id: ServiceId.make('service-1'),
           service_name: 'Regular Wash',
-          unit_type: 'kg' as UnitType,
-          quantity: 5,
-          price_at_order: 10000,
-          subtotal: 50000,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
+          unit_type: 'kg',
         }),
-        OrderItemWithService.make({
-          id: '2' as OrderItemId,
-          order_id: 'order-123' as OrderId,
-          service_id: 'service-2' as ServiceId,
+        createMockOrderItemWithService({
+          id: OrderItemId.make('2'),
+          order_id: OrderId.make('order-123'),
+          service_id: ServiceId.make('service-2'),
           service_name: 'Express Wash',
-          unit_type: 'set' as UnitType,
+          unit_type: 'set',
           quantity: 2,
           price_at_order: 25000,
-          subtotal: 50000,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
       ]
       const mockSqlLayer = createMockSqlClient<OrderItemWithService>({ rows: items })

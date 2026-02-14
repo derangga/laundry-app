@@ -3,6 +3,7 @@ import { Model } from '@effect/sql'
 import { CustomerId } from './Customer.js'
 import { UserId } from './User.js'
 import { ServiceId, UnitType } from './LaundryService.js'
+import { DecimalNumber } from './common/DecimalNumber.js'
 
 export const OrderId = Schema.String.pipe(Schema.brand('OrderId'))
 export type OrderId = typeof OrderId.Type
@@ -22,7 +23,7 @@ export class Order extends Model.Class<Order>('Order')({
   customer_id: CustomerId,
   status: OrderStatus,
   payment_status: PaymentStatus,
-  total_price: Schema.Number,
+  total_price: DecimalNumber,
   created_by: UserId,
   created_at: Model.DateTimeInsertFromDate,
   updated_at: Model.DateTimeUpdateFromDate,
@@ -32,9 +33,9 @@ export class OrderItem extends Model.Class<OrderItem>('OrderItem')({
   id: Model.Generated(OrderItemId),
   order_id: OrderId,
   service_id: ServiceId,
-  quantity: Schema.Number,
-  price_at_order: Schema.Number,
-  subtotal: Schema.Number,
+  quantity: DecimalNumber,
+  price_at_order: DecimalNumber,
+  subtotal: DecimalNumber,
   created_at: Model.DateTimeInsertFromDate,
 }) {}
 
@@ -72,7 +73,7 @@ export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithD
   customer_phone: Schema.String,
   status: OrderStatus,
   payment_status: PaymentStatus,
-  total_price: Schema.Number,
+  total_price: DecimalNumber,
   created_by: UserId,
   created_by_name: Schema.String,
   created_at: Schema.DateTimeUtc,
@@ -82,7 +83,7 @@ export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithD
 export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
   id: OrderId,
   order_number: Schema.String,
-  total_price: Schema.Number,
+  total_price: DecimalNumber,
   payment_status: PaymentStatus,
   created_at: Schema.DateTimeUtc,
 }) {}
@@ -95,8 +96,8 @@ export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
   service_id: ServiceId,
   service_name: Schema.String,
   unit_type: UnitType,
-  quantity: Schema.Number,
-  price_at_order: Schema.Number,
-  subtotal: Schema.Number,
+  quantity: DecimalNumber,
+  price_at_order: DecimalNumber,
+  subtotal: DecimalNumber,
   created_at: Schema.DateTimeUtc,
 }) {}
