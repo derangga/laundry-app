@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DateTime, Effect, Option } from 'effect'
+import { Effect, Option } from 'effect'
 import { OrderRepository, OrderInsertData } from '@repositories/OrderRepository'
 import {
   Order,
@@ -26,6 +26,33 @@ const createMockOrder = (overrides: Partial<Order> = {}): Order =>
     updated_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as Order
+
+const createMockOrderWithDetails = (overrides: Partial<OrderWithDetails> = {}): OrderWithDetails =>
+  ({
+    id: '1' as OrderId,
+    order_number: 'ORD-001',
+    customer_id: 'customer-123' as CustomerId,
+    customer_name: 'John Doe',
+    customer_phone: '+628123456789',
+    status: 'received' as OrderStatus,
+    payment_status: 'unpaid' as PaymentStatus,
+    total_price: 50000,
+    created_by: 'user-123' as UserId,
+    created_by_name: 'Admin User',
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  }) as unknown as OrderWithDetails
+
+const createMockOrderSummary = (overrides: Partial<OrderSummary> = {}): OrderSummary =>
+  ({
+    id: '1' as OrderId,
+    order_number: 'ORD-001',
+    total_price: 50000,
+    payment_status: 'paid' as PaymentStatus,
+    created_at: '2024-01-01T00:00:00.000Z',
+    ...overrides,
+  }) as unknown as OrderSummary
 
 describe('OrderRepository', () => {
   describe('findById', () => {
@@ -479,21 +506,11 @@ describe('OrderRepository', () => {
   describe('findWithDetails', () => {
     it('should return orders with customer and user details', async () => {
       const orders = [
-        OrderWithDetails.make({
+        createMockOrderWithDetails({
           id: '1' as OrderId,
-          order_number: 'ORD-001',
-          customer_id: 'customer-123' as CustomerId,
           customer_name: 'John Doe',
-          customer_phone: '+628123456789',
-          status: 'received' as OrderStatus,
-          payment_status: 'unpaid' as PaymentStatus,
-          total_price: 50000,
-          created_by: 'user-123' as UserId,
-          created_by_name: 'Admin User',
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
-          updated_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
-        OrderWithDetails.make({
+        createMockOrderWithDetails({
           id: '2' as OrderId,
           order_number: 'ORD-002',
           customer_id: 'customer-456' as CustomerId,
@@ -502,10 +519,6 @@ describe('OrderRepository', () => {
           status: 'in_progress' as OrderStatus,
           payment_status: 'paid' as PaymentStatus,
           total_price: 75000,
-          created_by: 'user-123' as UserId,
-          created_by_name: 'Admin User',
-          created_at: DateTime.unsafeMake(new Date('2024-01-02T00:00:00.000Z')),
-          updated_at: DateTime.unsafeMake(new Date('2024-01-02T00:00:00.000Z')),
         }),
       ]
       const mockSqlLayer = createMockSqlClient<OrderWithDetails>({ rows: orders })
@@ -528,19 +541,9 @@ describe('OrderRepository', () => {
 
     it('should apply filters', async () => {
       const orders = [
-        OrderWithDetails.make({
+        createMockOrderWithDetails({
           id: '1' as OrderId,
-          order_number: 'ORD-001',
-          customer_id: 'customer-123' as CustomerId,
-          customer_name: 'John Doe',
-          customer_phone: '+628123456789',
           status: 'received' as OrderStatus,
-          payment_status: 'unpaid' as PaymentStatus,
-          total_price: 50000,
-          created_by: 'user-123' as UserId,
-          created_by_name: 'Admin User',
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
-          updated_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
       ]
       const mockSqlLayer = createMockSqlClient<OrderWithDetails>({ rows: orders })
@@ -580,19 +583,17 @@ describe('OrderRepository', () => {
   describe('findSummaries', () => {
     it('should return order summaries for analytics', async () => {
       const summaries = [
-        OrderSummary.make({
+        createMockOrderSummary({
           id: '1' as OrderId,
           order_number: 'ORD-001',
           total_price: 50000,
           payment_status: 'paid' as PaymentStatus,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
-        OrderSummary.make({
+        createMockOrderSummary({
           id: '2' as OrderId,
           order_number: 'ORD-002',
           total_price: 75000,
           payment_status: 'paid' as PaymentStatus,
-          created_at: DateTime.unsafeMake(new Date('2024-01-02T00:00:00.000Z')),
         }),
       ]
       const mockSqlLayer = createMockSqlClient<OrderSummary>({ rows: summaries })
@@ -618,19 +619,14 @@ describe('OrderRepository', () => {
 
     it('should return all summaries when no filters', async () => {
       const summaries = [
-        OrderSummary.make({
+        createMockOrderSummary({
           id: '1' as OrderId,
-          order_number: 'ORD-001',
-          total_price: 50000,
-          payment_status: 'paid' as PaymentStatus,
-          created_at: DateTime.unsafeMake(new Date('2024-01-01T00:00:00.000Z')),
         }),
-        OrderSummary.make({
+        createMockOrderSummary({
           id: '2' as OrderId,
           order_number: 'ORD-002',
           total_price: 75000,
           payment_status: 'unpaid' as PaymentStatus,
-          created_at: DateTime.unsafeMake(new Date('2024-01-02T00:00:00.000Z')),
         }),
       ]
       const mockSqlLayer = createMockSqlClient<OrderSummary>({ rows: summaries })
