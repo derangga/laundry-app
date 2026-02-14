@@ -19,6 +19,7 @@
     "format:frontend": "bun --cwd ./frontend format"
   },
   "workspaces": [
-    "backend"
+    "backend",
+    "frontend"
   ]
 }
