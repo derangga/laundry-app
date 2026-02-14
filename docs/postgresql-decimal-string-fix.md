@@ -1,4 +1,10 @@
-# PostgreSQL DECIMAL Returns Strings in Effect SQL
+## Table of Contents
+
+| Date | Title |
+|------|-------|
+| 2026-02-14 | PostgreSQL DECIMAL Returns Strings in Effect SQL |
+
+---
 
 ## Problem
 
