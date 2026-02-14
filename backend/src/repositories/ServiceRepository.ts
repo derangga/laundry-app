@@ -111,17 +111,15 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
 
       const query = `UPDATE services SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, price, unit_type, is_active, created_at, updated_at`
 
-      return sql
-        .unsafe(query, params)
-        .pipe(
-          Effect.flatMap((rows) => {
-            const first = rows[0]
-            return first !== undefined
-              ? decodeService(first).pipe(Effect.map(Option.some))
-              : Effect.succeed(Option.none())
-          }),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-        )
+      return sql.unsafe(query, params).pipe(
+        Effect.flatMap((rows) => {
+          const first = rows[0]
+          return first !== undefined
+            ? decodeService(first).pipe(Effect.map(Option.some))
+            : Effect.succeed(Option.none())
+        }),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
     }
 
     const softDelete = (id: ServiceId): Effect.Effect<void, SqlError.SqlError> =>
