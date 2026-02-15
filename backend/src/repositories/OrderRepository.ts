@@ -27,6 +27,7 @@ export interface OrderInsertData {
 }
 
 export interface OrderFilterOptions {
+  customer_id?: CustomerId
   status?: OrderStatus
   payment_status?: PaymentStatus
   start_date?: Date
@@ -84,6 +85,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       const params: Array<string | number | Date> = []
       let paramIndex = 1
 
+      if (options.customer_id !== undefined) {
+        conditions.push(`customer_id = $${paramIndex++}`)
+        params.push(options.customer_id)
+      }
       if (options.status !== undefined) {
         conditions.push(`status = $${paramIndex++}`)
         params.push(options.status)
@@ -130,6 +135,10 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       const params: Array<string | number | Date> = []
       let paramIndex = 1
 
+      if (options.customer_id !== undefined) {
+        conditions.push(`o.customer_id = $${paramIndex++}`)
+        params.push(options.customer_id)
+      }
       if (options.status !== undefined) {
         conditions.push(`o.status = $${paramIndex++}`)
         params.push(options.status)

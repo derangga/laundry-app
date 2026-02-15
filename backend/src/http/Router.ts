@@ -3,14 +3,19 @@ import { Layer } from 'effect'
 import { CustomerApi } from '@api/CustomerApi'
 import { AuthApi } from '@api/AuthApi'
 import { ServiceApi } from '@api/ServiceApi'
+import { OrderApi } from '@api/OrderApi'
 import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
 import { AuthHandlersLive } from '@handlers/AuthHandlers'
 import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
+import { OrderHandlersLive } from '@handlers/OrderHandlers'
 import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
+import { OrderRepository } from '@repositories/OrderRepository'
+import { OrderItemRepository } from '@repositories/OrderItemRepository'
+import { ServiceRepository } from '@repositories/ServiceRepository'
 import { LoginUseCase } from 'src/usecase/auth/LoginUseCase'
 import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
@@ -20,7 +25,7 @@ import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
-import { ServiceRepository } from '@repositories/ServiceRepository'
+import { OrderService } from 'src/usecase/order/OrderService'
 
 /**
  * HTTP Router Configuration with HttpApiBuilder
@@ -73,9 +78,24 @@ const ServiceApiLive = HttpApiBuilder.api(ServiceApi).pipe(
 )
 
 /**
+ * Compose Order API with handlers, middleware, and dependencies
+ *
+ * All endpoints require authentication via AuthMiddleware.
+ */
+const OrderApiLive = HttpApiBuilder.api(OrderApi).pipe(
+  Layer.provide(OrderHandlersLive),
+  Layer.provide(AuthMiddlewareLive),
+  Layer.provide(JwtService.Default),
+  Layer.provide(OrderService.Default),
+  Layer.provide(OrderRepository.Default),
+  Layer.provide(OrderItemRepository.Default),
+  Layer.provide(ServiceRepository.Default)
+)
+
+/**
  * Combine all APIs into a single HTTP app
  */
-const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive, ServiceApiLive)
+const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive, ServiceApiLive, OrderApiLive)
 
 /**
  * Create app with all APIs

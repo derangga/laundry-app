@@ -202,3 +202,34 @@ export class ServiceNotFound extends Schema.TaggedError<ServiceNotFound>()(
   },
   HttpApiSchema.annotations({ status: 404 })
 ) {}
+
+// ============================================================================
+// Order Errors (404, 422)
+// ============================================================================
+
+export class OrderNotFound extends Schema.TaggedError<OrderNotFound>()(
+  'OrderNotFound',
+  {
+    message: Schema.String,
+    orderId: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 404 })
+) {}
+
+export class InvalidOrderStatus extends Schema.TaggedError<InvalidOrderStatus>()(
+  'InvalidOrderStatus',
+  {
+    message: Schema.String,
+    currentStatus: Schema.optional(Schema.String),
+    attemptedStatus: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 422 })
+) {}
+
+export class EmptyOrderError extends Schema.TaggedError<EmptyOrderError>()(
+  'EmptyOrderError',
+  {
+    message: Schema.String,
+  },
+  HttpApiSchema.annotations({ status: 422 })
+) {}

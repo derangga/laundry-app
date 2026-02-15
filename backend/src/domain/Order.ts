@@ -101,3 +101,39 @@ export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
   subtotal: DecimalNumber,
   created_at: Schema.DateTimeUtc,
 }) {}
+
+// HTTP Response Models
+export class OrderResponse extends Schema.Class<OrderResponse>('OrderResponse')({
+  id: Schema.String,
+  order_number: Schema.String,
+  customer_id: Schema.String,
+  status: OrderStatus,
+  payment_status: PaymentStatus,
+  total_price: Schema.Number,
+  created_by: Schema.String,
+  created_at: Schema.DateTimeUtc,
+  updated_at: Schema.DateTimeUtc,
+}) {}
+
+export class OrderItemResponse extends Schema.Class<OrderItemResponse>('OrderItemResponse')({
+  id: Schema.String,
+  service_id: Schema.String,
+  quantity: Schema.Number,
+  price_at_order: Schema.Number,
+  subtotal: Schema.Number,
+}) {}
+
+export class OrderWithItemsResponse extends Schema.Class<OrderWithItemsResponse>(
+  'OrderWithItemsResponse'
+)({
+  id: Schema.String,
+  order_number: Schema.String,
+  customer_id: Schema.String,
+  status: OrderStatus,
+  payment_status: PaymentStatus,
+  total_price: Schema.Number,
+  created_by: Schema.String,
+  created_at: Schema.DateTimeUtc,
+  updated_at: Schema.DateTimeUtc,
+  items: Schema.Array(OrderItemResponse),
+}) {}
