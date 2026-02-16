@@ -6,7 +6,7 @@ import { generateOrderNumber } from '@domain/OrderNumberGenerator'
 import { validateStatusTransition } from '@domain/OrderStatusValidator'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { OrderStatus, PaymentStatus, OrderId, CreateOrderInput } from '@domain/Order'
+import { OrderStatus, PaymentStatus, OrderId, CreateOrderInput, Order } from '@domain/Order'
 import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -64,14 +64,16 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         const totalPrice = calculateTotal(itemsWithPrices)
 
         // Create order (wrap in transaction if needed)
-        const order = yield* orderRepo.insert({
-          order_number: orderNumber,
-          customer_id: data.customer_id as CustomerId,
-          status: 'received',
-          payment_status: data.payment_status || 'unpaid',
-          total_price: totalPrice,
-          created_by: data.created_by as UserId,
-        })
+        const order = yield* orderRepo.insert(
+          Order.insert.make({
+            order_number: orderNumber,
+            customer_id: data.customer_id as CustomerId,
+            status: 'received',
+            payment_status: data.payment_status || 'unpaid',
+            total_price: totalPrice,
+            created_by: data.created_by as UserId,
+          })
+        )
 
         // Create order items
         yield* orderItemRepo.insertMany(
