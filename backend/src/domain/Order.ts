@@ -137,3 +137,13 @@ export class OrderWithItemsResponse extends Schema.Class<OrderWithItemsResponse>
   updated_at: Schema.DateTimeUtc,
   items: Schema.Array(OrderItemResponse),
 }) {}
+
+export class OrderFilterOptions extends Schema.Class<OrderFilterOptions>('OrderFilterOptions')({
+  customer_id: Schema.Option(CustomerId),
+  status: Schema.Option(OrderStatus),
+  payment_status: Schema.Option(PaymentStatus),
+  start_date: Schema.Option(Schema.Date),
+  end_date: Schema.Option(Schema.Date),
+  limit: Schema.Option(Schema.Number),
+  offset: Schema.Option(Schema.Number),
+}) {}

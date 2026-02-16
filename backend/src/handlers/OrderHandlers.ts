@@ -11,6 +11,7 @@ import {
   OrderResponse,
   OrderWithItemsResponse,
   OrderItemResponse,
+  OrderFilterOptions,
 } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
 import { CurrentUser } from '@domain/CurrentUser'
@@ -102,23 +103,19 @@ export const OrderHandlersLive = HttpApiBuilder.group(OrderApi, 'Orders', (handl
         const statusParam = url.searchParams.get('status')
         const paymentStatusParam = url.searchParams.get('payment_status')
 
-        // Build filter options
-        const filters: {
-          customer_id?: CustomerId
-          status?: OrderStatus
-          payment_status?: PaymentStatus
-          limit?: number
-          offset?: number
-        } = {}
+        // Build filter options with proper Option types
+        let customerIdOption: Option.Option<CustomerId> = Option.none()
+        let statusOption: Option.Option<OrderStatus> = Option.none()
+        let paymentStatusOption: Option.Option<PaymentStatus> = Option.none()
 
         if (customerIdParam) {
-          filters.customer_id = CustomerId.make(customerIdParam)
+          customerIdOption = Option.some(CustomerId.make(customerIdParam))
         }
 
         if (statusParam) {
           const statusDecode = Schema.decodeUnknownOption(OrderStatus)(statusParam)
           if (statusDecode._tag === 'Some') {
-            filters.status = statusDecode.value
+            statusOption = Option.some(statusDecode.value)
           } else {
             return yield* Effect.fail(
               new ValidationError({
@@ -132,7 +129,7 @@ export const OrderHandlersLive = HttpApiBuilder.group(OrderApi, 'Orders', (handl
         if (paymentStatusParam) {
           const paymentDecode = Schema.decodeUnknownOption(PaymentStatus)(paymentStatusParam)
           if (paymentDecode._tag === 'Some') {
-            filters.payment_status = paymentDecode.value
+            paymentStatusOption = Option.some(paymentDecode.value)
           } else {
             return yield* Effect.fail(
               new ValidationError({
@@ -144,6 +141,16 @@ export const OrderHandlersLive = HttpApiBuilder.group(OrderApi, 'Orders', (handl
         }
 
         // Get orders with details
+        const filters = OrderFilterOptions.make({
+          customer_id: customerIdOption,
+          status: statusOption,
+          payment_status: paymentStatusOption,
+          start_date: Option.none(),
+          end_date: Option.none(),
+          limit: Option.none(),
+          offset: Option.none(),
+        })
+
         const orders = yield* orderRepo.findWithDetails(filters).pipe(
           Effect.mapError((error) => {
             return new ValidationError({
@@ -162,16 +169,12 @@ export const OrderHandlersLive = HttpApiBuilder.group(OrderApi, 'Orders', (handl
      * Returns: OrderWithItemsResponse
      * Errors: 404 (not found), 400 (validation)
      */
-    .handle('getById', () =>
+    .handle('getById', ({ path }) =>
       Effect.gen(function* () {
         const orderRepo = yield* OrderRepository
         const orderItemRepo = yield* OrderItemRepository
-        const request = yield* HttpServerRequest.HttpServerRequest
 
-        // Extract ID from path parameter
-        const url = new URL(request.url, 'http://localhost')
-        const pathParts = url.pathname.split('/').filter(Boolean)
-        const id = pathParts[pathParts.length - 1]
+        const id = path.id
 
         if (!id) {
           return yield* Effect.fail(

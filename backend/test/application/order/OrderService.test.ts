@@ -6,7 +6,16 @@ import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { CreateOrderInput, CreateOrderItemInput, Order, OrderId, OrderStatus, PaymentStatus, OrderItem, OrderItemId } from '@domain/Order'
+import {
+  CreateOrderInput,
+  CreateOrderItemInput,
+  Order,
+  OrderId,
+  OrderStatus,
+  PaymentStatus,
+  OrderItem,
+  OrderItemId,
+} from '@domain/Order'
 import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -75,27 +84,30 @@ describe('OrderService', () => {
       findByCustomerId: vi.fn((customerId: CustomerId) =>
         Effect.succeed(orders.filter((o) => o.customer_id === customerId))
       ),
-      insert: vi.fn((data: {
-        order_number: string
-        customer_id: CustomerId
-        status: OrderStatus
-        payment_status: PaymentStatus
-        total_price: number
-        created_by: UserId
-      }) =>
-        Effect.succeed(
-          createTestOrder('new-order-id', {
-            order_number: data.order_number,
-            customer_id: data.customer_id,
-            status: data.status,
-            payment_status: data.payment_status,
-            total_price: data.total_price,
-            created_by: data.created_by,
-          })
-        )
+      insert: vi.fn(
+        (data: {
+          order_number: string
+          customer_id: CustomerId
+          status: OrderStatus
+          payment_status: PaymentStatus
+          total_price: number
+          created_by: UserId
+        }) =>
+          Effect.succeed(
+            createTestOrder('new-order-id', {
+              order_number: data.order_number,
+              customer_id: data.customer_id,
+              status: data.status,
+              payment_status: data.payment_status,
+              total_price: data.total_price,
+              created_by: data.created_by,
+            })
+          )
       ),
       updateStatus: vi.fn((_id: OrderId, _status: OrderStatus) => Effect.succeed(void 0)),
-      updatePaymentStatus: vi.fn((_id: OrderId, _paymentStatus: PaymentStatus) => Effect.succeed(void 0)),
+      updatePaymentStatus: vi.fn((_id: OrderId, _paymentStatus: PaymentStatus) =>
+        Effect.succeed(void 0)
+      ),
       findByOrderNumber: vi.fn((_orderNumber: string) => Effect.succeed(Option.none())),
       findWithFilters: vi.fn(() => Effect.succeed(orders)),
       findWithDetails: vi.fn((_id: OrderId) => Effect.succeed(Option.none())),
@@ -106,15 +118,17 @@ describe('OrderService', () => {
   const createMockOrderItemRepo = (): OrderItemRepository => {
     return {
       findById: vi.fn((_id: OrderItemId) => Effect.succeed(Option.none())),
-      insertMany: vi.fn((
-        items: Array<{
-          order_id: OrderId
-          service_id: ServiceId
-          quantity: number
-          price_at_order: number
-          subtotal: number
-        }>
-      ) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item)))),
+      insertMany: vi.fn(
+        (
+          items: Array<{
+            order_id: OrderId
+            service_id: ServiceId
+            quantity: number
+            price_at_order: number
+            subtotal: number
+          }>
+        ) => Effect.succeed(items.map((item, idx) => createTestOrderItem(`item-${idx}`, item)))
+      ),
       insert: vi.fn((_data) => Effect.succeed({} as OrderItem)),
       findByOrderId: vi.fn((_orderId: OrderId) => Effect.succeed([])),
       findByOrderIdWithService: vi.fn((_orderId: OrderId) => Effect.succeed([])),
@@ -214,14 +228,16 @@ describe('OrderService', () => {
           const totalPrice = calculateTotal(itemsWithPrices)
 
           // Create order
-          const order = yield* orderRepo.insert({
-            order_number: orderNumber,
-            customer_id: CustomerId.make(data.customer_id),
-            status: 'received',
-            payment_status: data.payment_status || 'unpaid',
-            total_price: totalPrice,
-            created_by: UserId.make(data.created_by),
-          })
+          const order = yield* orderRepo.insert(
+            Order.insert.make({
+              order_number: orderNumber,
+              customer_id: CustomerId.make(data.customer_id),
+              status: 'received',
+              payment_status: data.payment_status || 'unpaid',
+              total_price: totalPrice,
+              created_by: UserId.make(data.created_by),
+            })
+          )
 
           // Create order items
           yield* orderItemRepo.insertMany(
@@ -325,7 +341,12 @@ describe('OrderService', () => {
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
-            items: [CreateOrderItemInput.make({ service_id: ServiceId.make('non-existent-service'), quantity: 1 })],
+            items: [
+              CreateOrderItemInput.make({
+                service_id: ServiceId.make('non-existent-service'),
+                quantity: 1,
+              }),
+            ],
             created_by: UserId.make('user-1'),
           })
         )
@@ -344,7 +365,9 @@ describe('OrderService', () => {
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
-            items: [CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 1 })],
+            items: [
+              CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 1 }),
+            ],
             created_by: UserId.make('user-1'),
             payment_status: 'paid',
           })

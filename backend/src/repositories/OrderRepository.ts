@@ -7,9 +7,9 @@ import {
   PaymentStatus,
   OrderWithDetails,
   OrderSummary,
+  OrderFilterOptions,
 } from '../domain/Order'
 import { CustomerId } from '../domain/Customer'
-import { UserId } from '../domain/User'
 
 // Helper to decode SQL results through the schema
 const decodeOrders = Schema.decodeUnknown(Schema.Array(Order))
@@ -17,24 +17,16 @@ const decodeOrder = Schema.decodeUnknown(Order)
 const decodeOrdersWithDetails = Schema.decodeUnknown(Schema.Array(OrderWithDetails))
 const decodeOrderSummaries = Schema.decodeUnknown(Schema.Array(OrderSummary))
 
-export interface OrderInsertData {
-  order_number: string
-  customer_id: CustomerId
-  status: OrderStatus
-  payment_status: PaymentStatus
-  total_price: number
-  created_by: UserId
-}
-
-export interface OrderFilterOptions {
-  customer_id?: CustomerId
-  status?: OrderStatus
-  payment_status?: PaymentStatus
-  start_date?: Date
-  end_date?: Date
-  limit?: number
-  offset?: number
-}
+// Default filter options with all fields set to none
+const defaultOrderFilterOptions = new OrderFilterOptions({
+  customer_id: Option.none(),
+  status: Option.none(),
+  payment_status: Option.none(),
+  start_date: Option.none(),
+  end_date: Option.none(),
+  limit: Option.none(),
+  offset: Option.none(),
+})
 
 export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRepository', {
   effect: Effect.gen(function* () {
@@ -79,31 +71,40 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       )
 
     const findWithFilters = (
-      options: OrderFilterOptions
+      options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly Order[], SqlError.SqlError> => {
       const conditions: string[] = []
       const params: Array<string | number | Date> = []
       let paramIndex = 1
 
-      if (options.customer_id !== undefined) {
+      const customerId = Option.getOrUndefined(options.customer_id)
+      if (customerId !== undefined) {
         conditions.push(`customer_id = $${paramIndex++}`)
-        params.push(options.customer_id)
+        params.push(customerId)
       }
-      if (options.status !== undefined) {
+
+      const status = Option.getOrUndefined(options.status)
+      if (status !== undefined) {
         conditions.push(`status = $${paramIndex++}`)
-        params.push(options.status)
+        params.push(status)
       }
-      if (options.payment_status !== undefined) {
+
+      const paymentStatus = Option.getOrUndefined(options.payment_status)
+      if (paymentStatus !== undefined) {
         conditions.push(`payment_status = $${paramIndex++}`)
-        params.push(options.payment_status)
+        params.push(paymentStatus)
       }
-      if (options.start_date !== undefined) {
+
+      const startDate = Option.getOrUndefined(options.start_date)
+      if (startDate !== undefined) {
         conditions.push(`created_at >= $${paramIndex++}`)
-        params.push(options.start_date)
+        params.push(startDate)
       }
-      if (options.end_date !== undefined) {
+
+      const endDate = Option.getOrUndefined(options.end_date)
+      if (endDate !== undefined) {
         conditions.push(`created_at <= $${paramIndex++}`)
-        params.push(options.end_date)
+        params.push(endDate)
       }
 
       let query =
@@ -113,13 +114,16 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY created_at DESC'
 
-      if (options.limit !== undefined) {
+      const limit = Option.getOrUndefined(options.limit)
+      if (limit !== undefined) {
         query += ` LIMIT $${paramIndex++}`
-        params.push(options.limit)
+        params.push(limit)
       }
-      if (options.offset !== undefined) {
+
+      const offset = Option.getOrUndefined(options.offset)
+      if (offset !== undefined) {
         query += ` OFFSET $${paramIndex++}`
-        params.push(options.offset)
+        params.push(offset)
       }
 
       return sql.unsafe(query, params).pipe(
@@ -129,31 +133,40 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     }
 
     const findWithDetails = (
-      options: OrderFilterOptions = {}
+      options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly OrderWithDetails[], SqlError.SqlError> => {
       const conditions: string[] = []
       const params: Array<string | number | Date> = []
       let paramIndex = 1
 
-      if (options.customer_id !== undefined) {
+      const customerId = Option.getOrUndefined(options.customer_id)
+      if (customerId !== undefined) {
         conditions.push(`o.customer_id = $${paramIndex++}`)
-        params.push(options.customer_id)
+        params.push(customerId)
       }
-      if (options.status !== undefined) {
+
+      const status = Option.getOrUndefined(options.status)
+      if (status !== undefined) {
         conditions.push(`o.status = $${paramIndex++}`)
-        params.push(options.status)
+        params.push(status)
       }
-      if (options.payment_status !== undefined) {
+
+      const paymentStatus = Option.getOrUndefined(options.payment_status)
+      if (paymentStatus !== undefined) {
         conditions.push(`o.payment_status = $${paramIndex++}`)
-        params.push(options.payment_status)
+        params.push(paymentStatus)
       }
-      if (options.start_date !== undefined) {
+
+      const startDate = Option.getOrUndefined(options.start_date)
+      if (startDate !== undefined) {
         conditions.push(`o.created_at >= $${paramIndex++}`)
-        params.push(options.start_date)
+        params.push(startDate)
       }
-      if (options.end_date !== undefined) {
+
+      const endDate = Option.getOrUndefined(options.end_date)
+      if (endDate !== undefined) {
         conditions.push(`o.created_at <= $${paramIndex++}`)
-        params.push(options.end_date)
+        params.push(endDate)
       }
 
       let query = `
@@ -180,13 +193,16 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY o.created_at DESC'
 
-      if (options.limit !== undefined) {
+      const limit = Option.getOrUndefined(options.limit)
+      if (limit !== undefined) {
         query += ` LIMIT $${paramIndex++}`
-        params.push(options.limit)
+        params.push(limit)
       }
-      if (options.offset !== undefined) {
+
+      const offset = Option.getOrUndefined(options.offset)
+      if (offset !== undefined) {
         query += ` OFFSET $${paramIndex++}`
-        params.push(options.offset)
+        params.push(offset)
       }
 
       return sql.unsafe(query, params).pipe(
@@ -196,23 +212,28 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     }
 
     const findSummaries = (
-      options: Pick<OrderFilterOptions, 'payment_status' | 'start_date' | 'end_date'> = {}
+      options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly OrderSummary[], SqlError.SqlError> => {
       const conditions: string[] = []
       const params: Array<string | Date> = []
       let paramIndex = 1
 
-      if (options.payment_status !== undefined) {
+      const paymentStatus = Option.getOrUndefined(options.payment_status)
+      if (paymentStatus !== undefined) {
         conditions.push(`payment_status = $${paramIndex++}`)
-        params.push(options.payment_status)
+        params.push(paymentStatus)
       }
-      if (options.start_date !== undefined) {
+
+      const startDate = Option.getOrUndefined(options.start_date)
+      if (startDate !== undefined) {
         conditions.push(`created_at >= $${paramIndex++}`)
-        params.push(options.start_date)
+        params.push(startDate)
       }
-      if (options.end_date !== undefined) {
+
+      const endDate = Option.getOrUndefined(options.end_date)
+      if (endDate !== undefined) {
         conditions.push(`created_at <= $${paramIndex++}`)
-        params.push(options.end_date)
+        params.push(endDate)
       }
 
       let query = 'SELECT id, order_number, total_price, payment_status, created_at FROM orders'
@@ -257,27 +278,12 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         WHERE id = ${id}
       `.pipe(Effect.map(() => void 0))
 
-    const insert = (data: OrderInsertData): Effect.Effect<Order, SqlError.SqlError> =>
-      sql`
-        INSERT INTO orders (order_number, customer_id, status, payment_status, total_price, created_by)
-        VALUES (${data.order_number}, ${data.customer_id}, ${data.status}, ${data.payment_status}, ${data.total_price}, ${data.created_by})
-        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
-      `.pipe(
-        Effect.flatMap((rows) => {
-          const first = rows[0]
-          return first !== undefined
-            ? decodeOrder(first)
-            : Effect.fail(new Error('Insert failed - no row returned'))
-        }),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-      )
-
     return {
       // Base CRUD from makeRepository
       findById: repo.findById,
+      insert: repo.insert,
 
       // Custom methods
-      insert,
       findByOrderNumber,
       findByCustomerId,
       findWithFilters,

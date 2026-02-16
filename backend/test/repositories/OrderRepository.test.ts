@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
-import { OrderRepository, OrderInsertData } from '@repositories/OrderRepository'
+import { OrderRepository } from '@repositories/OrderRepository'
 import {
   Order,
   OrderStatus,
@@ -8,6 +8,7 @@ import {
   OrderWithDetails,
   OrderSummary,
   OrderId,
+  OrderFilterOptions,
 } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -229,7 +230,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithFilters({ status: 'received' as OrderStatus })
+        return yield* repo.findWithFilters(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.some('received'),
+            payment_status: Option.none(),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.none(),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromise(
@@ -248,7 +259,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithFilters({ payment_status: 'paid' as PaymentStatus })
+        return yield* repo.findWithFilters(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.none(),
+            payment_status: Option.some('paid'),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.none(),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromise(
@@ -268,7 +289,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithFilters({ limit: 2 })
+        return yield* repo.findWithFilters(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.none(),
+            payment_status: Option.none(),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.some(2),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromise(
@@ -287,7 +318,7 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithFilters({})
+        return yield* repo.findWithFilters()
       })
 
       const result = await Effect.runPromise(
@@ -306,7 +337,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithFilters({ status: 'received' as OrderStatus })
+        return yield* repo.findWithFilters(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.some('received'),
+            payment_status: Option.none(),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.none(),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromiseExit(
@@ -326,14 +367,14 @@ describe('OrderRepository', () => {
       })
       const mockSqlLayer = createMockSqlClient<Order>({ rows: [newOrder] })
 
-      const input: OrderInsertData = {
+      const input = Order.insert.make({
         order_number: 'ORD-002',
-        customer_id: 'customer-456' as CustomerId,
-        status: 'received' as OrderStatus,
-        payment_status: 'unpaid' as PaymentStatus,
+        customer_id: CustomerId.make('customer-456'),
+        status: 'received',
+        payment_status: 'unpaid',
         total_price: 75000,
-        created_by: 'user-123' as UserId,
-      }
+        created_by: UserId.make('user-123'),
+      })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
@@ -355,14 +396,14 @@ describe('OrderRepository', () => {
         error: sqlError,
       })
 
-      const input: OrderInsertData = {
+      const input = Order.insert.make({
         order_number: 'ORD-002',
-        customer_id: 'customer-456' as CustomerId,
-        status: 'received' as OrderStatus,
-        payment_status: 'unpaid' as PaymentStatus,
+        customer_id: CustomerId.make('customer-456'),
+        status: 'received',
+        payment_status: 'unpaid',
         total_price: 75000,
-        created_by: 'user-123' as UserId,
-      }
+        created_by: UserId.make('user-123'),
+      })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
@@ -379,14 +420,14 @@ describe('OrderRepository', () => {
     it('should fail when no row returned from insert', async () => {
       const mockSqlLayer = createMockSqlClient<Order>({ rows: [] })
 
-      const input: OrderInsertData = {
+      const input = Order.insert.make({
         order_number: 'ORD-002',
-        customer_id: 'customer-456' as CustomerId,
-        status: 'received' as OrderStatus,
-        payment_status: 'unpaid' as PaymentStatus,
+        customer_id: CustomerId.make('customer-456'),
+        status: 'received',
+        payment_status: 'unpaid',
         total_price: 75000,
-        created_by: 'user-123' as UserId,
-      }
+        created_by: UserId.make('user-123'),
+      })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
@@ -550,7 +591,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findWithDetails({ status: 'received' as OrderStatus })
+        return yield* repo.findWithDetails(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.some('received'),
+            payment_status: Option.none(),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.none(),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromise(
@@ -600,7 +651,17 @@ describe('OrderRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
-        return yield* repo.findSummaries({ payment_status: 'paid' as PaymentStatus })
+        return yield* repo.findSummaries(
+          new OrderFilterOptions({
+            customer_id: Option.none(),
+            status: Option.none(),
+            payment_status: Option.some('paid'),
+            start_date: Option.none(),
+            end_date: Option.none(),
+            limit: Option.none(),
+            offset: Option.none(),
+          })
+        )
       })
 
       const result = await Effect.runPromise(
