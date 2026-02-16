@@ -167,10 +167,20 @@ const createMockOrderRepo = (
         return Effect.succeed({ ...newOrder })
       }
     ),
-    updateStatus: vi.fn((_id: OrderId, _status: OrderStatus) => {
+    updateStatus: vi.fn((id: OrderId, status: OrderStatus) => {
+      const order = ordersArray.find((o) => o.id === id)
+      if (order) {
+        ;(order as unknown as { status: OrderStatus }).status = status
+        ;(order as unknown as { updated_at: Date }).updated_at = new Date()
+      }
       return Effect.succeed(void 0)
     }),
-    updatePaymentStatus: vi.fn((_id: OrderId, _paymentStatus: PaymentStatus) => {
+    updatePaymentStatus: vi.fn((id: OrderId, paymentStatus: PaymentStatus) => {
+      const order = ordersArray.find((o) => o.id === id)
+      if (order) {
+        ;(order as unknown as { payment_status: PaymentStatus }).payment_status = paymentStatus
+        ;(order as unknown as { updated_at: Date }).updated_at = new Date()
+      }
       return Effect.succeed(void 0)
     }),
     findSummaries: vi.fn(() => Effect.succeed([])),
