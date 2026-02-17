@@ -28,9 +28,7 @@ const ApiLayer = createAppRouter()
 const ScalarLayer = Layer.unwrapEffect(
   Effect.gen(function* () {
     const { nodeEnv } = yield* ServerConfig
-    return nodeEnv !== 'production'
-      ? HttpApiScalar.layer({ path: '/docs' })
-      : Layer.empty
+    return nodeEnv !== 'production' ? HttpApiScalar.layer({ path: '/docs' }) : Layer.empty
   })
 )
 
