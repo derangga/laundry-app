@@ -1,6 +1,6 @@
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
 import { Effect, Option, Schema } from 'effect'
-import { OrderApi } from '@api/OrderApi'
+import { AppApi } from '@api/AppApi'
 import { OrderService } from 'src/usecase/order/OrderService'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
@@ -32,7 +32,7 @@ import {
  * - Domain errors (Data.TaggedError) are caught and mapped to HTTP errors
  * - HTTP errors include proper status codes and message formats
  */
-export const OrderHandlersLive = HttpApiBuilder.group(OrderApi, 'Orders', (handlers) =>
+export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handlers) =>
   handlers
     /**
      * Create new order

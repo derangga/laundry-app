@@ -1,6 +1,6 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option } from 'effect'
-import { ServiceApi } from '@api/ServiceApi'
+import { AppApi } from '@api/AppApi'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { ServiceId, SuccessDeleteService } from '@domain/LaundryService'
 import {
@@ -12,7 +12,7 @@ import {
 } from '@domain/http/HttpErrors'
 import { CurrentUser } from '@domain/CurrentUser'
 
-export const ServiceHandlersLive = HttpApiBuilder.group(ServiceApi, 'Services', (handlers) =>
+export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (handlers) =>
   handlers
     .handle('list', () =>
       Effect.gen(function* () {

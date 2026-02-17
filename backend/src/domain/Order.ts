@@ -4,6 +4,7 @@ import { CustomerId } from './Customer.js'
 import { UserId } from './User.js'
 import { ServiceId, UnitType } from './LaundryService.js'
 import { DecimalNumber } from './common/DecimalNumber.js'
+import { DateTimeUtcString } from './common/DateTimeUtcString.js'
 
 export const OrderId = Schema.String.pipe(Schema.brand('OrderId'))
 export type OrderId = typeof OrderId.Type
@@ -76,8 +77,8 @@ export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithD
   total_price: DecimalNumber,
   created_by: UserId,
   created_by_name: Schema.String,
-  created_at: Schema.DateTimeUtc,
-  updated_at: Schema.DateTimeUtc,
+  created_at: DateTimeUtcString,
+  updated_at: DateTimeUtcString,
 }) {}
 
 export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
@@ -85,7 +86,7 @@ export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
   order_number: Schema.String,
   total_price: DecimalNumber,
   payment_status: PaymentStatus,
-  created_at: Schema.DateTimeUtc,
+  created_at: DateTimeUtcString,
 }) {}
 
 export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
@@ -99,7 +100,7 @@ export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
   quantity: DecimalNumber,
   price_at_order: DecimalNumber,
   subtotal: DecimalNumber,
-  created_at: Schema.DateTimeUtc,
+  created_at: DateTimeUtcString,
 }) {}
 
 // HTTP Response Models
@@ -111,8 +112,8 @@ export class OrderResponse extends Schema.Class<OrderResponse>('OrderResponse')(
   payment_status: PaymentStatus,
   total_price: Schema.Number,
   created_by: Schema.String,
-  created_at: Schema.DateTimeUtc,
-  updated_at: Schema.DateTimeUtc,
+  created_at: DateTimeUtcString,
+  updated_at: DateTimeUtcString,
 }) {}
 
 export class OrderItemResponse extends Schema.Class<OrderItemResponse>('OrderItemResponse')({
@@ -133,8 +134,8 @@ export class OrderWithItemsResponse extends Schema.Class<OrderWithItemsResponse>
   payment_status: PaymentStatus,
   total_price: Schema.Number,
   created_by: Schema.String,
-  created_at: Schema.DateTimeUtc,
-  updated_at: Schema.DateTimeUtc,
+  created_at: DateTimeUtcString,
+  updated_at: DateTimeUtcString,
   items: Schema.Array(OrderItemResponse),
 }) {}
 

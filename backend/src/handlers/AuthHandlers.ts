@@ -1,6 +1,6 @@
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
 import { Effect, Option } from 'effect'
-import { AuthApi } from '@api/AuthApi'
+import { AppApi } from '@api/AppApi'
 import { LoginUseCase } from 'src/usecase/auth/LoginUseCase'
 import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
@@ -28,7 +28,7 @@ import {
  * - Domain errors are caught and mapped to HTTP errors with status codes
  * - Each error type is handled separately with appropriate messages
  */
-export const AuthHandlersLive = HttpApiBuilder.group(AuthApi, 'Auth', (handlers) =>
+export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) =>
   handlers
     /**
      * Login with email and password
