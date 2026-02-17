@@ -1,9 +1,6 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Layer } from 'effect'
-import { CustomerApi } from '@api/CustomerApi'
-import { AuthApi } from '@api/AuthApi'
-import { ServiceApi } from '@api/ServiceApi'
-import { OrderApi } from '@api/OrderApi'
+import { AppApi } from '@api/AppApi'
 import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
 import { AuthHandlersLive } from '@handlers/AuthHandlers'
 import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
@@ -27,82 +24,47 @@ import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
 
-/**
- * HTTP Router Configuration with HttpApiBuilder
- *
- * Composes multiple APIs with their handlers and middleware:
- * - /health - Health check endpoint (legacy HttpRouter)
- * - /api/auth - Authentication endpoints (HttpApi-based)
- * - /api/customers - Customer management endpoints (HttpApi-based)
- *
- * Uses HttpApiBuilder for type-safe, automatic validation and error handling.
- * Middleware is provided at the API layer for consistent behavior.
- */
-
-/**
- * Compose Customer API with handlers and dependencies
- */
-const CustomerApiLive = HttpApiBuilder.api(CustomerApi).pipe(
-  Layer.provide(CustomerHandlersLive),
-  Layer.provide(CustomerRepository.Default),
-  Layer.provide(CustomerService.Default)
+const HandlersLive = Layer.mergeAll(
+  AuthHandlersLive,
+  CustomerHandlersLive,
+  ServiceHandlersLive,
+  OrderHandlersLive
 )
 
-/**
- * Compose Auth API with handlers, middleware, and dependencies
- *
- * Protected endpoints (logout, register) require authentication via AuthMiddleware.
- * The middleware verifies JWT tokens and provides CurrentUser context to handlers.
- */
-const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
-  Layer.provide(AuthHandlersLive),
-  Layer.provide(AuthMiddlewareLive),
-  Layer.provide(LoginUseCase.Default),
-  Layer.provide(RefreshTokenUseCase.Default),
-  Layer.provide(LogoutUseCase.Default),
-  Layer.provide(RegisterUserUseCase.Default),
-  Layer.provide(BootstrapUseCase.Default),
-  Layer.provide(JwtService.Default),
-  Layer.provide(TokenGenerator.Default),
-  Layer.provide(PasswordService.Default),
-  Layer.provide(UserRepository.Default),
-  Layer.provide(RefreshTokenRepository.Default)
+const MiddlewareLive = Layer.mergeAll(AuthMiddlewareLive, AuthAdminMiddlewareLive)
+
+const UseCasesLive = Layer.mergeAll(
+  LoginUseCase.Default,
+  RefreshTokenUseCase.Default,
+  LogoutUseCase.Default,
+  RegisterUserUseCase.Default,
+  BootstrapUseCase.Default,
+  OrderService.Default,
+  CustomerService.Default,
+  LaundryServiceService.Default
 )
 
-const ServiceApiLive = HttpApiBuilder.api(ServiceApi).pipe(
-  Layer.provide(ServiceHandlersLive),
-  Layer.provide(AuthAdminMiddlewareLive),
-  Layer.provide(JwtService.Default),
-  Layer.provide(LaundryServiceService.Default),
-  Layer.provide(ServiceRepository.Default)
+const RepositoriesLive = Layer.mergeAll(
+  UserRepository.Default,
+  RefreshTokenRepository.Default,
+  CustomerRepository.Default,
+  ServiceRepository.Default,
+  OrderRepository.Default,
+  OrderItemRepository.Default
 )
 
-/**
- * Compose Order API with handlers, middleware, and dependencies
- *
- * All endpoints require authentication via AuthMiddleware.
- */
-const OrderApiLive = HttpApiBuilder.api(OrderApi).pipe(
-  Layer.provide(OrderHandlersLive),
-  Layer.provide(AuthMiddlewareLive),
-  Layer.provide(JwtService.Default),
-  Layer.provide(OrderService.Default),
-  Layer.provide(OrderRepository.Default),
-  Layer.provide(OrderItemRepository.Default),
-  Layer.provide(ServiceRepository.Default)
+const InfraLive = Layer.mergeAll(
+  JwtService.Default,
+  TokenGenerator.Default,
+  PasswordService.Default
 )
 
-/**
- * Combine all APIs into a single HTTP app
- */
-const ApiLive = Layer.mergeAll(CustomerApiLive, AuthApiLive, ServiceApiLive, OrderApiLive)
+const ApiLive = HttpApiBuilder.api(AppApi).pipe(
+  Layer.provide(HandlersLive),
+  Layer.provide(MiddlewareLive),
+  Layer.provide(UseCasesLive),
+  Layer.provide(RepositoriesLive),
+  Layer.provide(InfraLive)
+)
 
-/**
- * Create app with all APIs
- *
- * Returns a Layer providing the composed HTTP application
- */
-export const createAppRouter = () => {
-  // Return the API layer with all handlers, middleware, and dependencies
-  return ApiLive
-}
+export const createAppRouter = () => ApiLive

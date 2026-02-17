@@ -1,9 +1,10 @@
 import { Effect, Layer } from 'effect'
-import { HttpApiBuilder, HttpMiddleware, HttpServer } from '@effect/platform'
+import { HttpApiBuilder, HttpApiScalar, HttpMiddleware, HttpServer } from '@effect/platform'
 import { BunRuntime } from '@effect/platform-bun'
 import { SqlClientLive } from 'src/SqlClient.js'
 import { HttpServerLive } from './http/HttpServer.js'
 import { createAppRouter } from './http/Router.js'
+import { ServerConfig } from './configs/env.js'
 
 /**
  * Application Composition
@@ -23,9 +24,20 @@ import { createAppRouter } from './http/Router.js'
 // Get the API layer (provides Context<Api>)
 const ApiLayer = createAppRouter()
 
+// Only mount Scalar UI in non-production environments
+const ScalarLayer = Layer.unwrapEffect(
+  Effect.gen(function* () {
+    const { nodeEnv } = yield* ServerConfig
+    return nodeEnv !== 'production'
+      ? HttpApiScalar.layer({ path: '/docs' })
+      : Layer.empty
+  })
+)
+
 // Compose HTTP server with middleware and API
 // Pattern from example: HttpApiBuilder.serve -> middlewareCors -> ApiLayer -> HttpServer
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
+  Layer.provide(ScalarLayer),
   Layer.provide(HttpApiBuilder.middlewareCors()),
   Layer.provide(ApiLayer),
   HttpServer.withLogAddress,

@@ -1,6 +1,6 @@
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
 import { Effect, Option } from 'effect'
-import { CustomerApi } from '@api/CustomerApi'
+import { AppApi } from '@api/AppApi'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerId } from '@domain/Customer'
@@ -16,7 +16,7 @@ import { CustomerNotFound, CustomerAlreadyExists, ValidationError } from '@domai
  * - Domain errors (Data.TaggedError) are caught and mapped to HTTP errors
  * - HTTP errors include proper status codes and message formats
  */
-export const CustomerHandlersLive = HttpApiBuilder.group(CustomerApi, 'Customers', (handlers) =>
+export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (handlers) =>
   handlers
     /**
      * Search customer by phone number (query parameter)

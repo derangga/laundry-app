@@ -1,6 +1,7 @@
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
 import { DecimalNumber } from './common/DecimalNumber.js'
+import { DateTimeUtcString } from './common/DateTimeUtcString.js'
 
 export const ServiceId = Schema.String.pipe(Schema.brand('ServiceId'))
 export type ServiceId = typeof ServiceId.Type
@@ -40,6 +41,18 @@ export class ActiveServiceInfo extends Schema.Class<ActiveServiceInfo>('ActiveSe
   name: Schema.String,
   price: DecimalNumber,
   unit_type: UnitType,
+}) {}
+
+export class LaundryServiceResponse extends Schema.Class<LaundryServiceResponse>(
+  'LaundryServiceResponse'
+)({
+  id: ServiceId,
+  name: Schema.String,
+  price: DecimalNumber,
+  unit_type: UnitType,
+  is_active: Schema.Boolean,
+  created_at: DateTimeUtcString,
+  updated_at: DateTimeUtcString,
 }) {}
 
 export class SuccessDeleteService extends Schema.Class<SuccessDeleteService>(

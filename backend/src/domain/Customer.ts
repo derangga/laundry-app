@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
+import { DateTimeUtcString } from './common/DateTimeUtcString.js'
 
 export const CustomerId = Schema.String.pipe(Schema.brand('CustomerId'))
 export type CustomerId = typeof CustomerId.Type
@@ -23,6 +24,15 @@ export class UpdateCustomerInput extends Schema.Class<UpdateCustomerInput>('Upda
   name: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
   phone: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
   address: Schema.optional(Schema.NullOr(Schema.String)),
+}) {}
+
+export class CustomerResponse extends Schema.Class<CustomerResponse>('CustomerResponse')({
+  id: CustomerId,
+  name: Schema.String,
+  phone: Schema.String,
+  address: Schema.NullOr(Schema.String),
+  created_at: DateTimeUtcString,
+  updated_at: DateTimeUtcString,
 }) {}
 
 export class CustomerSummary extends Schema.Class<CustomerSummary>('CustomerSummary')({
