@@ -85,17 +85,27 @@ export const AnalyticsHandlersLive = HttpApiBuilder.group(AppApi, 'Analytics', (
           endDate = end
         }
 
-        return yield* analyticsService.getWeeklyAnalytics(startDate, endDate, paymentFilter).pipe(
-          Effect.catchTag('SqlError', () => new InternalServerError({ message: 'Database operation failed' }))
-        )
+        return yield* analyticsService
+          .getWeeklyAnalytics(startDate, endDate, paymentFilter)
+          .pipe(
+            Effect.catchTag(
+              'SqlError',
+              () => new InternalServerError({ message: 'Database operation failed' })
+            )
+          )
       })
     )
     .handle('dashboard', () =>
       Effect.gen(function* () {
         const analyticsService = yield* AnalyticsService
-        return yield* analyticsService.getDashboardStats().pipe(
-          Effect.catchTag('SqlError', () => new InternalServerError({ message: 'Database operation failed' }))
-        )
+        return yield* analyticsService
+          .getDashboardStats()
+          .pipe(
+            Effect.catchTag(
+              'SqlError',
+              () => new InternalServerError({ message: 'Database operation failed' })
+            )
+          )
       })
     )
 )

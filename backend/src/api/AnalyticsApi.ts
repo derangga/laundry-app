@@ -1,6 +1,10 @@
 import { HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Schema } from 'effect'
-import { WeeklyAnalyticsResponse, DashboardStatsResponse, AnalyticsPaymentFilter } from '@domain/Analytics'
+import {
+  WeeklyAnalyticsResponse,
+  DashboardStatsResponse,
+  AnalyticsPaymentFilter,
+} from '@domain/Analytics'
 import { ValidationError, Forbidden, InternalServerError } from '@domain/http/HttpErrors'
 import { AuthAdminMiddleware } from 'src/middleware/AuthMiddleware'
 

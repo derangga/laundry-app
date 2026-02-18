@@ -4,8 +4,8 @@ import { DecimalNumber } from './common/DecimalNumber'
 // Raw DB row from the weekly aggregation SQL query
 export class WeeklyRow extends Schema.Class<WeeklyRow>('WeeklyRow')({
   week_start: Schema.DateFromSelf, // PG ::date → JS Date
-  total_revenue: DecimalNumber,    // PG DECIMAL → string → number
-  order_count: DecimalNumber,      // PG BIGINT/COUNT → string → number
+  total_revenue: DecimalNumber, // PG DECIMAL → string → number
+  order_count: DecimalNumber, // PG BIGINT/COUNT → string → number
 }) {}
 
 // Filter enum — 'all' means no payment_status WHERE clause
