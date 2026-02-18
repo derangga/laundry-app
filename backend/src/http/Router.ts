@@ -5,6 +5,7 @@ import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
 import { AuthHandlersLive } from '@handlers/AuthHandlers'
 import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
 import { OrderHandlersLive } from '@handlers/OrderHandlers'
+import { ReceiptHandlersLive } from '@handlers/ReceiptHandlers'
 import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
@@ -23,12 +24,14 @@ import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
+import { ReceiptService } from '@usecase/receipt/ReceiptService'
 
 const HandlersLive = Layer.mergeAll(
   AuthHandlersLive,
   CustomerHandlersLive,
   ServiceHandlersLive,
-  OrderHandlersLive
+  OrderHandlersLive,
+  ReceiptHandlersLive
 )
 
 const MiddlewareLive = Layer.mergeAll(AuthMiddlewareLive, AuthAdminMiddlewareLive)
@@ -41,7 +44,8 @@ const UseCasesLive = Layer.mergeAll(
   BootstrapUseCase.Default,
   OrderService.Default,
   CustomerService.Default,
-  LaundryServiceService.Default
+  LaundryServiceService.Default,
+  ReceiptService.Default
 )
 
 const RepositoriesLive = Layer.mergeAll(
