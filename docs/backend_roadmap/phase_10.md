@@ -340,18 +340,18 @@ const RepositoriesLive = Layer.mergeAll(
 
 #### Task 10.6: Write Tests
 
-- [ ] **Unit tests for ReceiptService**:
+- [x] **Unit tests for ReceiptService** (`test/usecase/receipt/ReceiptService.test.ts`):
   - Receipt contains all required fields per PRD FR-7.1
   - Uses `price_at_order` (not current price) for items
   - Falls back gracefully if staff not found (uses `'Staff'`)
   - Returns `OrderNotFoundError` for non-existent order
-- [ ] **Integration tests for Receipt endpoint**:
+- [x] **Integration tests for Receipt endpoint** (`test/api/receiptRoutes.test.ts`):
   - `GET /api/receipts/:orderId` returns complete receipt
   - Receipt contains business header, order info, customer, items, staff name
   - Receipt accessible by both admin and staff
   - Returns 404 for non-existent order
 - [x] Verify `bun run typecheck` passes
-- [ ] Verify `bun run test` passes
+- [x] Verify `bun run test` passes
 
 ---
 
@@ -368,7 +368,7 @@ const RepositoriesLive = Layer.mergeAll(
 - [x] Receipt uses `price_at_order` (historical price), not current service price
 - [x] Receipt endpoint accessible by both admin and staff
 - [x] `bun run typecheck` passes
-- [ ] `bun run test` passes
+- [x] `bun run test` passes (297 tests)
 
 ---
 
