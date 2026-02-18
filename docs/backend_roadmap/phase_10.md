@@ -46,9 +46,9 @@
 
 #### Task 10.1: Define Receipt Domain Schema
 
-- [ ] Create `src/domain/Receipt.ts`
-- [ ] Define `ReceiptItem` with service details (name, unit_type, quantity, price_at_order, subtotal)
-- [ ] Define `ReceiptResponse` with all PRD FR-7.1 fields
+- [x] Create `src/domain/Receipt.ts`
+- [x] Define `ReceiptItem` with service details (name, unit_type, quantity, price_at_order, subtotal)
+- [x] Define `ReceiptResponse` with all PRD FR-7.1 fields
 
 ```typescript
 import { Schema } from 'effect'
@@ -92,8 +92,8 @@ export class ReceiptResponse extends Schema.Class<ReceiptResponse>('ReceiptRespo
 
 #### Task 10.2: Create ReceiptService
 
-- [ ] Create `src/usecase/receipt/ReceiptService.ts`
-- [ ] Implement `generateReceipt(orderId)`:
+- [x] Create `src/usecase/receipt/ReceiptService.ts`
+- [x] Implement `generateReceipt(orderId)`:
   - Fetch order via `OrderRepository.findById()`
   - Fetch items via `OrderItemRepository.findByOrderIdWithService()` (reuse existing — has `service_name`, `unit_type`, `price_at_order`)
   - Fetch customer via `CustomerRepository.findById()`
@@ -198,8 +198,8 @@ export class ReceiptService extends Effect.Service<ReceiptService>()(
 
 #### Task 10.3: Define Receipt API Endpoint
 
-- [ ] Create `src/api/ReceiptApi.ts` with `ReceiptGroup`
-- [ ] Receipt endpoint uses `AuthMiddleware` (accessible by both admin and staff)
+- [x] Create `src/api/ReceiptApi.ts` with `ReceiptGroup`
+- [x] Receipt endpoint uses `AuthMiddleware` (accessible by both admin and staff)
 
 **`src/api/ReceiptApi.ts`**:
 
@@ -227,9 +227,9 @@ export const ReceiptGroup = HttpApiGroup.make('Receipts')
 
 #### Task 10.4: Implement Receipt Handler
 
-- [ ] Create `src/handlers/ReceiptHandlers.ts`
-- [ ] Handle `getReceipt`: extract `path.orderId`, call `ReceiptService.generateReceipt()`
-- [ ] Map domain errors to HTTP errors
+- [x] Create `src/handlers/ReceiptHandlers.ts`
+- [x] Handle `getReceipt`: extract `path.orderId`, call `ReceiptService.generateReceipt()`
+- [x] Map domain errors to HTTP errors
 
 ```typescript
 import { HttpApiBuilder } from '@effect/platform'
@@ -270,8 +270,8 @@ export const ReceiptHandlersLive = HttpApiBuilder.group(AppApi, 'Receipts', (han
 
 #### Task 10.5: Wire Up in AppApi and Router
 
-- [ ] Update `src/api/AppApi.ts` — add `.add(ReceiptGroup)`
-- [ ] Update `src/http/Router.ts` — add handler layer, service layer
+- [x] Update `src/api/AppApi.ts` — add `.add(ReceiptGroup)`
+- [x] Update `src/http/Router.ts` — add handler layer, service layer
 
 **`src/api/AppApi.ts`** (updated):
 
@@ -340,24 +340,24 @@ const RepositoriesLive = Layer.mergeAll(
 
 #### Task 10.6: Write Tests
 
-- [ ] **Unit tests for ReceiptService**:
+- [x] **Unit tests for ReceiptService** (`test/usecase/receipt/ReceiptService.test.ts`):
   - Receipt contains all required fields per PRD FR-7.1
   - Uses `price_at_order` (not current price) for items
   - Falls back gracefully if staff not found (uses `'Staff'`)
   - Returns `OrderNotFoundError` for non-existent order
-- [ ] **Integration tests for Receipt endpoint**:
+- [x] **Integration tests for Receipt endpoint** (`test/api/receiptRoutes.test.ts`):
   - `GET /api/receipts/:orderId` returns complete receipt
   - Receipt contains business header, order info, customer, items, staff name
   - Receipt accessible by both admin and staff
   - Returns 404 for non-existent order
-- [ ] Verify `bun run typecheck` passes
-- [ ] Verify `bun run test` passes
+- [x] Verify `bun run typecheck` passes
+- [x] Verify `bun run test` passes
 
 ---
 
 ### Verification Checklist
 
-- [ ] `GET /api/receipts/:orderId` contains all PRD FR-7.1 fields:
+- [x] `GET /api/receipts/:orderId` contains all PRD FR-7.1 fields:
   - Business header (name, address, phone)
   - Order info (receipt number = order number, date, status)
   - Customer info (name, phone)
@@ -365,9 +365,10 @@ const RepositoriesLive = Layer.mergeAll(
   - Total price
   - Payment status
   - Staff name (who created the order)
-- [ ] Receipt uses `price_at_order` (historical price), not current service price
-- [ ] Receipt endpoint accessible by both admin and staff
-- [ ] `bun run typecheck` and `bun run test` pass
+- [x] Receipt uses `price_at_order` (historical price), not current service price
+- [x] Receipt endpoint accessible by both admin and staff
+- [x] `bun run typecheck` passes
+- [x] `bun run test` passes (297 tests)
 
 ---
 
