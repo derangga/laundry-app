@@ -5,7 +5,6 @@ import { CustomerRepository } from '@repositories/CustomerRepository'
 import { UserRepository } from '@repositories/UserRepository'
 import { ReceiptItem, ReceiptResponse } from '@domain/Receipt'
 import { OrderId } from '@domain/Order'
-import { CustomerId } from '@domain/Customer'
 import { OrderNotFound } from '@domain/OrderErrors'
 
 export class ReceiptService extends Effect.Service<ReceiptService>()('ReceiptService', {
