@@ -28,9 +28,7 @@ export class ReceiptService extends Effect.Service<ReceiptService>()('ReceiptSer
         const items = yield* orderItemRepo.findByOrderIdWithService(orderId)
 
         // 3. Fetch customer
-        const customerOption = yield* customerRepo.findById(
-          order.customer_id as unknown as CustomerId
-        )
+        const customerOption = yield* customerRepo.findById(order.customer_id)
         const customer = Option.isSome(customerOption)
           ? customerOption.value
           : { name: 'Unknown', phone: '-' }
