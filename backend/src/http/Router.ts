@@ -6,6 +6,7 @@ import { AuthHandlersLive } from '@handlers/AuthHandlers'
 import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
 import { OrderHandlersLive } from '@handlers/OrderHandlers'
 import { ReceiptHandlersLive } from '@handlers/ReceiptHandlers'
+import { AnalyticsHandlersLive } from '@handlers/AnalyticsHandlers'
 import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
@@ -14,6 +15,7 @@ import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
+import { AnalyticsRepository } from '@repositories/AnalyticsRepository'
 import { LoginUseCase } from 'src/usecase/auth/LoginUseCase'
 import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
@@ -25,13 +27,15 @@ import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
+import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
 
 const HandlersLive = Layer.mergeAll(
   AuthHandlersLive,
   CustomerHandlersLive,
   ServiceHandlersLive,
   OrderHandlersLive,
-  ReceiptHandlersLive
+  ReceiptHandlersLive,
+  AnalyticsHandlersLive
 )
 
 const MiddlewareLive = Layer.mergeAll(AuthMiddlewareLive, AuthAdminMiddlewareLive)
@@ -45,7 +49,8 @@ const UseCasesLive = Layer.mergeAll(
   OrderService.Default,
   CustomerService.Default,
   LaundryServiceService.Default,
-  ReceiptService.Default
+  ReceiptService.Default,
+  AnalyticsService.Default
 )
 
 const RepositoriesLive = Layer.mergeAll(
@@ -54,7 +59,8 @@ const RepositoriesLive = Layer.mergeAll(
   CustomerRepository.Default,
   ServiceRepository.Default,
   OrderRepository.Default,
-  OrderItemRepository.Default
+  OrderItemRepository.Default,
+  AnalyticsRepository.Default
 )
 
 const InfraLive = Layer.mergeAll(

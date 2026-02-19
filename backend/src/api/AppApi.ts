@@ -4,6 +4,7 @@ import { CustomerGroup } from './CustomerApi'
 import { ServiceGroup } from './ServiceApi'
 import { OrderGroup } from './OrderApi'
 import { ReceiptGroup } from './ReceiptApi'
+import { AnalyticsGroup } from './AnalyticsApi'
 
 export class AppApi extends HttpApi.make('AppApi')
   .add(AuthGroup)
@@ -11,6 +12,7 @@ export class AppApi extends HttpApi.make('AppApi')
   .add(ServiceGroup)
   .add(OrderGroup)
   .add(ReceiptGroup)
+  .add(AnalyticsGroup)
   .annotateContext(
     OpenApi.annotations({
       title: 'Laundry App API',

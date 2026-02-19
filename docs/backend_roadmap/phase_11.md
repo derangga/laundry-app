@@ -51,11 +51,11 @@
 
 #### Task 11.1: Define Analytics Domain Schemas
 
-- [ ] Create `src/domain/Analytics.ts`
-- [ ] Define filter schema for payment status (`'paid' | 'unpaid' | 'all'`)
-- [ ] Define `WeeklyDataPoint` response schema
-- [ ] Define `WeeklyAnalyticsResponse` wrapper
-- [ ] Define `DashboardStatsResponse` for quick stats
+- [x] Create `src/domain/Analytics.ts`
+- [x] Define filter schema for payment status (`'paid' | 'unpaid' | 'all'`)
+- [x] Define `WeeklyDataPoint` response schema
+- [x] Define `WeeklyAnalyticsResponse` wrapper
+- [x] Define `DashboardStatsResponse` for quick stats
 
 ```typescript
 import { Schema } from 'effect'
@@ -98,13 +98,13 @@ export class DashboardStatsResponse extends Schema.Class<DashboardStatsResponse>
 
 #### Task 11.2: Create AnalyticsRepository
 
-- [ ] Create `src/repositories/AnalyticsRepository.ts`
-- [ ] Implement `getWeeklyAggregation(startDate, endDate, paymentStatus?)` — returns raw weekly rows
-- [ ] Implement `getTodaysOrderCount()` — `COUNT(*)` where `created_at >= today`
-- [ ] Implement `getPendingPaymentCount()` — `COUNT(*)` where `payment_status = 'unpaid'`
-- [ ] Implement `getWeeklyRevenue()` — `SUM(total_price)` where `payment_status = 'paid'` and `created_at >= 7 days ago`
-- [ ] Implement `getTotalCustomerCount()` — `COUNT(*)` from customers table
-- [ ] All queries use explicit column lists (no `SELECT *`)
+- [x] Create `src/repositories/AnalyticsRepository.ts`
+- [x] Implement `getWeeklyAggregation(startDate, endDate, paymentStatus?)` — returns raw weekly rows
+- [x] Implement `getTodaysOrderCount()` — `COUNT(*)` where `created_at >= today`
+- [x] Implement `getPendingPaymentCount()` — `COUNT(*)` where `payment_status = 'unpaid'`
+- [x] Implement `getWeeklyRevenue()` — `SUM(total_price)` where `payment_status = 'paid'` and `created_at >= 7 days ago`
+- [x] Implement `getTotalCustomerCount()` — `COUNT(*)` from customers table
+- [x] All queries use explicit column lists (no `SELECT *`)
 
 ```typescript
 import { Effect, Option, Schema } from 'effect'
@@ -201,17 +201,17 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
 
 #### Task 11.3: Create AnalyticsService
 
-- [ ] Create `src/usecase/analytics/AnalyticsService.ts`
-- [ ] Implement `getWeeklyAnalytics(startDate, endDate, paymentFilter)`:
+- [x] Create `src/usecase/analytics/AnalyticsService.ts`
+- [x] Implement `getWeeklyAnalytics(startDate, endDate, paymentFilter)`:
   - Compute `startDate`/`endDate` from predefined range or custom input
   - If `paymentFilter === 'all'`, pass `Option.none()` to repository
   - Fetch raw weekly data from repository
   - **Zero-fill**: iterate week by week from `startDate` to `endDate`, inserting `{ total_revenue: 0, order_count: 0 }` for missing weeks
   - Return `WeeklyAnalyticsResponse`
-- [ ] Implement `getDashboardStats()`:
+- [x] Implement `getDashboardStats()`:
   - Run 4 parallel queries using `Effect.all({ concurrency: 4 })`
   - Return `DashboardStatsResponse`
-- [ ] Predefined range helper:
+- [x] Predefined range helper:
   - `'last_4_weeks'` → today - 4 weeks
   - `'last_12_weeks'` → today - 12 weeks (default)
   - `'last_6_months'` → today - 6 months
@@ -341,8 +341,8 @@ export class AnalyticsService extends Effect.Service<AnalyticsService>()(
 
 #### Task 11.4: Define Analytics API Endpoints
 
-- [ ] Create `src/api/AnalyticsApi.ts` with `AnalyticsGroup`
-- [ ] Analytics endpoints use `AuthAdminMiddleware` (admin only, returns 403 for staff)
+- [x] Create `src/api/AnalyticsApi.ts` with `AnalyticsGroup`
+- [x] Analytics endpoints use `AuthAdminMiddleware` (admin only, returns 403 for staff)
 
 **`src/api/AnalyticsApi.ts`**:
 
@@ -371,12 +371,12 @@ export const AnalyticsGroup = HttpApiGroup.make('Analytics')
 
 #### Task 11.5: Implement Analytics Handlers
 
-- [ ] Create `src/handlers/AnalyticsHandlers.ts`
-- [ ] Handle `weekly`: parse query params (`start_date`, `end_date`, `payment_status`, `range`), validate with `Schema.decodeUnknownOption()`, call `AnalyticsService.getWeeklyAnalytics()`
-- [ ] Handle `dashboard`: call `AnalyticsService.getDashboardStats()`
-- [ ] Support predefined ranges via `range` query param: `last_4_weeks`, `last_12_weeks`, `last_6_months`, `this_year`, `last_year`
-- [ ] Custom range via `start_date` + `end_date` query params (ISO date strings)
-- [ ] Default to `last_12_weeks` if no range or dates provided
+- [x] Create `src/handlers/AnalyticsHandlers.ts`
+- [x] Handle `weekly`: parse query params (`start_date`, `end_date`, `payment_status`, `range`), validate with `Schema.decodeUnknownOption()`, call `AnalyticsService.getWeeklyAnalytics()`
+- [x] Handle `dashboard`: call `AnalyticsService.getDashboardStats()`
+- [x] Support predefined ranges via `range` query param: `last_4_weeks`, `last_12_weeks`, `last_6_months`, `this_year`, `last_year`
+- [x] Custom range via `start_date` + `end_date` query params (ISO date strings)
+- [x] Default to `last_12_weeks` if no range or dates provided
 
 ```typescript
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
@@ -505,8 +505,8 @@ export const AnalyticsHandlersLive = HttpApiBuilder.group(AppApi, 'Analytics', (
 
 #### Task 11.6: Wire Up in AppApi and Router
 
-- [ ] Update `src/api/AppApi.ts` — add `.add(AnalyticsGroup)`
-- [ ] Update `src/http/Router.ts` — add handler layers, service layers, repository layer
+- [x] Update `src/api/AppApi.ts` — add `.add(AnalyticsGroup)`
+- [x] Update `src/http/Router.ts` — add handler layers, service layers, repository layer
 
 **`src/api/AppApi.ts`** (updated):
 
@@ -600,13 +600,13 @@ const RepositoriesLive = Layer.mergeAll(
 
 ### Verification Checklist
 
-- [ ] `GET /api/analytics/weekly` returns zero-filled weeks (weeks with no orders show as `{ total_revenue: 0, order_count: 0 }`)
-- [ ] Weekly analytics supports payment filters: `paid`, `unpaid`, `all` (default)
-- [ ] Weekly analytics supports predefined ranges: `last_4_weeks`, `last_12_weeks` (default), `last_6_months`, `this_year`, `last_year`
-- [ ] Weekly analytics supports custom date range: `start_date` + `end_date` params
-- [ ] `GET /api/analytics/dashboard` returns all 4 quick stats: `todays_orders`, `pending_payments`, `weekly_revenue`, `total_customers`
-- [ ] Analytics endpoints return 403 for non-admin users
-- [ ] `bun run typecheck` and `bun run test` pass
+- [x] `GET /api/analytics/weekly` returns zero-filled weeks (weeks with no orders show as `{ total_revenue: 0, order_count: 0 }`)
+- [x] Weekly analytics supports payment filters: `paid`, `unpaid`, `all` (default)
+- [x] Weekly analytics supports predefined ranges: `last_4_weeks`, `last_12_weeks` (default), `last_6_months`, `this_year`, `last_year`
+- [x] Weekly analytics supports custom date range: `start_date` + `end_date` params
+- [x] `GET /api/analytics/dashboard` returns all 4 quick stats: `todays_orders`, `pending_payments`, `weekly_revenue`, `total_customers`
+- [x] Analytics endpoints return 403 for non-admin users
+- [x] `bun run typecheck` and `bun run test` pass
 
 ---
 
