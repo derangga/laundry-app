@@ -371,6 +371,7 @@ Working HTTP server infrastructure with:
 ### Implementation Notes
 
 **Key Decisions:**
+
 - Used `Schema.decodeUnknown` in RequestParser for parsing unknown HTTP data
 - Applied middleware via function composition (corsMiddleware → loggingMiddleware → errorHandlerMiddleware → router)
 - Used `Effect.either` pattern in logger to handle both success and error paths while keeping `startTime` in scope
@@ -378,6 +379,7 @@ Working HTTP server infrastructure with:
 - Used config-based port/host in HttpServerLive for flexible deployment
 
 **Files Implemented:**
+
 - `src/http/HttpServer.ts` - Config-based server layer
 - `src/http/RequestParser.ts` - Body/query parsing with Schema validation
 - `src/http/middleware/cors.ts` - CORS with preflight support
@@ -387,6 +389,7 @@ Working HTTP server infrastructure with:
 - Updated `src/main.ts` - Server startup with layer composition
 
 **Verified:**
+
 - Server starts on configured port (default 3000)
 - GET /health returns 200 OK with "OK" text
 - OPTIONS preflight returns 204 with all CORS headers

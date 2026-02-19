@@ -62,20 +62,24 @@ Use `@effect/platform-bun` HTTP server directly without additional web framework
 #### Alternatives Considered
 
 **Hono**
+
 - Pros: Fast, modern, good DX, Bun-compatible
 - Cons: Adds abstraction layer over Effect, requires adapters, framework patterns may not align with Effect
 
 **Fastify**
+
 - Pros: Mature ecosystem, good performance, extensive plugin system
 - Cons: Not designed for Effect patterns, requires significant integration work, callback-based patterns
 
 **Express**
+
 - Pros: Most popular, vast ecosystem, familiar to many developers
 - Cons: Legacy design, callback-based, poor TypeScript support, not optimized for modern runtimes
 
 #### Consequences
 
 **Positive**:
+
 - Full type safety from request to response
 - Consistent error handling using Effect's error channel
 - Optimal performance with Bun runtime
@@ -83,12 +87,14 @@ Use `@effect/platform-bun` HTTP server directly without additional web framework
 - No framework upgrade/migration concerns
 
 **Negative**:
+
 - Need to implement routing logic (no off-the-shelf router)
 - Smaller community compared to popular frameworks
 - May require more initial setup for common patterns (CORS, body parsing)
 - Team needs strong Effect-TS knowledge
 
 **Risks**:
+
 - Learning curve for developers unfamiliar with Effect Platform HTTP APIs
 - Less third-party middleware available
 - Need to handle edge cases manually
@@ -96,28 +102,33 @@ Use `@effect/platform-bun` HTTP server directly without additional web framework
 #### Implementation Notes
 
 **Router Implementation**:
+
 - Use `HttpApiBuilder` with `HttpApi.make()` for declarative endpoint definitions
 - Route handlers return `Effect<Response, HttpError, Dependencies>`
 - Compose routes using `HttpApiBuilder.group()` for handler implementations
 - Layer composition with `Layer.provide()` for dependency injection
 
 **Middleware Composition**:
+
 - Use `HttpApiMiddleware.Tag<AuthMiddleware>` pattern for authentication
 - Middleware provides `CurrentUser` context to protected handlers
 - Bearer token verification via `HttpApiSecurity.bearer`
 - Use `Layer.effect()` to implement middleware with dependencies
 
 **Request Parsing**:
+
 - Parse JSON bodies using @effect/schema for validation
 - Extract path/query parameters with type safety
 - `HttpApiBuilder` handles automatic validation via `setPayload()` and `addSuccess()`/`addError()`
 
 **Response Building**:
+
 - Construct responses with proper status codes (200, 201, 400, 401, 404, 500)
 - Use tagged errors for consistent error responses
 - Error mapping via `Effect.mapError()` in handlers
 
 **Security**:
+
 - CORS configuration via `HttpApiBuilder.middlewareCors()`
 - AuthMiddleware for JWT verification on protected routes
 - Role-based authorization via guards in use cases
@@ -146,20 +157,24 @@ Implement a REST API using standard HTTP semantics with Effect-TS for handlers a
 #### Alternatives Considered
 
 **tRPC**
+
 - Pros: End-to-end type safety, great DX with TypeScript, shared types between client/server
 - Cons: Adds complexity, requires tRPC client on frontend, couples frontend/backend more tightly, less mature ecosystem for Effect integration
 
 **Effect RPC**
+
 - Pros: Native Effect solution, designed for Effect applications
 - Cons: Less mature, smaller ecosystem, requires custom frontend client, locks into Effect ecosystem for client
 
 **GraphQL**
+
 - Pros: Flexible queries, reduces over-fetching, strong typing with schema
 - Cons: Significant complexity, resolver overhead, overkill for this application, requires GraphQL client setup, challenging error handling
 
 #### Consequences
 
 **Positive**:
+
 - Simple, well-understood API design
 - Easy to document (OpenAPI/Swagger if needed)
 - Frontend can use standard fetch or any HTTP client
@@ -168,12 +183,14 @@ Implement a REST API using standard HTTP semantics with Effect-TS for handlers a
 - Easy to test with standard HTTP tools
 
 **Negative**:
+
 - No automatic end-to-end type safety (requires manual schema alignment)
 - Potential for over-fetching or under-fetching data
 - Version management requires discipline
 - Multiple endpoints for related operations
 
 **Risks**:
+
 - Schema drift between frontend and backend (mitigate with shared types package)
 - Breaking changes require API versioning strategy
 - Need manual documentation maintenance
@@ -182,26 +199,28 @@ Implement a REST API using standard HTTP semantics with Effect-TS for handlers a
 
 **Endpoint Design**:
 export class CustomerApi extends HttpApi.make('CustomerApi').add(
-  HttpApiGroup.make('Customers').add(
-    HttpApiEndpoint.get('searchByPhone', '/api/customers')
-      .addSuccess(Customer)
-      .addError(CustomerNotFound),
-    HttpApiEndpoint.post('create', '/api/customers')
-      .setPayload(CreateCustomerInput)
-      .addSuccess(Customer)
-      .addError(CustomerAlreadyExists),
-    HttpApiEndpoint.get('getById', '/api/customers/:id')
-      .addSuccess(Customer)
-      .addError(CustomerNotFound)
-  )
+HttpApiGroup.make('Customers').add(
+HttpApiEndpoint.get('searchByPhone', '/api/customers')
+.addSuccess(Customer)
+.addError(CustomerNotFound),
+HttpApiEndpoint.post('create', '/api/customers')
+.setPayload(CreateCustomerInput)
+.addSuccess(Customer)
+.addError(CustomerAlreadyExists),
+HttpApiEndpoint.get('getById', '/api/customers/:id')
+.addSuccess(Customer)
+.addError(CustomerNotFound)
+)
 ) {}
 
 **Resource-Based Routing**:
+
 - Nouns for resources (customers, orders, services)
 - HTTP verbs for actions (GET=read, POST=create, PUT=update, DELETE=delete)
 - Consistent URL structure
 
 **Response Format**:
+
 - JSON for all responses
 - Consistent error structure:
   ```json
@@ -215,6 +234,7 @@ export class CustomerApi extends HttpApi.make('CustomerApi').add(
   ```
 
 **Status Codes**:
+
 - 200 OK (successful GET/PUT)
 - 201 Created (successful POST)
 - 400 Bad Request (validation errors)
@@ -224,6 +244,7 @@ export class CustomerApi extends HttpApi.make('CustomerApi').add(
 - 500 Internal Server Error (unexpected errors)
 
 **Versioning Strategy**:
+
 - Start without version prefix (v1 implicit)
 - If breaking changes needed, introduce `/api/v2/` prefix
 - Maintain backward compatibility where possible
@@ -256,24 +277,29 @@ Use `@effect/sql` with `@effect/sql-pg` for database access, implementing a repo
 #### Alternatives Considered
 
 **Drizzle ORM**
+
 - Pros: Excellent DX, strong TypeScript support, Bun-compatible, good query builder
 - Cons: Adds abstraction layer, requires Effect wrappers for error handling, may limit complex queries
 
 **Kysely**
+
 - Pros: Great type safety, good query builder, SQL-first approach
 - Cons: Not Effect-native, requires significant Effect integration work, separate runtime concerns
 
 **Prisma**
+
 - Pros: Mature ecosystem, great DX, automatic migrations, Prisma Studio
 - Cons: Separate runtime/engine, poor Effect integration, schema-first approach may not fit, heavier dependency
 
 **Raw pg Driver**
+
 - Pros: Maximum control, lightweight
 - Cons: No Effect integration, manual error handling, no type safety, significant boilerplate
 
 #### Consequences
 
 **Positive**:
+
 - Idiomatic Effect code throughout
 - `Model.Class` provides automatic CRUD operations via `Model.makeRepository`
 - `Effect.Service` offers cleaner dependency injection compared to manual Context.Tag
@@ -285,12 +311,14 @@ Use `@effect/sql` with `@effect/sql-pg` for database access, implementing a repo
 - No ORM impedance mismatch
 
 **Negative**:
+
 - Write more SQL compared to ORM query builders
 - Need to handle migrations separately (not auto-generated)
 - Manual schema definitions in TypeScript
 - Smaller ecosystem compared to Prisma/Drizzle
 
 **Risks**:
+
 - Learning curve for @effect/sql API
 - SQL injection if not careful with dynamic queries
 - Schema drift between database and TypeScript types
@@ -298,72 +326,72 @@ Use `@effect/sql` with `@effect/sql-pg` for database access, implementing a repo
 #### Implementation Notes
 
 **Schema Definition**:
-```typescript
-import { Schema } from "@effect/schema"
-import { Model } from "@effect/sql"
 
-class Customer extends Model.Class<Customer>("Customer")({
+```typescript
+import { Schema } from '@effect/schema'
+import { Model } from '@effect/sql'
+
+class Customer extends Model.Class<Customer>('Customer')({
   id: Model.Generated(Schema.String),
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
-  created_at: Model.DateTimeInsert,  // snake_case matches database column
-  updated_at: Model.DateTimeUpdate   // snake_case matches database column
+  created_at: Model.DateTimeInsert, // snake_case matches database column
+  updated_at: Model.DateTimeUpdate, // snake_case matches database column
 }) {}
 ```
 
 **Note**: Use `Model.Class` for database entities as it provides built-in support for:
+
 - Generated IDs with `Model.Generated`
 - Automatic timestamps with `Model.DateTimeInsert` and `Model.DateTimeUpdate`
 - Integration with `Model.makeRepository` for CRUD operations
 - **Important**: Property names should match database column names exactly (use `snake_case` for database fields like `created_at`, `customer_id`, etc.)
 
 **Repository Pattern**:
+
 ```typescript
-import { SqlClient } from "@effect/sql"
+import { SqlClient } from '@effect/sql'
 
-export class CustomerRepository extends Effect.Service<CustomerRepository>()(
-  "CustomerRepository",
-  {
-    effect: Effect.gen(function* () {
-      const sql = yield* SqlClient.SqlClient;
-      const repo = yield* Model.makeRepository(Customer, {
-        tableName: "customers",
-        spanPrefix: "CustomerRepository",
-        idColumn: "id",
-      });
+export class CustomerRepository extends Effect.Service<CustomerRepository>()('CustomerRepository', {
+  effect: Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient
+    const repo = yield* Model.makeRepository(Customer, {
+      tableName: 'customers',
+      spanPrefix: 'CustomerRepository',
+      idColumn: 'id',
+    })
 
-      // CRITICAL: Always use explicit column lists, NEVER use SELECT *
-      const findByPhone = (phone: string) =>
-          sql<Customer>`
+    // CRITICAL: Always use explicit column lists, NEVER use SELECT *
+    const findByPhone = (phone: string) =>
+      sql<Customer>`
             SELECT id, name, phone, address, created_at, updated_at
             FROM customers
             WHERE phone = ${phone}
           `.pipe(
-              Effect.flatMap(rows =>
-                rows.length > 0
-                  ? Effect.succeed(Option.some(rows[0]))
-                  : Effect.succeed(Option.none())
-              )
-            );
+        Effect.flatMap((rows) =>
+          rows.length > 0 ? Effect.succeed(Option.some(rows[0])) : Effect.succeed(Option.none())
+        )
+      )
 
-      return {
-        ...repo, // Includes findById, insert, update, delete
-        fetchByPhone
-      };
-    }),
-    dependencies: [PgLive],
-  },
-) {}
+    return {
+      ...repo, // Includes findById, insert, update, delete
+      fetchByPhone,
+    }
+  }),
+  dependencies: [PgLive],
+}) {}
 ```
 
 **Note**: `Effect.Service` provides:
+
 - Cleaner syntax compared to manual `Context.Tag` definitions
 - Automatic dependency management
 - Better integration with Effect's layer system
 - `Model.makeRepository` generates CRUD operations automatically
 
 **Query Execution**:
+
 - **CRITICAL: NEVER use `SELECT *` in queries - always specify explicit column lists**
   - Improves performance by reducing data transfer
   - Prevents accidentally exposing sensitive columns
@@ -376,6 +404,7 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()(
 - Use transactions for multi-step operations
 
 **Example - Correct vs Incorrect**:
+
 ```typescript
 // ❌ WRONG - Never use SELECT *
 sql<Customer>`SELECT * FROM customers WHERE id = ${id}`
@@ -396,24 +425,28 @@ sql<CustomerSummary>`
 ```
 
 **Important Patterns**:
+
 - Always use `Model.Class` for database entities (not `Schema.Struct`)
 - Always use `Effect.Service` for repositories and services (not manual `Context.Tag`)
 - Import `Model` from `@effect/sql` for entity definitions
 - Repository methods from `Model.makeRepository` include: `findById`, `insert`, `update`, `delete`
 
 **Naming Conventions**:
+
 - **Database tables**: Use `snake_case` (e.g., `customers`, `order_items`, `refresh_tokens`)
 - **Database columns**: Use `snake_case` (e.g., `customer_id`, `created_at`, `updated_at`, `phone_number`)
 - **Model.Class properties**: Must match database column names exactly (use `snake_case`)
 - **TypeScript variables/functions**: Use `camelCase` for application code, but `snake_case` for database mappings
 
 **Migration Strategy**:
+
 - Consider golang-migrate or similar tool for SQL migrations
 - Store migration files in `/backend/migrations/`
 - Version migrations with timestamps
 - Run migrations as part of deployment process
 
 **Connection Configuration**:
+
 - Connection pool size based on expected load
 - Timeout configuration
 - SSL/TLS for production
@@ -434,6 +467,7 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 #### Rationale
 
 **Why JWT with Refresh Tokens**:
+
 - **Stateless Access Tokens**: Reduces database lookups for every request, improves scalability
 - **Revocation Capability**: Refresh tokens stored in database enable revocation (logout, security events)
 - **Security Balance**: Short-lived access tokens (15 min) limit exposure; refresh tokens provide seamless UX
@@ -441,12 +475,14 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 - **Good Fit for Use Case**: Staff application with infrequent logins but need for immediate revocation
 
 **Token Strategy**:
+
 - **Access Tokens**: JWT, short-lived (15 minutes), contain user ID and role, signed with secret
 - **Refresh Tokens**: Random tokens, long-lived (7-30 days), stored in database, rotated on use
 - **Storage**: httpOnly cookies for both tokens (XSS protection)
 - **Rotation**: Issue new refresh token on each refresh (limits replay window)
 
 **Authorization (RBAC)**:
+
 - **Roles**: Admin (full access) vs Staff (limited access)
 - **Role in JWT**: Role claim embedded in access token
 - **Permission Checks**: Route-level and operation-level guards
@@ -455,20 +491,24 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 #### Alternatives Considered
 
 **Session-Based Authentication**
+
 - Pros: Simple revocation (delete session), familiar pattern, server controls everything
 - Cons: Requires Redis or database for session storage, scaling complexity, stateful
 
 **Pure JWT (No Refresh Tokens)**
+
 - Pros: Fully stateless, simple implementation
 - Cons: Cannot revoke tokens before expiry, security risk if token compromised, long expiry = high risk, short expiry = poor UX
 
 **OAuth2/OIDC**
+
 - Pros: Industry standard, delegation support
 - Cons: Overkill for staff-only internal application, requires auth provider, complex
 
 #### Consequences
 
 **Positive**:
+
 - Good performance (stateless access token validation)
 - Immediate revocation via refresh token invalidation
 - Scalable (no session state to manage)
@@ -477,6 +517,7 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 - Standard approach with good library support
 
 **Negative**:
+
 - Two-token system adds complexity
 - Database lookup required for refresh operations
 - Must maintain refresh token table
@@ -484,6 +525,7 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 - Clock skew considerations for JWT expiry
 
 **Risks**:
+
 - JWT secret leak compromises all tokens
 - Refresh token database becomes bottleneck under high load
 - Cookie security depends on HTTPS in production
@@ -492,16 +534,18 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 #### Implementation Notes
 
 **JWT Structure**:
+
 ```typescript
 interface AccessTokenPayload {
-  sub: string        // User ID
-  role: "admin" | "staff"
-  iat: number        // Issued at
-  exp: number        // Expires at (15 min)
+  sub: string // User ID
+  role: 'admin' | 'staff'
+  iat: number // Issued at
+  exp: number // Expires at (15 min)
 }
 ```
 
 **Refresh Token Storage**:
+
 ```sql
 CREATE TABLE refresh_tokens (
   id UUID PRIMARY KEY,
@@ -514,26 +558,29 @@ CREATE TABLE refresh_tokens (
 ```
 
 **Authentication Flow**:
+
 1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token → Return both in httpOnly cookies
 2. API Request: Extract access token → Verify signature → Extract user/role → Inject into Effect Context
 3. Refresh: Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new tokens
 4. Logout: Revoke refresh token in database → Clear cookies
 
 **Authorization Implementation**:
+
 ```typescript
 // CurrentUser is provided by AuthMiddleware
-const currentUser = yield* CurrentUser
+const currentUser = yield * CurrentUser
 
 // Authorization guard
 const requireAdmin = Effect.gen(function* () {
   const user = yield* CurrentUser
-  if (user.role !== "admin") {
+  if (user.role !== 'admin') {
     return yield* Effect.fail(new ForbiddenError())
   }
 })
 ```
 
 **AuthMiddleware using HttpApiMiddleware.Tag pattern**:
+
 ```typescript
 import { HttpApiMiddleware, HttpApiSecurity } from '@effect/platform'
 import { Effect, Layer, Redacted } from 'effect'
@@ -541,16 +588,13 @@ import { Unauthorized } from '@domain/http/HttpErrors'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
 
-export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()(
-  'AuthMiddleware',
-  {
-    failure: Unauthorized,
-    provides: CurrentUser,
-    security: {
-      bearer: HttpApiSecurity.bearer,
-    },
-  }
-) {}
+export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('AuthMiddleware', {
+  failure: Unauthorized,
+  provides: CurrentUser,
+  security: {
+    bearer: HttpApiSecurity.bearer,
+  },
+}) {}
 
 export const AuthMiddlewareLive = Layer.effect(
   AuthMiddleware,
@@ -577,23 +621,26 @@ export const AuthMiddlewareLive = Layer.effect(
 ```
 
 **Usage in API endpoints**:
+
 ```typescript
-HttpApiEndpoint.post('logout', '/api/auth/logout')
-  .middleware(AuthMiddleware)  // Requires authentication
+HttpApiEndpoint.post('logout', '/api/auth/logout').middleware(AuthMiddleware) // Requires authentication
 ```
 
 **Note**: `AuthMiddleware` uses `HttpApiMiddleware.Tag` pattern because it represents request-scoped security that:
+
 - Extracts and verifies bearer tokens from Authorization header
 - Provides `CurrentUser` context to downstream handlers
 - Is declared at the API/security level for type-safe security
 
 **Middleware**:
+
 - Authentication middleware extracts/verifies access token
 - Injects CurrentUser into Effect Context
 - Routes requiring auth are composed with auth middleware
 - Admin routes additionally use requireAdmin guard
 
 **Security Considerations**:
+
 - JWT secret from environment variable (long, random)
 - Password hashing with bcrypt or argon2 (cost factor ≥ 10)
 - HTTPS-only cookies in production
@@ -711,6 +758,7 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Layer Responsibilities
 
 **Domain Layer** (`src/domain/`):
+
 - Business entities (using `Model.Class` for database entities)
 - Domain-specific errors (`*Errors.ts`)
 - Domain services and utilities (PhoneNumber, OrderStatusValidator)
@@ -718,12 +766,14 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 - Pure functions (no infrastructure dependencies)
 
 **API Layer** (`src/api/`):
+
 - `HttpApi.make()` definitions with endpoints and groups
 - Request/response schemas
 - Error definitions per endpoint
 - Type-safe API contracts
 
 **Handlers Layer** (`src/handlers/`):
+
 - `HttpApiBuilder.group()` implementations for each API
 - Request parsing and parameter extraction
 - Error mapping from domain errors to HTTP errors
@@ -731,6 +781,7 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 - HTTP-specific concerns only
 
 **Usecase Layer** (`src/usecase/`):
+
 - Use cases orchestrating domain services
 - Application-specific business flows
 - Transaction boundaries
@@ -738,21 +789,25 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 - Independent of HTTP/database details
 
 **Middleware Layer** (`src/middleware/`):
+
 - `AuthMiddleware` using `HttpApiMiddleware.Tag` pattern
 - JWT verification and CurrentUser provision
 - Request-scoped security
 
 **Repository Layer** (`src/repositories/`):
+
 - Database access using `Effect.Service` and `Model.makeRepository`
 - CRUD operations for entities
 - Custom queries with explicit column selection
 
 **HTTP Layer** (`src/http/`):
+
 - HTTP server setup (`HttpServer.ts`)
 - Router composition (`Router.ts`)
 - Request parsing utilities
 
 **Configuration Layer** (`src/configs/`):
+
 - Environment variable parsing (`env.ts`)
 - Application configuration
 
@@ -768,6 +823,7 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Consequences
 
 **Positive**:
+
 - Clear boundaries between layers
 - Highly testable (can test domain without infrastructure)
 - Easy to navigate codebase
@@ -776,12 +832,14 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 - Easy to swap infrastructure implementations
 
 **Negative**:
+
 - More files and directories than flat structure
 - May feel over-engineered for small applications
 - Requires discipline to maintain boundaries
 - Potential for boilerplate in simple CRUD operations
 
 **Risks**:
+
 - Team may be tempted to skip layers for "simple" features
 - Circular dependencies if not careful
 - Need to resist putting business logic in routes or repositories
@@ -789,6 +847,7 @@ Organize code using Clean Architecture / Hexagonal Architecture principles withi
 #### Handler Pattern Example
 
 **API Definition (src/api/CustomerApi.ts)**:
+
 ```typescript
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Customer, CreateCustomerInput } from '@domain/Customer'
@@ -807,33 +866,32 @@ export class CustomerApi extends HttpApi.make('CustomerApi').add(
 ```
 
 **Handler Implementation (src/handlers/CustomerHandlers.ts)**:
+
 ```typescript
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option } from 'effect'
 import { CustomerApi } from '@api/CustomerApi'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 
-export const CustomerHandlersLive = HttpApiBuilder.group(
-  CustomerApi,
-  'Customers',
-  (handlers) =>
-    handlers
-      .handle('searchByPhone', () =>
-        Effect.gen(function* () {
-          const customerService = yield* CustomerService
-          // Handler logic
-        })
-      )
-      .handle('create', ({ payload }) =>
-        Effect.gen(function* () {
-          const customerService = yield* CustomerService
-          return yield* customerService.create(payload)
-        })
-      )
+export const CustomerHandlersLive = HttpApiBuilder.group(CustomerApi, 'Customers', (handlers) =>
+  handlers
+    .handle('searchByPhone', () =>
+      Effect.gen(function* () {
+        const customerService = yield* CustomerService
+        // Handler logic
+      })
+    )
+    .handle('create', ({ payload }) =>
+      Effect.gen(function* () {
+        const customerService = yield* CustomerService
+        return yield* customerService.create(payload)
+      })
+    )
 )
 ```
 
 **Router and Layer Composition (src/http/Router.ts)**:
+
 ```typescript
 import { HttpApiBuilder } from '@effect/platform'
 import { Layer } from 'effect'
@@ -853,7 +911,7 @@ const CustomerApiLive = HttpApiBuilder.api(CustomerApi).pipe(
 
 const AuthApiLive = HttpApiBuilder.api(AuthApi).pipe(
   Layer.provide(AuthHandlersLive),
-  Layer.provide(AuthMiddlewareLive),
+  Layer.provide(AuthMiddlewareLive)
   // ... other dependencies
 )
 
@@ -887,89 +945,94 @@ Use Effect's typed error handling with a structured error hierarchy, discriminat
 #### Error Type Hierarchy
 
 **Domain Errors** (Business Logic):
+
 ```typescript
 // Customer domain
-class CustomerNotFound extends Data.TaggedError("CustomerNotFound")<{
+class CustomerNotFound extends Data.TaggedError('CustomerNotFound')<{
   phone: string
 }> {}
 
-class CustomerAlreadyExists extends Data.TaggedError("CustomerAlreadyExists")<{
+class CustomerAlreadyExists extends Data.TaggedError('CustomerAlreadyExists')<{
   phone: string
 }> {}
 
-class CustomerValidationError extends Data.TaggedError("CustomerValidationError")<{
+class CustomerValidationError extends Data.TaggedError('CustomerValidationError')<{
   field: string
   message: string
 }> {}
 
 // Order domain
-class OrderNotFound extends Data.TaggedError("OrderNotFound")<{
+class OrderNotFound extends Data.TaggedError('OrderNotFound')<{
   orderId: string
 }> {}
 
-class InvalidOrderStatus extends Data.TaggedError("InvalidOrderStatus")<{
+class InvalidOrderStatus extends Data.TaggedError('InvalidOrderStatus')<{
   currentStatus: string
   attemptedStatus: string
 }> {}
 
-class OrderValidationError extends Data.TaggedError("OrderValidationError")<{
+class OrderValidationError extends Data.TaggedError('OrderValidationError')<{
   errors: Array<{ field: string; message: string }>
 }> {}
 ```
 
 **Infrastructure Errors**:
+
 ```typescript
-class DatabaseError extends Data.TaggedError("DatabaseError")<{
+class DatabaseError extends Data.TaggedError('DatabaseError')<{
   operation: string
   cause: unknown
 }> {}
 
-class ConfigurationError extends Data.TaggedError("ConfigurationError")<{
+class ConfigurationError extends Data.TaggedError('ConfigurationError')<{
   setting: string
   message: string
 }> {}
 ```
 
 **Authentication/Authorization Errors**:
+
 ```typescript
-class UnauthorizedError extends Data.TaggedError("UnauthorizedError")<{
+class UnauthorizedError extends Data.TaggedError('UnauthorizedError')<{
   reason: string
 }> {}
 
-class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
+class ForbiddenError extends Data.TaggedError('ForbiddenError')<{
   requiredRole?: string
 }> {}
 
-class InvalidTokenError extends Data.TaggedError("InvalidTokenError")<{
-  tokenType: "access" | "refresh"
+class InvalidTokenError extends Data.TaggedError('InvalidTokenError')<{
+  tokenType: 'access' | 'refresh'
 }> {}
 ```
 
 #### Error Recovery Strategies
 
 **Retry** (for transient failures):
+
 ```typescript
 const result = Effect.retry(
   fetchFromExternalService,
-  Schedule.exponential("100 millis").pipe(Schedule.upTo("5 seconds"))
+  Schedule.exponential('100 millis').pipe(Schedule.upTo('5 seconds'))
 )
 ```
 
 **Fallback** (default values):
+
 ```typescript
-const config = loadConfig.pipe(
-  Effect.catchAll(() => Effect.succeed(defaultConfig))
-)
+const config = loadConfig.pipe(Effect.catchAll(() => Effect.succeed(defaultConfig)))
 ```
 
 **Transform** (map to different error):
+
 ```typescript
-const customer = repo.findByPhone(phone).pipe(
-  Effect.mapError(dbError => new CustomerNotFound({ phone }))
-)
+const customer = repo
+  .findByPhone(phone)
+  .pipe(Effect.mapError((dbError) => new CustomerNotFound({ phone })))
 ```
 
 **Fail Fast** (propagate error):
+
 ```typescript
 const order = Effect.gen(function* (_) {
   const customer = yield* _(customerService.findByPhone(phone)) // Propagates error
@@ -985,36 +1048,41 @@ Map domain/infrastructure errors to HTTP status codes:
 const errorToHttpResponse = (error: unknown): HttpResponse => {
   if (error instanceof CustomerNotFound) {
     return HttpResponse.json(
-      { error: { code: "CUSTOMER_NOT_FOUND", message: `Customer with phone ${error.phone} not found` } },
+      {
+        error: {
+          code: 'CUSTOMER_NOT_FOUND',
+          message: `Customer with phone ${error.phone} not found`,
+        },
+      },
       { status: 404 }
     )
   }
 
   if (error instanceof UnauthorizedError) {
     return HttpResponse.json(
-      { error: { code: "UNAUTHORIZED", message: error.reason } },
+      { error: { code: 'UNAUTHORIZED', message: error.reason } },
       { status: 401 }
     )
   }
 
   if (error instanceof ForbiddenError) {
     return HttpResponse.json(
-      { error: { code: "FORBIDDEN", message: "Insufficient permissions" } },
+      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
       { status: 403 }
     )
   }
 
   if (error instanceof OrderValidationError) {
     return HttpResponse.json(
-      { error: { code: "VALIDATION_ERROR", errors: error.errors } },
+      { error: { code: 'VALIDATION_ERROR', errors: error.errors } },
       { status: 400 }
     )
   }
 
   // Unexpected errors
-  console.error("Unexpected error:", error)
+  console.error('Unexpected error:', error)
   return HttpResponse.json(
-    { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" } },
+    { error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } },
     { status: 500 }
   )
 }
@@ -1026,14 +1094,14 @@ Use Effect Logger for structured logging:
 
 ```typescript
 Effect.gen(function* (_) {
-  yield* _(Effect.logInfo("Creating order", { customerId, items }))
+  yield* _(Effect.logInfo('Creating order', { customerId, items }))
   const order = yield* _(orderService.create(customerId, items))
-  yield* _(Effect.logInfo("Order created", { orderId: order.id }))
+  yield* _(Effect.logInfo('Order created', { orderId: order.id }))
   return order
 }).pipe(
-  Effect.catchAll(error =>
+  Effect.catchAll((error) =>
     Effect.gen(function* (_) {
-      yield* _(Effect.logError("Order creation failed", { error }))
+      yield* _(Effect.logError('Order creation failed', { error }))
       return yield* _(Effect.fail(error))
     })
   )
@@ -1041,6 +1109,7 @@ Effect.gen(function* (_) {
 ```
 
 **Log Levels**:
+
 - **Debug**: Development details
 - **Info**: Important business events (order created, customer registered)
 - **Warning**: Recoverable issues (retry attempts, fallback used)
@@ -1050,20 +1119,24 @@ Effect.gen(function* (_) {
 #### Alternatives Considered
 
 **Try/Catch Exceptions**
+
 - Pros: Familiar, built into JavaScript
 - Cons: No type safety, easy to forget handling, breaks Effect composition
 
 **Result Type (Custom)**
+
 - Pros: Type-safe error handling
 - Cons: Reinventing the wheel, poor integration with Effect
 
 **Throwing Errors in Effect**
+
 - Pros: Simple
 - Cons: Loses typed error benefits, Effect.die for unexpected errors only
 
 #### Consequences
 
 **Positive**:
+
 - All error cases explicit in type signatures
 - Compiler enforces error handling
 - Rich error context for debugging
@@ -1072,12 +1145,14 @@ Effect.gen(function* (_) {
 - Structured logging integration
 
 **Negative**:
+
 - Requires discipline to create error types
 - More verbose than throwing exceptions
 - Learning curve for Effect error handling
 - Need to maintain error type hierarchy
 
 **Risks**:
+
 - Developers may use Effect.die to bypass error handling (anti-pattern)
 - Over-granular error types increase complexity
 - Error mapping to HTTP must be kept in sync
@@ -1085,6 +1160,7 @@ Effect.gen(function* (_) {
 #### Implementation Notes
 
 **Error Handling**:
+
 ```typescript
 // HttpApiBuilder handles errors automatically via addError() declarations
 HttpApiEndpoint.post('create', '/api/customers')
@@ -1109,27 +1185,33 @@ HttpApiEndpoint.post('create', '/api/customers')
 ```
 
 **Validation Errors**:
+
 ```typescript
-const parseRequest = <A>(schema: Schema.Schema<A>) =>
+const parseRequest =
+  <A>(schema: Schema.Schema<A>) =>
   (data: unknown): Effect.Effect<A, ValidationError, never> =>
     Schema.decode(schema)(data).pipe(
-      Effect.mapError(parseError => new ValidationError({
-        errors: parseError.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
-      }))
+      Effect.mapError(
+        (parseError) =>
+          new ValidationError({
+            errors: parseError.errors.map((e) => ({ field: e.path.join('.'), message: e.message })),
+          })
+      )
     )
 ```
 
 **Testing Errors**:
+
 ```typescript
-test("returns 404 when customer not found", async () => {
+test('returns 404 when customer not found', async () => {
   const result = await Effect.runPromise(
-    customerService.findByPhone("+6299999999").pipe(
+    customerService.findByPhone('+6299999999').pipe(
       Effect.flip // Flip success/error channels for testing
     )
   )
 
   expect(result).toBeInstanceOf(CustomerNotFound)
-  expect(result.phone).toBe("+6299999999")
+  expect(result.phone).toBe('+6299999999')
 })
 ```
 
@@ -1159,13 +1241,16 @@ Use `@effect/schema` for all validation, parsing, and serialization needs across
 #### Use Cases
 
 **1. API Request Validation**:
+
 ```typescript
 const CreateOrderRequest = Schema.Struct({
   customerId: Schema.String.pipe(Schema.uuid()),
-  items: Schema.Array(Schema.Struct({
-    serviceId: Schema.String.pipe(Schema.uuid()),
-    quantity: Schema.Number.pipe(Schema.positive())
-  })).pipe(Schema.nonEmpty())
+  items: Schema.Array(
+    Schema.Struct({
+      serviceId: Schema.String.pipe(Schema.uuid()),
+      quantity: Schema.Number.pipe(Schema.positive()),
+    })
+  ).pipe(Schema.nonEmpty()),
 })
 
 type CreateOrderRequest = Schema.Schema.Type<typeof CreateOrderRequest>
@@ -1177,44 +1262,44 @@ const handler = Effect.gen(function* (_) {
 ```
 
 **2. Database Entity Schemas**:
+
 ```typescript
 // Use Model.Class for database entities (defined in domain layer)
-class Customer extends Model.Class<Customer>("Customer")({
+class Customer extends Model.Class<Customer>('Customer')({
   id: Model.Generated(Schema.String),
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
-  created_at: Model.DateTimeInsert,  // Database column: created_at (snake_case)
-  updated_at: Model.DateTimeUpdate   // Database column: updated_at (snake_case)
+  created_at: Model.DateTimeInsert, // Database column: created_at (snake_case)
+  updated_at: Model.DateTimeUpdate, // Database column: updated_at (snake_case)
 }) {}
 
 // Model.Class integrates with @effect/sql for automatic CRUD operations
-const repo = yield* Model.makeRepository(Customer, {
-  tableName: "customers",          // Table name in snake_case
-  spanPrefix: "CustomerRepository",
-  idColumn: "id",
-});
+const repo =
+  yield *
+  Model.makeRepository(Customer, {
+    tableName: 'customers', // Table name in snake_case
+    spanPrefix: 'CustomerRepository',
+    idColumn: 'id',
+  })
 
-const customer = yield* repo.findById("customer-id");
+const customer = yield * repo.findById('customer-id')
 ```
 
 **Note**:
+
 - Use `Model.Class` for database entities that map to tables
 - Use `Schema.Struct` for API DTOs, request/response validation, and non-database schemas
 - **Database Convention**: All database table names and column names must use `snake_case` (e.g., `created_at`, `updated_at`, `customer_id`)
 - **TypeScript Convention**: Model.Class properties should match the database column names exactly (use `snake_case` for database fields)
 
 **3. Shared Value Objects and Enums**:
+
 ```typescript
 // Shared schemas for status enums (not database entities)
-const OrderStatus = Schema.Literal(
-  "received",
-  "in_progress",
-  "ready",
-  "delivered"
-)
+const OrderStatus = Schema.Literal('received', 'in_progress', 'ready', 'delivered')
 
-const PaymentStatus = Schema.Literal("paid", "unpaid")
+const PaymentStatus = Schema.Literal('paid', 'unpaid')
 
 type OrderStatus = Schema.Schema.Type<typeof OrderStatus>
 type PaymentStatus = Schema.Schema.Type<typeof PaymentStatus>
@@ -1223,10 +1308,11 @@ type PaymentStatus = Schema.Schema.Type<typeof PaymentStatus>
 **Note**: For the actual Order entity, use `Model.Class` (see "Database Entity Schemas" section). Use `Schema.Literal` for enums and value objects.
 
 **4. Phone Number Validation**:
+
 ```typescript
 const PhoneNumber = Schema.String.pipe(
   Schema.pattern(/^\+62\d{9,13}$/),
-  Schema.brand("PhoneNumber")
+  Schema.brand('PhoneNumber')
 )
 
 type PhoneNumber = Schema.Schema.Type<typeof PhoneNumber>
@@ -1236,6 +1322,7 @@ const normalizePhoneNumber = (phone: string): Effect.Effect<PhoneNumber, Validat
 ```
 
 **5. Configuration Validation**:
+
 ```typescript
 const AppConfig = Schema.Struct({
   database: Schema.Struct({
@@ -1267,51 +1354,49 @@ const loadConfig = (): Effect.Effect<AppConfig, ConfigurationError> =>
 **Note**: These patterns apply to both `Schema.Struct` (for DTOs) and `Model.Class` (for database entities).
 
 **Optional Fields**:
+
 ```typescript
 // Example with Schema.Struct (for DTOs)
 const CustomerDTO = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   address: Schema.optional(Schema.String), // May be undefined
-  notes: Schema.NullOr(Schema.String)       // May be null
+  notes: Schema.NullOr(Schema.String), // May be null
 })
 
 // Same patterns work in Model.Class for database entities
-class Customer extends Model.Class<Customer>("Customer")({
+class Customer extends Model.Class<Customer>('Customer')({
   id: Model.Generated(Schema.String),
   name: Schema.String,
-  address: Schema.NullOr(Schema.String),  // Nullable field (snake_case: address)
-  notes: Schema.NullOr(Schema.String),    // Nullable field (snake_case: notes)
+  address: Schema.NullOr(Schema.String), // Nullable field (snake_case: address)
+  notes: Schema.NullOr(Schema.String), // Nullable field (snake_case: notes)
   created_at: Model.DateTimeInsert,
-  updated_at: Model.DateTimeUpdate
+  updated_at: Model.DateTimeUpdate,
 }) {}
 ```
 
 **Transformations**:
+
 ```typescript
-const DateFromString = Schema.transform(
-  Schema.String,
-  Schema.Date,
-  { decode: (s) => new Date(s), encode: (d) => d.toISOString() }
-)
+const DateFromString = Schema.transform(Schema.String, Schema.Date, {
+  decode: (s) => new Date(s),
+  encode: (d) => d.toISOString(),
+})
 ```
 
 **Refinements**:
-```typescript
-const PositiveInteger = Schema.Number.pipe(
-  Schema.int(),
-  Schema.positive()
-)
 
-const NonEmptyString = Schema.String.pipe(
-  Schema.minLength(1)
-)
+```typescript
+const PositiveInteger = Schema.Number.pipe(Schema.int(), Schema.positive())
+
+const NonEmptyString = Schema.String.pipe(Schema.minLength(1))
 ```
 
 **Branded Types** (prevent mixing):
+
 ```typescript
-const CustomerId = Schema.String.pipe(Schema.uuid(), Schema.brand("CustomerId"))
-const ServiceId = Schema.String.pipe(Schema.uuid(), Schema.brand("ServiceId"))
+const CustomerId = Schema.String.pipe(Schema.uuid(), Schema.brand('CustomerId'))
+const ServiceId = Schema.String.pipe(Schema.uuid(), Schema.brand('ServiceId'))
 
 type CustomerId = Schema.Schema.Type<typeof CustomerId>
 type ServiceId = Schema.Schema.Type<typeof ServiceId>
@@ -1327,13 +1412,15 @@ const parseResult = Schema.decode(CreateOrderRequest)(requestBody)
 // Effect<CreateOrderRequest, ParseError, never>
 
 parseResult.pipe(
-  Effect.catchTag("ParseError", (error) =>
-    Effect.fail(new ValidationError({
-      errors: error.errors.map(e => ({
-        field: e.path.join('.'),
-        message: e.message
-      }))
-    }))
+  Effect.catchTag('ParseError', (error) =>
+    Effect.fail(
+      new ValidationError({
+        errors: error.errors.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      })
+    )
   )
 )
 ```
@@ -1341,28 +1428,34 @@ parseResult.pipe(
 #### Alternatives Considered
 
 **Zod**
+
 - Pros: Very popular, great DX, excellent error messages, huge ecosystem
 - Cons: Not Effect-native, requires adapters for Effect integration, separate runtime
 
 **Yup**
+
 - Pros: Mature, widely used, good for forms
 - Cons: Not Effect-native, less TypeScript-centric, older API design
 
 **io-ts**
+
 - Pros: Similar approach to @effect/schema, functional
 - Cons: Less integrated with Effect, @effect/schema is the successor
 
 **ArkType**
+
 - Pros: Fast, good TypeScript inference
 - Cons: Newer, smaller ecosystem, not Effect-native
 
 **Custom Validation**
+
 - Pros: Full control
 - Cons: Massive effort, error-prone, loses ecosystem benefits
 
 #### Consequences
 
 **Positive**:
+
 - Single source of truth for types and validation
 - Automatic TypeScript type inference
 - Excellent error messages
@@ -1372,12 +1465,14 @@ parseResult.pipe(
 - Effect-native error handling
 
 **Negative**:
+
 - Learning curve for @effect/schema API
 - Schema definitions can be verbose
 - Runtime overhead for validation (necessary for safety)
 - Breaking changes in @effect/schema affect entire app
 
 **Risks**:
+
 - Over-validation (validating internal data unnecessarily)
 - Performance impact if used inappropriately (e.g., validating every function call)
 - Schema complexity grows with domain complexity
@@ -1385,12 +1480,14 @@ parseResult.pipe(
 #### Implementation Notes
 
 **Schema Organization**:
+
 - Domain entity schemas in `src/domain/{entity}/{Entity}.ts` (use `Model.Class` for database entities)
 - Request/response DTOs in `src/api/{resource}/schemas.ts` (use `Schema.Struct`)
 - Shared utility schemas in `src/domain/` (use `Schema.Struct`)
 - Database entities colocated with repositories (use `Model.Class`)
 
 **Best Practices**:
+
 - Validate at boundaries (HTTP requests, database queries, external APIs)
 - Don't validate internal function calls between layers
 - Use `Model.Class` for database entities (provides CRUD integration)
@@ -1400,6 +1497,7 @@ parseResult.pipe(
 - Keep schemas close to where they're used
 
 **Testing**:
+
 - Test schema validation separately
 - Verify error messages are helpful
 - Test edge cases (empty strings, null, undefined, etc.)
@@ -1411,10 +1509,12 @@ parseResult.pipe(
 ### Core Dependencies
 
 **Runtime & Language**:
+
 - `bun` - JavaScript runtime (≥1.0)
 - `typescript` - Type system (≥5.0)
 
 **Effect Ecosystem**:
+
 - `effect` - Core Effect library (including `Effect.Service` for dependency injection)
 - `@effect/platform` - Platform abstractions
 - `@effect/platform-bun` - Bun-specific implementations
@@ -1423,14 +1523,17 @@ parseResult.pipe(
 - `@effect/sql-pg` - PostgreSQL driver
 
 **Database**:
+
 - `postgresql` - Database server
 - `pg` - Node.js PostgreSQL client (peer dependency for @effect/sql-pg)
 
 **Authentication**:
+
 - `jose` - JWT signing and verification
 - `bcrypt` or `@node-rs/bcrypt` - Password hashing
 
 **Development**:
+
 - `vitest` - Testing framework
 - `@effect/vitest` - Effect testing utilities
 - `prettier` - Code formatting
@@ -1439,9 +1542,11 @@ parseResult.pipe(
 ### Optional Dependencies
 
 **Migration Tools**:
+
 - `golang-migrate` or `node-pg-migrate` - Database migrations
 
 **Observability** (Future):
+
 - `@effect/opentelemetry` - OpenTelemetry integration
 - `pino` - Structured logging
 
@@ -1506,45 +1611,39 @@ HTTP Request
 
 ```typescript
 // 1. Define and implement service with Effect.Service
-export class CustomerService extends Effect.Service<CustomerService>()(
-  "CustomerService",
-  {
-    effect: Effect.gen(function* () {
-      const repo = yield* CustomerRepository;
+export class CustomerService extends Effect.Service<CustomerService>()('CustomerService', {
+  effect: Effect.gen(function* () {
+    const repo = yield* CustomerRepository
 
-      return {
-        findByPhone: (phone: PhoneNumber) => repo.findByPhone(phone),
-        create: (data: NewCustomer) =>
-          Effect.gen(function* () {
-            // Business logic here
-            const existing = yield* repo.findByPhone(data.phone);
-            if (Option.isSome(existing)) {
-              return yield* Effect.fail(new CustomerAlreadyExists({ phone: data.phone }));
-            }
-            return yield* repo.insert(data);
-          })
-      };
-    }),
-    dependencies: [CustomerRepository.Default],
-  },
-) {}
+    return {
+      findByPhone: (phone: PhoneNumber) => repo.findByPhone(phone),
+      create: (data: NewCustomer) =>
+        Effect.gen(function* () {
+          // Business logic here
+          const existing = yield* repo.findByPhone(data.phone)
+          if (Option.isSome(existing)) {
+            return yield* Effect.fail(new CustomerAlreadyExists({ phone: data.phone }))
+          }
+          return yield* repo.insert(data)
+        }),
+    }
+  }),
+  dependencies: [CustomerRepository.Default],
+}) {}
 
 // 2. Compose layers
-const AppLive = Layer.mergeAll(
-  SqlClientLive,
-  CustomerRepository.Default,
-  CustomerService.Default
-)
+const AppLive = Layer.mergeAll(SqlClientLive, CustomerRepository.Default, CustomerService.Default)
 
 // 3. Use in application
 const program = Effect.gen(function* () {
-  const customerService = yield* CustomerService;
-  const customer = yield* customerService.findByPhone(phone);
+  const customerService = yield* CustomerService
+  const customer = yield* customerService.findByPhone(phone)
   // ...
 }).pipe(Effect.provide(AppLive))
 ```
 
 **Note**: Prefer `Effect.Service` over manual `Context.Tag` implementations:
+
 - Cleaner, more concise syntax
 - Dependencies are explicit in the service definition
 - Automatic `.Default` layer generation
@@ -1554,49 +1653,50 @@ const program = Effect.gen(function* () {
 ### Testing Strategy
 
 **Unit Tests** (Domain & Application):
+
 - Test business logic without infrastructure
 - Mock repositories/external services using Test Layers
 - Fast, no database required
 
 **Integration Tests** (Infrastructure):
+
 - Test repositories against real database (test container)
 - Test HTTP routes end-to-end
 - Slower, but catch integration issues
 
 **Test Structure**:
-```typescript
-import { describe, test, expect } from "vitest"
-import { Effect, Layer } from "effect"
 
-describe("CustomerService", () => {
+```typescript
+import { describe, test, expect } from 'vitest'
+import { Effect, Layer } from 'effect'
+
+describe('CustomerService', () => {
   test("creates customer when phone doesn't exist", async () => {
     // Create mock repository layer
     const TestRepo = Layer.succeed(
       CustomerRepository,
       CustomerRepository.of({
         findByPhone: () => Effect.succeed(Option.none()),
-        insert: (data) => Effect.succeed({ id: "123", ...data }),
+        insert: (data) => Effect.succeed({ id: '123', ...data }),
         findById: () => Effect.succeed(Option.none()),
         update: () => Effect.succeed(undefined),
-        delete: () => Effect.succeed(undefined)
+        delete: () => Effect.succeed(undefined),
       })
     )
 
     const program = Effect.gen(function* () {
-      const service = yield* CustomerService;
-      return yield* service.create({ name: "John", phone: "+628123456789" });
-    }).pipe(
-      Effect.provide(TestRepo),
-      Effect.provide(CustomerService.Default)
-    )
+      const service = yield* CustomerService
+      return yield* service.create({ name: 'John', phone: '+628123456789' })
+    }).pipe(Effect.provide(TestRepo), Effect.provide(CustomerService.Default))
 
     const result = await Effect.runPromise(program)
-    expect(result.id).toBe("123")
+    expect(result.id).toBe('123')
   })
 })
 ```
 
 **Note**: When testing services defined with `Effect.Service`:
+
 - Use `Layer.succeed` with the service constructor
 - Provide all methods required by the repository/service interface
 - Use the `.Default` layer for services under test
@@ -1604,10 +1704,12 @@ describe("CustomerService", () => {
 ### Database Migration Approach
 
 **Option 1: golang-migrate**
+
 - Pros: Battle-tested, simple, language-agnostic
 - Cons: Separate tool to install
 
 **Option 2: Custom Effect-based migrations**
+
 - Pros: All TypeScript, Effect integration
 - Cons: Need to build migration runner
 
@@ -1696,7 +1798,7 @@ Topics deferred or out of scope for initial implementation:
 
 - **Effect Discord**: https://discord.gg/effect-ts
 - **Effect Examples**: https://github.com/Effect-TS/effect/tree/main/packages/examples
-- **Effect Twitter**: @EffectTS_
+- **Effect Twitter**: @EffectTS\_
 
 ### Security Resources
 

@@ -116,6 +116,7 @@ Technical reference map for the laundry management application backend. Updated 
 ### 1. Domain Models — `Model.Class` vs `Schema.Class`
 
 **Database entities** use `Model.Class` from `@effect/sql`:
+
 ```typescript
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
@@ -137,6 +138,7 @@ export class Order extends Model.Class<Order>('Order')({
 ```
 
 **DTOs (request/response)** use `Schema.Class` from `effect`:
+
 ```typescript
 export class OrderResponse extends Schema.Class<OrderResponse>('OrderResponse')({
   id: Schema.String,
@@ -155,24 +157,28 @@ export class CreateOrderInput extends Schema.Class<CreateOrderInput>('CreateOrde
 ```
 
 **Enums/Literals**:
+
 ```typescript
 export const OrderStatus = Schema.Literal('received', 'in_progress', 'ready', 'delivered')
 export type OrderStatus = typeof OrderStatus.Type
 ```
 
 **Branded IDs**:
+
 ```typescript
 export const CustomerId = Schema.String.pipe(Schema.brand('CustomerId'))
 export type CustomerId = typeof CustomerId.Type
 ```
 
 **Common schemas** in `domain/common/`:
+
 - `DecimalNumber` — transforms PG DECIMAL (string) → JS number
 - `DateTimeUtcString` — `Schema.DateTimeUtc` with `{ type: "string", format: "date-time" }` JSON Schema annotation for OpenAPI
 
 ### 2. HTTP Errors — `Schema.TaggedError` with status annotations
 
 All HTTP errors live in `src/domain/http/HttpErrors.ts`:
+
 ```typescript
 import { HttpApiSchema } from '@effect/platform'
 import { Schema } from 'effect'
@@ -197,7 +203,11 @@ export class OrderNotFound extends Schema.TaggedError<OrderNotFound>()(
 
 export class ValidationError extends Schema.TaggedError<ValidationError>()(
   'ValidationError',
-  { message: Schema.String, field: Schema.optional(Schema.String), details: Schema.optional(Schema.Any) },
+  {
+    message: Schema.String,
+    field: Schema.optional(Schema.String),
+    details: Schema.optional(Schema.Any),
+  },
   HttpApiSchema.annotations({ status: 400 })
 ) {}
 ```
@@ -226,10 +236,11 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addSuccess(OrderWithItemsResponse)
       .addError(OrderNotFound)
   )
-  .middlewareEndpoints(AuthMiddleware)  // All endpoints require auth
+  .middlewareEndpoints(AuthMiddleware) // All endpoints require auth
 ```
 
 **Admin-only endpoints** use `AuthAdminMiddleware`:
+
 ```typescript
 // src/api/ServiceApi.ts — admin endpoints first, then public endpoints after middleware
 export const ServiceGroup = HttpApiGroup.make('Services')
@@ -241,6 +252,7 @@ export const ServiceGroup = HttpApiGroup.make('Services')
 ```
 
 **Composing into AppApi**:
+
 ```typescript
 // src/api/AppApi.ts
 export class AppApi extends HttpApi.make('AppApi')
@@ -267,11 +279,13 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
       Effect.gen(function* () {
         const orderService = yield* OrderService
         const currentUser = yield* CurrentUser
-        const order = yield* orderService.create({ ...payload, created_by: currentUser.id })
-          .pipe(Effect.mapError((error) => {
-            if (error._tag === 'EmptyOrderError') return new EmptyOrderError({ message: error.message })
+        const order = yield* orderService.create({ ...payload, created_by: currentUser.id }).pipe(
+          Effect.mapError((error) => {
+            if (error._tag === 'EmptyOrderError')
+              return new EmptyOrderError({ message: error.message })
             return new ValidationError({ message: error.message })
-          }))
+          })
+        )
         return OrderResponse.make({ ...order })
       })
     )
@@ -283,8 +297,11 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
         // Validate enum params with Schema.decodeUnknownOption
         if (statusParam) {
           const decoded = Schema.decodeUnknownOption(OrderStatus)(statusParam)
-          if (decoded._tag === 'Some') { /* use decoded.value */ }
-          else { return yield* Effect.fail(new ValidationError({ message: '...' })) }
+          if (decoded._tag === 'Some') {
+            /* use decoded.value */
+          } else {
+            return yield* Effect.fail(new ValidationError({ message: '...' }))
+          }
         }
         // ...
       })
@@ -293,6 +310,7 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
 ```
 
 **Key patterns in handlers**:
+
 - `{ payload }` — auto-parsed body from `setPayload()`
 - `{ path }` — auto-parsed path params from `setPath()`
 - `yield* HttpServerRequest.HttpServerRequest` — access raw request for query params
@@ -351,6 +369,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
 ```
 
 **Key repository patterns**:
+
 - `Schema.decodeUnknown(Schema.Array(SomeModel))` for decoding query results
 - `Option.fromNullable(rows[0])` for single-row queries
 - `sql.unsafe(query, params)` for dynamic queries with `$1`, `$2` parameter indexing
@@ -358,6 +377,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
 - `as const` on returned object
 
 **Existing methods useful for reuse**:
+
 - `OrderItemRepository.findByOrderIdWithService(orderId)` — joins `order_items` with `services`, returns `OrderItemWithService[]` (has `service_name`, `unit_type`, `price_at_order`, `subtotal`)
 - `UserRepository.findBasicInfo(userId)` — returns `{ id, name, email }` (lightweight)
 - `CustomerRepository.findById(customerId)` — returns full customer with `name`, `phone`, `address`
@@ -391,6 +411,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
 ```
 
 **Key service patterns**:
+
 - `dependencies: [...]` declares layer dependencies (auto-wired with `.Default`)
 - `Effect.all([...], { concurrency: N })` for parallel independent queries
 - `Option.isNone()` / `Option.isSome()` for null checking
@@ -401,6 +422,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
 Two middleware classes in `src/middleware/AuthMiddleware.ts`:
 
 **`AuthMiddleware`** — any authenticated user (staff or admin):
+
 ```typescript
 export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('AuthMiddleware', {
   failure: Unauthorized,
@@ -410,6 +432,7 @@ export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('Aut
 ```
 
 **`AuthAdminMiddleware`** — admin only (returns 403 for staff):
+
 ```typescript
 export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthAdminMiddleware>()(
   'AuthAdminMiddleware',
@@ -422,6 +445,7 @@ export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthAdminMiddlewa
 ```
 
 **Implementation** uses `Layer.effect()`:
+
 - Extracts bearer token via `Redacted.value(token)`
 - Verifies JWT via `JwtService.verifyAccessToken()`
 - Returns `{ id, email, role } satisfies CurrentUserData`
@@ -488,24 +512,24 @@ export const createAppRouter = () => ApiLive
 
 ## Existing API Endpoints
 
-| Method | Path | Auth | Handler |
-|--------|------|------|---------|
-| POST | `/api/auth/login` | None | AuthHandlers |
-| POST | `/api/auth/register` | AuthAdmin | AuthHandlers |
-| POST | `/api/auth/refresh` | None | AuthHandlers |
-| POST | `/api/auth/logout` | Auth | AuthHandlers |
-| POST | `/api/auth/bootstrap` | None | AuthHandlers |
-| GET | `/api/auth/me` | Auth | AuthHandlers |
-| GET | `/api/customers/search` | Auth | CustomerHandlers |
-| POST | `/api/customers` | Auth | CustomerHandlers |
-| GET | `/api/customers/:id` | Auth | CustomerHandlers |
-| PUT | `/api/customers/:id` | Auth | CustomerHandlers |
-| POST | `/api/services` | AuthAdmin | ServiceHandlers |
-| PUT | `/api/services/:id` | AuthAdmin | ServiceHandlers |
-| DELETE | `/api/services/:id` | AuthAdmin | ServiceHandlers |
-| GET | `/api/services` | None | ServiceHandlers |
-| POST | `/api/orders` | Auth | OrderHandlers |
-| GET | `/api/orders` | Auth | OrderHandlers |
-| GET | `/api/orders/:id` | Auth | OrderHandlers |
-| PUT | `/api/orders/:id/status` | Auth | OrderHandlers |
-| PUT | `/api/orders/:id/payment` | Auth | OrderHandlers |
+| Method | Path                      | Auth      | Handler          |
+| ------ | ------------------------- | --------- | ---------------- |
+| POST   | `/api/auth/login`         | None      | AuthHandlers     |
+| POST   | `/api/auth/register`      | AuthAdmin | AuthHandlers     |
+| POST   | `/api/auth/refresh`       | None      | AuthHandlers     |
+| POST   | `/api/auth/logout`        | Auth      | AuthHandlers     |
+| POST   | `/api/auth/bootstrap`     | None      | AuthHandlers     |
+| GET    | `/api/auth/me`            | Auth      | AuthHandlers     |
+| GET    | `/api/customers/search`   | Auth      | CustomerHandlers |
+| POST   | `/api/customers`          | Auth      | CustomerHandlers |
+| GET    | `/api/customers/:id`      | Auth      | CustomerHandlers |
+| PUT    | `/api/customers/:id`      | Auth      | CustomerHandlers |
+| POST   | `/api/services`           | AuthAdmin | ServiceHandlers  |
+| PUT    | `/api/services/:id`       | AuthAdmin | ServiceHandlers  |
+| DELETE | `/api/services/:id`       | AuthAdmin | ServiceHandlers  |
+| GET    | `/api/services`           | None      | ServiceHandlers  |
+| POST   | `/api/orders`             | Auth      | OrderHandlers    |
+| GET    | `/api/orders`             | Auth      | OrderHandlers    |
+| GET    | `/api/orders/:id`         | Auth      | OrderHandlers    |
+| PUT    | `/api/orders/:id/status`  | Auth      | OrderHandlers    |
+| PUT    | `/api/orders/:id/payment` | Auth      | OrderHandlers    |

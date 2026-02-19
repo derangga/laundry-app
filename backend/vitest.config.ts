@@ -16,11 +16,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@domain': resolve(__dirname, './src/domain'),
-      '@application': resolve(__dirname, './src/application'),
-      '@infrastructure': resolve(__dirname, './src/infrastructure'),
+      '@usecase': resolve(__dirname, './src/usecase'),
       '@repositories': resolve(__dirname, './src/repositories'),
       '@api': resolve(__dirname, './src/api'),
+      '@http': resolve(__dirname, './src/http'),
+      '@configs': resolve(__dirname, './src/configs'),
       '@shared': resolve(__dirname, './src/shared'),
+      '@middleware': resolve(__dirname, './src/middleware'),
+      '@handlers': resolve(__dirname, './src/handlers'),
     },
   },
 })

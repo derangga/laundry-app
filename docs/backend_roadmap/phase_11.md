@@ -10,28 +10,28 @@
 
 ### Endpoints Summary
 
-| Endpoint | Method | Auth | Purpose |
-|----------|--------|------|---------|
-| `/api/analytics/weekly` | GET | `AuthAdminMiddleware` | Weekly revenue + order count with filters |
-| `/api/analytics/dashboard` | GET | `AuthAdminMiddleware` | Quick stats (today's orders, pending payments, weekly revenue, total customers) |
+| Endpoint                   | Method | Auth                  | Purpose                                                                         |
+| -------------------------- | ------ | --------------------- | ------------------------------------------------------------------------------- |
+| `/api/analytics/weekly`    | GET    | `AuthAdminMiddleware` | Weekly revenue + order count with filters                                       |
+| `/api/analytics/dashboard` | GET    | `AuthAdminMiddleware` | Quick stats (today's orders, pending payments, weekly revenue, total customers) |
 
 ---
 
 ### New Files (7 files)
 
-| Layer | File | Purpose |
-|-------|------|---------|
-| Domain | `src/domain/Analytics.ts` | `WeeklyDataPoint`, `WeeklyAnalyticsResponse`, `DashboardStatsResponse`, filter schemas |
-| Repository | `src/repositories/AnalyticsRepository.ts` | SQL aggregation queries (weekly grouping, dashboard counts) |
-| Use case | `src/usecase/analytics/AnalyticsService.ts` | Date range computation, zero-fill logic, dashboard assembly |
-| API | `src/api/AnalyticsApi.ts` | `AnalyticsGroup` with `AuthAdminMiddleware` |
-| Handlers | `src/handlers/AnalyticsHandlers.ts` | Query param parsing, service calls |
+| Layer      | File                                        | Purpose                                                                                |
+| ---------- | ------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Domain     | `src/domain/Analytics.ts`                   | `WeeklyDataPoint`, `WeeklyAnalyticsResponse`, `DashboardStatsResponse`, filter schemas |
+| Repository | `src/repositories/AnalyticsRepository.ts`   | SQL aggregation queries (weekly grouping, dashboard counts)                            |
+| Use case   | `src/usecase/analytics/AnalyticsService.ts` | Date range computation, zero-fill logic, dashboard assembly                            |
+| API        | `src/api/AnalyticsApi.ts`                   | `AnalyticsGroup` with `AuthAdminMiddleware`                                            |
+| Handlers   | `src/handlers/AnalyticsHandlers.ts`         | Query param parsing, service calls                                                     |
 
 ### Modified Files (2 files)
 
-| File | Change |
-|------|--------|
-| `src/api/AppApi.ts` | Add `AnalyticsGroup` to `AppApi` |
+| File                 | Change                                                       |
+| -------------------- | ------------------------------------------------------------ |
+| `src/api/AppApi.ts`  | Add `AnalyticsGroup` to `AppApi`                             |
 | `src/http/Router.ts` | Add new handlers, use cases, repository to layer composition |
 
 ---
@@ -114,7 +114,7 @@ import { PaymentStatus } from '../domain/Order'
 interface WeeklyRow {
   week_start: Date
   total_revenue: string // PostgreSQL DECIMAL comes as string
-  order_count: string   // PostgreSQL BIGINT comes as string
+  order_count: string // PostgreSQL BIGINT comes as string
 }
 
 export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
@@ -229,112 +229,106 @@ import {
 } from '@domain/Analytics'
 import { PaymentStatus } from '@domain/Order'
 
-export class AnalyticsService extends Effect.Service<AnalyticsService>()(
-  'AnalyticsService',
-  {
-    effect: Effect.gen(function* () {
-      const analyticsRepo = yield* AnalyticsRepository
+export class AnalyticsService extends Effect.Service<AnalyticsService>()('AnalyticsService', {
+  effect: Effect.gen(function* () {
+    const analyticsRepo = yield* AnalyticsRepository
 
-      /**
-       * Zero-fill: ensure every Monday between startDate and endDate has a data point.
-       * Weeks with no orders show as { total_revenue: 0, order_count: 0 }.
-       */
-      const zeroFillWeeks = (
-        rows: readonly { week_start: Date; total_revenue: string; order_count: string }[],
-        startDate: Date,
-        endDate: Date
-      ): WeeklyDataPoint[] => {
-        // Build a map of week_start ISO string → row data
-        const dataMap = new Map<string, { total_revenue: number; order_count: number }>()
-        for (const row of rows) {
-          const key = row.week_start.toISOString().slice(0, 10)
-          dataMap.set(key, {
-            total_revenue: parseFloat(String(row.total_revenue)),
-            order_count: parseInt(String(row.order_count), 10),
-          })
-        }
-
-        // Find the first Monday on or before startDate
-        const result: WeeklyDataPoint[] = []
-        const current = new Date(startDate)
-        // Align to Monday (day 1)
-        const day = current.getDay()
-        const diff = day === 0 ? -6 : 1 - day
-        current.setDate(current.getDate() + diff)
-
-        while (current < endDate) {
-          const key = current.toISOString().slice(0, 10)
-          const data = dataMap.get(key)
-          result.push(
-            WeeklyDataPoint.make({
-              week_start: key,
-              total_revenue: data?.total_revenue ?? 0,
-              order_count: data?.order_count ?? 0,
-            })
-          )
-          current.setDate(current.getDate() + 7)
-        }
-
-        return result
+    /**
+     * Zero-fill: ensure every Monday between startDate and endDate has a data point.
+     * Weeks with no orders show as { total_revenue: 0, order_count: 0 }.
+     */
+    const zeroFillWeeks = (
+      rows: readonly { week_start: Date; total_revenue: string; order_count: string }[],
+      startDate: Date,
+      endDate: Date
+    ): WeeklyDataPoint[] => {
+      // Build a map of week_start ISO string → row data
+      const dataMap = new Map<string, { total_revenue: number; order_count: number }>()
+      for (const row of rows) {
+        const key = row.week_start.toISOString().slice(0, 10)
+        dataMap.set(key, {
+          total_revenue: parseFloat(String(row.total_revenue)),
+          order_count: parseInt(String(row.order_count), 10),
+        })
       }
 
-      const getWeeklyAnalytics = (
-        startDate: Date,
-        endDate: Date,
-        paymentFilter: AnalyticsPaymentFilter
-      ) =>
-        Effect.gen(function* () {
-          // Translate 'all' → Option.none(), 'paid'/'unpaid' → Option.some(value)
-          const paymentStatusOption: Option.Option<PaymentStatus> =
-            paymentFilter === 'all'
-              ? Option.none()
-              : Option.some(paymentFilter as PaymentStatus)
+      // Find the first Monday on or before startDate
+      const result: WeeklyDataPoint[] = []
+      const current = new Date(startDate)
+      // Align to Monday (day 1)
+      const day = current.getDay()
+      const diff = day === 0 ? -6 : 1 - day
+      current.setDate(current.getDate() + diff)
 
-          const rows = yield* analyticsRepo.getWeeklyAggregation(
-            startDate,
-            endDate,
-            paymentStatusOption
-          )
-
-          const weeks = zeroFillWeeks(rows, startDate, endDate)
-
-          return WeeklyAnalyticsResponse.make({
-            weeks,
-            start_date: startDate.toISOString().slice(0, 10),
-            end_date: endDate.toISOString().slice(0, 10),
-            payment_filter: paymentFilter,
+      while (current < endDate) {
+        const key = current.toISOString().slice(0, 10)
+        const data = dataMap.get(key)
+        result.push(
+          WeeklyDataPoint.make({
+            week_start: key,
+            total_revenue: data?.total_revenue ?? 0,
+            order_count: data?.order_count ?? 0,
           })
-        })
-
-      const getDashboardStats = () =>
-        Effect.gen(function* () {
-          const [todaysOrders, pendingPayments, weeklyRevenue, totalCustomers] =
-            yield* Effect.all(
-              [
-                analyticsRepo.getTodaysOrderCount(),
-                analyticsRepo.getPendingPaymentCount(),
-                analyticsRepo.getWeeklyRevenue(),
-                analyticsRepo.getTotalCustomerCount(),
-              ],
-              { concurrency: 4 }
-            )
-
-          return DashboardStatsResponse.make({
-            todays_orders: todaysOrders,
-            pending_payments: pendingPayments,
-            weekly_revenue: weeklyRevenue,
-            total_customers: totalCustomers,
-          })
-        })
-
-      return {
-        getWeeklyAnalytics,
-        getDashboardStats,
+        )
+        current.setDate(current.getDate() + 7)
       }
-    }),
-    dependencies: [AnalyticsRepository.Default],
-  }
-) {}
+
+      return result
+    }
+
+    const getWeeklyAnalytics = (
+      startDate: Date,
+      endDate: Date,
+      paymentFilter: AnalyticsPaymentFilter
+    ) =>
+      Effect.gen(function* () {
+        // Translate 'all' → Option.none(), 'paid'/'unpaid' → Option.some(value)
+        const paymentStatusOption: Option.Option<PaymentStatus> =
+          paymentFilter === 'all' ? Option.none() : Option.some(paymentFilter as PaymentStatus)
+
+        const rows = yield* analyticsRepo.getWeeklyAggregation(
+          startDate,
+          endDate,
+          paymentStatusOption
+        )
+
+        const weeks = zeroFillWeeks(rows, startDate, endDate)
+
+        return WeeklyAnalyticsResponse.make({
+          weeks,
+          start_date: startDate.toISOString().slice(0, 10),
+          end_date: endDate.toISOString().slice(0, 10),
+          payment_filter: paymentFilter,
+        })
+      })
+
+    const getDashboardStats = () =>
+      Effect.gen(function* () {
+        const [todaysOrders, pendingPayments, weeklyRevenue, totalCustomers] = yield* Effect.all(
+          [
+            analyticsRepo.getTodaysOrderCount(),
+            analyticsRepo.getPendingPaymentCount(),
+            analyticsRepo.getWeeklyRevenue(),
+            analyticsRepo.getTotalCustomerCount(),
+          ],
+          { concurrency: 4 }
+        )
+
+        return DashboardStatsResponse.make({
+          todays_orders: todaysOrders,
+          pending_payments: pendingPayments,
+          weekly_revenue: weeklyRevenue,
+          total_customers: totalCustomers,
+        })
+      })
+
+    return {
+      getWeeklyAnalytics,
+      getDashboardStats,
+    }
+  }),
+  dependencies: [AnalyticsRepository.Default],
+}) {}
 ```
 
 ---
@@ -550,7 +544,7 @@ const HandlersLive = Layer.mergeAll(
   ServiceHandlersLive,
   OrderHandlersLive,
   ReceiptHandlersLive,
-  AnalyticsHandlersLive   // NEW
+  AnalyticsHandlersLive // NEW
 )
 
 const UseCasesLive = Layer.mergeAll(
@@ -563,7 +557,7 @@ const UseCasesLive = Layer.mergeAll(
   CustomerService.Default,
   LaundryServiceService.Default,
   ReceiptService.Default,
-  AnalyticsService.Default  // NEW
+  AnalyticsService.Default // NEW
 )
 
 const RepositoriesLive = Layer.mergeAll(
@@ -573,7 +567,7 @@ const RepositoriesLive = Layer.mergeAll(
   ServiceRepository.Default,
   OrderRepository.Default,
   OrderItemRepository.Default,
-  AnalyticsRepository.Default  // NEW
+  AnalyticsRepository.Default // NEW
 )
 ```
 
@@ -613,6 +607,6 @@ const RepositoriesLive = Layer.mergeAll(
 ### Deliverable
 
 Working analytics dashboard API:
+
 - Weekly revenue + order count charts with zero-fill, payment filters, and flexible date ranges (predefined + custom)
 - Dashboard quick stats for today's orders, pending payments, weekly revenue, and total customers
-
