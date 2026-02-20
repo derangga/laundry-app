@@ -10,26 +10,26 @@
 
 ### Endpoints Summary
 
-| Endpoint | Method | Auth | Purpose |
-|----------|--------|------|---------|
-| `/api/receipts/:orderId` | GET | `AuthMiddleware` | Receipt data for printing |
+| Endpoint                 | Method | Auth             | Purpose                   |
+| ------------------------ | ------ | ---------------- | ------------------------- |
+| `/api/receipts/:orderId` | GET    | `AuthMiddleware` | Receipt data for printing |
 
 ---
 
 ### New Files (5 files)
 
-| Layer | File | Purpose |
-|-------|------|---------|
-| Domain | `src/domain/Receipt.ts` | `ReceiptItem`, `ReceiptResponse` schemas |
+| Layer    | File                                    | Purpose                                                        |
+| -------- | --------------------------------------- | -------------------------------------------------------------- |
+| Domain   | `src/domain/Receipt.ts`                 | `ReceiptItem`, `ReceiptResponse` schemas                       |
 | Use case | `src/usecase/receipt/ReceiptService.ts` | Receipt data assembly (joins order + items + customer + staff) |
-| API | `src/api/ReceiptApi.ts` | `ReceiptGroup` with `AuthMiddleware` |
-| Handlers | `src/handlers/ReceiptHandlers.ts` | Path param parsing, service call |
+| API      | `src/api/ReceiptApi.ts`                 | `ReceiptGroup` with `AuthMiddleware`                           |
+| Handlers | `src/handlers/ReceiptHandlers.ts`       | Path param parsing, service call                               |
 
 ### Modified Files (2 files)
 
-| File | Change |
-|------|--------|
-| `src/api/AppApi.ts` | Add `ReceiptGroup` to `AppApi` |
+| File                 | Change                                        |
+| -------------------- | --------------------------------------------- |
+| `src/api/AppApi.ts`  | Add `ReceiptGroup` to `AppApi`                |
 | `src/http/Router.ts` | Add new handler, service to layer composition |
 
 ---
@@ -111,85 +111,80 @@ import { OrderId } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 
-export class ReceiptService extends Effect.Service<ReceiptService>()(
-  'ReceiptService',
-  {
-    effect: Effect.gen(function* () {
-      const orderRepo = yield* OrderRepository
-      const orderItemRepo = yield* OrderItemRepository
-      const customerRepo = yield* CustomerRepository
-      const userRepo = yield* UserRepository
+export class ReceiptService extends Effect.Service<ReceiptService>()('ReceiptService', {
+  effect: Effect.gen(function* () {
+    const orderRepo = yield* OrderRepository
+    const orderItemRepo = yield* OrderItemRepository
+    const customerRepo = yield* CustomerRepository
+    const userRepo = yield* UserRepository
 
-      const generateReceipt = (orderId: OrderId) =>
-        Effect.gen(function* () {
-          // 1. Fetch order
-          const orderOption = yield* orderRepo.findById(orderId)
-          if (Option.isNone(orderOption)) {
-            return yield* Effect.fail(
-              new OrderNotFoundError({ orderId, message: `Order not found: ${orderId}` })
-            )
-          }
-          const order = orderOption.value
-
-          // 2. Fetch items with service details (reuses existing method)
-          const items = yield* orderItemRepo.findByOrderIdWithService(orderId)
-
-          // 3. Fetch customer
-          const customerOption = yield* customerRepo.findById(
-            order.customer_id as unknown as CustomerId
+    const generateReceipt = (orderId: OrderId) =>
+      Effect.gen(function* () {
+        // 1. Fetch order
+        const orderOption = yield* orderRepo.findById(orderId)
+        if (Option.isNone(orderOption)) {
+          return yield* Effect.fail(
+            new OrderNotFoundError({ orderId, message: `Order not found: ${orderId}` })
           )
-          const customer = Option.isSome(customerOption)
-            ? customerOption.value
-            : { name: 'Unknown', phone: '-' }
+        }
+        const order = orderOption.value
 
-          // 4. Fetch staff (who created the order)
-          const staffOption = yield* userRepo.findBasicInfo(
-            order.created_by as unknown as UserId
-          )
-          const staffName = Option.isSome(staffOption) ? staffOption.value.name : 'Staff'
+        // 2. Fetch items with service details (reuses existing method)
+        const items = yield* orderItemRepo.findByOrderIdWithService(orderId)
 
-          // 5. Assemble receipt
-          return ReceiptResponse.make({
-            // Business header (hardcoded for MVP)
-            business_name: 'Laundry Service',
-            business_address: null,
-            business_phone: null,
-            // Order info
-            order_number: order.order_number,
-            order_date: order.created_at,
-            order_status: order.status,
-            // Customer
-            customer_name: customer.name,
-            customer_phone: customer.phone,
-            // Items
-            items: items.map((item) =>
-              ReceiptItem.make({
-                service_name: item.service_name,
-                unit_type: item.unit_type,
-                quantity: item.quantity,
-                price_at_order: item.price_at_order,
-                subtotal: item.subtotal,
-              })
-            ),
-            // Pricing
-            total_price: order.total_price,
-            // Payment
-            payment_status: order.payment_status,
-            // Footer
-            staff_name: staffName,
-          })
+        // 3. Fetch customer
+        const customerOption = yield* customerRepo.findById(
+          order.customer_id as unknown as CustomerId
+        )
+        const customer = Option.isSome(customerOption)
+          ? customerOption.value
+          : { name: 'Unknown', phone: '-' }
+
+        // 4. Fetch staff (who created the order)
+        const staffOption = yield* userRepo.findBasicInfo(order.created_by as unknown as UserId)
+        const staffName = Option.isSome(staffOption) ? staffOption.value.name : 'Staff'
+
+        // 5. Assemble receipt
+        return ReceiptResponse.make({
+          // Business header (hardcoded for MVP)
+          business_name: 'Laundry Service',
+          business_address: null,
+          business_phone: null,
+          // Order info
+          order_number: order.order_number,
+          order_date: order.created_at,
+          order_status: order.status,
+          // Customer
+          customer_name: customer.name,
+          customer_phone: customer.phone,
+          // Items
+          items: items.map((item) =>
+            ReceiptItem.make({
+              service_name: item.service_name,
+              unit_type: item.unit_type,
+              quantity: item.quantity,
+              price_at_order: item.price_at_order,
+              subtotal: item.subtotal,
+            })
+          ),
+          // Pricing
+          total_price: order.total_price,
+          // Payment
+          payment_status: order.payment_status,
+          // Footer
+          staff_name: staffName,
         })
+      })
 
-      return { generateReceipt }
-    }),
-    dependencies: [
-      OrderRepository.Default,
-      OrderItemRepository.Default,
-      CustomerRepository.Default,
-      UserRepository.Default,
-    ],
-  }
-) {}
+    return { generateReceipt }
+  }),
+  dependencies: [
+    OrderRepository.Default,
+    OrderItemRepository.Default,
+    CustomerRepository.Default,
+    UserRepository.Default,
+  ],
+}) {}
 ```
 
 **Note**: The receipt uses `price_at_order` from `OrderItemWithService` (historical price at time of order), not the current service price. This ensures receipt accuracy per PRD FR-7.1.
@@ -244,21 +239,19 @@ export const ReceiptHandlersLive = HttpApiBuilder.group(AppApi, 'Receipts', (han
     Effect.gen(function* () {
       const receiptService = yield* ReceiptService
 
-      const receipt = yield* receiptService
-        .generateReceipt(OrderId.make(path.orderId))
-        .pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'OrderNotFoundError') {
-              return new OrderNotFound({
-                message: error.message,
-                orderId: path.orderId,
-              })
-            }
-            return new ValidationError({
-              message: error.message || 'Failed to generate receipt',
+      const receipt = yield* receiptService.generateReceipt(OrderId.make(path.orderId)).pipe(
+        Effect.mapError((error) => {
+          if (error._tag === 'OrderNotFoundError') {
+            return new OrderNotFound({
+              message: error.message,
+              orderId: path.orderId,
             })
+          }
+          return new ValidationError({
+            message: error.message || 'Failed to generate receipt',
           })
-        )
+        })
+      )
 
       return receipt
     })
@@ -311,7 +304,7 @@ const HandlersLive = Layer.mergeAll(
   CustomerHandlersLive,
   ServiceHandlersLive,
   OrderHandlersLive,
-  ReceiptHandlersLive       // NEW
+  ReceiptHandlersLive // NEW
 )
 
 const UseCasesLive = Layer.mergeAll(
@@ -323,7 +316,7 @@ const UseCasesLive = Layer.mergeAll(
   OrderService.Default,
   CustomerService.Default,
   LaundryServiceService.Default,
-  ReceiptService.Default     // NEW
+  ReceiptService.Default // NEW
 )
 
 const RepositoriesLive = Layer.mergeAll(
@@ -375,5 +368,5 @@ const RepositoriesLive = Layer.mergeAll(
 ### Deliverable
 
 Working receipt generation API:
-- Receipt data endpoint with all PRD FR-7.1 fields for printing
 
+- Receipt data endpoint with all PRD FR-7.1 fields for printing

@@ -30,16 +30,16 @@ Each API file exports an `HttpApiGroup` (not an `HttpApi`). Groups are composed 
 
 ## Key Files
 
-| File | Role |
-|------|------|
-| `backend/src/api/AppApi.ts` | Unified `HttpApi` composing all groups + OpenAPI annotations |
-| `backend/src/api/AuthApi.ts` | `AuthGroup` — auth endpoints |
-| `backend/src/api/CustomerApi.ts` | `CustomerGroup` — customer CRUD |
-| `backend/src/api/ServiceApi.ts` | `ServiceGroup` — laundry service CRUD |
-| `backend/src/api/OrderApi.ts` | `OrderGroup` — order management |
-| `backend/src/http/Router.ts` | `HttpApiBuilder.api(AppApi)` + layer composition |
-| `backend/src/main.ts` | `HttpApiScalar.layer({ path: '/docs' })` mount |
-| `backend/src/domain/common/DateTimeUtcString.ts` | OpenAPI-safe date-time schema |
+| File                                             | Role                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `backend/src/api/AppApi.ts`                      | Unified `HttpApi` composing all groups + OpenAPI annotations |
+| `backend/src/api/AuthApi.ts`                     | `AuthGroup` — auth endpoints                                 |
+| `backend/src/api/CustomerApi.ts`                 | `CustomerGroup` — customer CRUD                              |
+| `backend/src/api/ServiceApi.ts`                  | `ServiceGroup` — laundry service CRUD                        |
+| `backend/src/api/OrderApi.ts`                    | `OrderGroup` — order management                              |
+| `backend/src/http/Router.ts`                     | `HttpApiBuilder.api(AppApi)` + layer composition             |
+| `backend/src/main.ts`                            | `HttpApiScalar.layer({ path: '/docs' })` mount               |
+| `backend/src/domain/common/DateTimeUtcString.ts` | OpenAPI-safe date-time schema                                |
 
 ## Patterns
 
@@ -120,12 +120,19 @@ The router groups layers by concern to stay under TypeScript's `Layer.provide` 2
 ```ts
 // backend/src/http/Router.ts
 const HandlersLive = Layer.mergeAll(
-  AuthHandlersLive, CustomerHandlersLive, ServiceHandlersLive, OrderHandlersLive
+  AuthHandlersLive,
+  CustomerHandlersLive,
+  ServiceHandlersLive,
+  OrderHandlersLive
 )
 const MiddlewareLive = Layer.mergeAll(AuthMiddlewareLive, AuthAdminMiddlewareLive)
 const UseCasesLive = Layer.mergeAll(/* ... 8 use cases ... */)
 const RepositoriesLive = Layer.mergeAll(/* ... 6 repos ... */)
-const InfraLive = Layer.mergeAll(JwtService.Default, TokenGenerator.Default, PasswordService.Default)
+const InfraLive = Layer.mergeAll(
+  JwtService.Default,
+  TokenGenerator.Default,
+  PasswordService.Default
+)
 
 const ApiLive = HttpApiBuilder.api(AppApi).pipe(
   Layer.provide(HandlersLive),
@@ -191,8 +198,8 @@ export class Customer extends Model.Class<Customer>('Customer')({
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
-  created_at: Model.DateTimeInsertFromDate,  // ← crashes OpenAPI
-  updated_at: Model.DateTimeUpdateFromDate,  // ← crashes OpenAPI
+  created_at: Model.DateTimeInsertFromDate, // ← crashes OpenAPI
+  updated_at: Model.DateTimeUpdateFromDate, // ← crashes OpenAPI
 }) {}
 
 // Response DTO (API) — uses DateTimeUtcString, OpenAPI-safe
@@ -201,8 +208,8 @@ export class CustomerResponse extends Schema.Class<CustomerResponse>('CustomerRe
   name: Schema.String,
   phone: Schema.String,
   address: Schema.NullOr(Schema.String),
-  created_at: DateTimeUtcString,  // ← safe
-  updated_at: DateTimeUtcString,  // ← safe
+  created_at: DateTimeUtcString, // ← safe
+  updated_at: DateTimeUtcString, // ← safe
 }) {}
 ```
 
@@ -220,6 +227,7 @@ Checklist for adding a new group (e.g., `PaymentGroup`):
    - Error classes in `backend/src/domain/http/HttpErrors.ts`
 
 2. **Create API group** in `backend/src/api/PaymentApi.ts`:
+
    ```ts
    export const PaymentGroup = HttpApiGroup.make('Payments')
      .add(HttpApiEndpoint.post('create', '/api/payments').setPayload(...).addSuccess(...))
@@ -228,6 +236,7 @@ Checklist for adding a new group (e.g., `PaymentGroup`):
 3. **Register in AppApi** — add `.add(PaymentGroup)` to `backend/src/api/AppApi.ts`
 
 4. **Implement handlers** in `backend/src/handlers/PaymentHandlers.ts`:
+
    ```ts
    export const PaymentHandlersLive = HttpApiBuilder.group(AppApi, 'Payments', (handlers) =>
      handlers.handle('create', ({ payload }) => /* ... */)
@@ -240,11 +249,11 @@ Checklist for adding a new group (e.g., `PaymentGroup`):
 
 ## Dependencies
 
-| Package | Version | Role |
-|---------|---------|------|
-| `effect` | `^3.19.16` | Core Effect runtime and Schema |
-| `@effect/platform` | `^0.72.2` | HttpApi, HttpApiBuilder, HttpApiScalar, OpenApi |
-| `@effect/platform-bun` | `^0.53.1` | Bun-specific HTTP server adapter |
-| `@effect/sql` | `^0.24.3` | Model.Class, database integration |
+| Package                | Version    | Role                                            |
+| ---------------------- | ---------- | ----------------------------------------------- |
+| `effect`               | `^3.19.16` | Core Effect runtime and Schema                  |
+| `@effect/platform`     | `^0.72.2`  | HttpApi, HttpApiBuilder, HttpApiScalar, OpenApi |
+| `@effect/platform-bun` | `^0.53.1`  | Bun-specific HTTP server adapter                |
+| `@effect/sql`          | `^0.24.3`  | Model.Class, database integration               |
 
 > **Note**: `@effect/platform` is still pre-1.0 and APIs may change between minor versions. Pin versions carefully and test after upgrades.

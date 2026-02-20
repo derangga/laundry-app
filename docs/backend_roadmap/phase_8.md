@@ -55,10 +55,12 @@ Working service management API with admin-only CRUD operations
 ### Files Created/Modified
 
 **Created:**
+
 - `src/api/ServiceApi.ts` - API definition with HttpApi
 - `src/handlers/ServiceHandlers.ts` - Request handlers
 - `test/api/services/serviceRoutes.test.ts` - Integration tests (8 tests)
 
 **Modified:**
+
 - `src/domain/http/HttpErrors.ts` - Added ServiceNotFound HTTP error
 - `src/http/Router.ts` - Added ServiceApi layer

@@ -58,21 +58,25 @@
 ### Implementation Notes
 
 **URL Query Parameter Parsing**:
+
 - `request.url` from Effect Platform is a relative path (e.g., `/api/customers?phone=...`)
 - Must use `new URL(request.url, 'http://localhost')` with a base URL to parse query params
 
 **Phone Number Normalization**:
+
 - Updated `normalizePhoneNumber` to handle all formats:
   - `08XXXXXXXXX` → `+628XXXXXXXXX`
   - `628XXXXXXXXX` → `+628XXXXXXXXX`
   - `+628XXXXXXXXX` → `+628XXXXXXXXX` (unchanged)
 
 **Model.makeRepository Issues**:
+
 - `insert` and `findById` from `Model.makeRepository` caused hangs
 - Replaced with custom raw SQL implementations in CustomerRepository
 - Raw SQL provides explicit column lists (following project guidelines)
 
 **CreateCustomerInput Schema**:
+
 - Changed `address` field from `Schema.NullOr` to `Schema.optionalWith` with default null
 - Allows omitting address field in request body
 
@@ -101,11 +105,13 @@ All verification tests passed with curl:
 ✅ Working customer management API with search, creation, and retrieval endpoints
 
 **Files Created**:
+
 - `src/api/customers/customerRoutes.ts` - HTTP route handlers
 - `docs/plans/phase_7_customer_api_test_plan.md` - Test plan (33 test cases)
 - `test/api/customers/customerRoutes.test.ts` - Unit tests (23 test cases)
 
 **Files Modified**:
+
 - `src/http/Router.ts` - Mounted customer routes
 - `src/main.ts` - Added CustomerRepository and CustomerService to service layers
 - `src/domain/Customer.ts` - Fixed CreateCustomerInput address field
@@ -119,14 +125,16 @@ All verification tests passed with curl:
 ✅ **Phase 7 Complete**: All customer management API endpoints are functional and tested.
 
 **Key Accomplishments**:
+
 1. Three fully-functional REST endpoints for customer CRUD operations
 2. Comprehensive phone number normalization (handles 08XX, 628XX, +628XX formats)
 3. Proper authentication/authorization middleware on all routes
 4. Detailed error handling with appropriate HTTP status codes
-5. Explicit SQL queries following project guidelines (no SELECT *)
+5. Explicit SQL queries following project guidelines (no SELECT \*)
 6. Comprehensive 33-scenario test plan document
 
 **Technical Debt Resolved**:
+
 - Fixed Effect Platform URL parsing issue for query parameters
 - Fixed Schema imports (moving from @effect/schema to effect)
 - Identified and worked around Model.makeRepository limitations

@@ -1,10 +1,13 @@
 import { Effect, Layer } from 'effect'
-import { HttpApiBuilder, HttpApiScalar, HttpMiddleware, HttpServer } from '@effect/platform'
+import { HttpApiBuilder, HttpApiScalar, HttpServer } from '@effect/platform'
 import { BunRuntime } from '@effect/platform-bun'
 import { SqlClientLive } from 'src/SqlClient.js'
 import { HttpServerLive } from './http/HttpServer.js'
 import { createAppRouter } from './http/Router.js'
 import { ServerConfig } from './configs/env.js'
+import { AppLogger, makeLoggerLayer } from './http/Logger.js'
+import { gracefulShutdown } from './http/GracefulShutdown.js'
+import { RequestLoggingMiddleware } from './middleware/RequestLoggingMiddleware.js'
 
 /**
  * Application Composition
@@ -32,21 +35,38 @@ const ScalarLayer = Layer.unwrapEffect(
   })
 )
 
-// Compose HTTP server with middleware and API
-// Pattern from example: HttpApiBuilder.serve -> middlewareCors -> ApiLayer -> HttpServer
-const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
+// Compose HTTP server with custom request logging middleware and API
+const HttpLive = HttpApiBuilder.serve(RequestLoggingMiddleware).pipe(
   Layer.provide(ScalarLayer),
   Layer.provide(HttpApiBuilder.middlewareCors()),
   Layer.provide(ApiLayer),
+  Layer.provide(AppLogger.Default),
   HttpServer.withLogAddress,
   Layer.provide(HttpServerLive),
   Layer.provide(SqlClientLive)
 )
 
-// Main program - just launch the layers
-const program = Layer.launch(HttpLive).pipe(
-  Effect.tapErrorCause((cause) => Effect.logError('Failed to start server:', cause))
-)
+// Signal handler setup for graceful shutdown on SIGTERM
+// (BunRuntime.runMain handles SIGINT by interrupting the fiber automatically)
+const setupShutdownHandlers = () => {
+  const shutdown = (signal: string) =>
+    void Effect.runPromise(
+      Effect.gen(function* () {
+        yield* Effect.logInfo(`Received ${signal}, initiating graceful shutdown...`)
+        yield* gracefulShutdown
+      }).pipe(Effect.andThen(Effect.sync(() => process.exit(0))))
+    )
 
-// Run with Bun runtime
-BunRuntime.runMain(program)
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
+}
+
+// Main program - log startup, set up shutdown handlers, then launch layers
+const program = Effect.gen(function* () {
+  yield* Effect.logInfo('Starting laundry-app backend...')
+  setupShutdownHandlers()
+  yield* Layer.launch(HttpLive)
+}).pipe(Effect.tapErrorCause((cause) => Effect.logError('Failed to start server', cause)))
+
+// Run with Bun runtime, applying logger configuration layer
+BunRuntime.runMain(program.pipe(Effect.provide(makeLoggerLayer)))

@@ -6,7 +6,7 @@ import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
 import { RegisterUserUseCase } from 'src/usecase/auth/RegisterUserUseCase'
 import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
-import { extractRefreshTokenFromCookie } from '@http/CookieHelper'
+import { extractRefreshTokenFromCookie } from 'src/http/CookieHelper'
 import {
   InvalidCredentials,
   Unauthorized,

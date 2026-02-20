@@ -61,23 +61,27 @@
 ### Implementation Notes
 
 **Cookie Helper Utilities** (`src/http/CookieHelper.ts`):
+
 - `getEnvBasedCookieOptions()` - Environment-aware cookie config (secure in production)
 - `setAuthCookies()` - Sets both access and refresh token cookies
 - `clearAuthCookies()` - Clears cookies on logout
 - `extractRefreshTokenFromCookie()` - Reads refresh token from Cookie header
 
 **Cookie Configuration**:
+
 - `accessToken`: HttpOnly, 15min expiry, path=/, accessible everywhere
 - `refreshToken`: HttpOnly, 7 days expiry, path=/api/auth/refresh (restricted)
 - `secure` flag: true in production, false in development
 - `sameSite`: strict (CSRF protection)
 
 **Dual Token Strategy**:
+
 - Both httpOnly cookies AND JSON response tokens
 - Supports web browsers (cookies) and API clients (Bearer tokens)
 - Cookie takes precedence over request body for refresh token
 
 **Router Integration** (`src/http/Router.ts`):
+
 - Mounted `authRoutes` at `/api/auth`
 - Available endpoints:
   - `POST /api/auth/login`
@@ -85,11 +89,13 @@
   - `POST /api/auth/logout`
 
 **Layer Composition** (`src/main.ts`):
+
 - Added all auth service layers to HTTP server
 - Layer hierarchy: HttpServer <- Services <- SqlClient
 - Services include: repositories, use cases, JWT, password, token generator
 
 **Supporting Changes**:
+
 - Added ValidationError handler to `errorHandlerMiddleware`
 - Fixed Schema import in `RequestParser` (use 'effect' not '@effect/schema')
 - Added `@http/*` and `@configs/*` path mappings to `tsconfig.json`
@@ -111,11 +117,13 @@
 ✅ Working authentication API with login, logout, and token refresh endpoints
 
 **Files Created**:
+
 - `src/http/CookieHelper.ts` - Cookie utilities
 - `src/api/auth/authRoutes.ts` - HTTP route handlers
 - `docs/plans/phase_6_auth_api_test_plan.md` - Test plan (34 test cases)
 
 **Files Modified**:
+
 - `src/domain/Auth.ts` - Added validation
 - `src/http/Router.ts` - Mounted auth routes
 - `src/main.ts` - Service layer composition
@@ -126,6 +134,7 @@
 **Git Branch**: `feature/phase-6-auth-api-routes`
 
 **Commits**:
+
 1. `feat(domain): add email and password validation to Auth schemas`
 2. `feat(http): add cookie helper utilities for auth tokens`
 3. `feat(api): implement auth API routes (login, logout, refresh)`

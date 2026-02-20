@@ -24,6 +24,7 @@ import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
+import { AppLogger } from 'src/http/Logger'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
@@ -66,7 +67,8 @@ const RepositoriesLive = Layer.mergeAll(
 const InfraLive = Layer.mergeAll(
   JwtService.Default,
   TokenGenerator.Default,
-  PasswordService.Default
+  PasswordService.Default,
+  AppLogger.Default
 )
 
 const ApiLive = HttpApiBuilder.api(AppApi).pipe(
