@@ -23,12 +23,16 @@ export const ServerConfig = Config.all({
   port: Config.integer('PORT').pipe(Config.withDefault(3000)),
   host: Config.string('HOST').pipe(Config.withDefault('0.0.0.0')),
   nodeEnv: Config.string('NODE_ENV').pipe(Config.withDefault('development')),
-  logLevel: Config.literal('debug', 'info', 'warning', 'error')('LOG_LEVEL').pipe(
-    Config.withDefault('info' as const)
-  ),
-  logFormat: Config.literal('json', 'pretty')('LOG_FORMAT').pipe(
-    Config.withDefault('pretty' as const)
-  ),
+  logLevel: Config.literal(
+    'debug',
+    'info',
+    'warning',
+    'error'
+  )('LOG_LEVEL').pipe(Config.withDefault('info' as const)),
+  logFormat: Config.literal(
+    'json',
+    'pretty'
+  )('LOG_FORMAT').pipe(Config.withDefault('pretty' as const)),
 })
 
 // Bcrypt configuration (1 variable)
