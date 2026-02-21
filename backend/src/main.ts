@@ -8,6 +8,9 @@ import { ServerConfig } from './configs/env.js'
 import { AppLogger, makeLoggerLayer } from './http/Logger.js'
 import { gracefulShutdown } from './http/GracefulShutdown.js'
 import { RequestLoggingMiddleware } from './middleware/RequestLoggingMiddleware.js'
+// import { SecurityHeadersMiddleware } from './middleware/SecurityHeadersMiddleware.js'
+// import { RequestSecurityMiddleware } from './middleware/RequestSecurityMiddleware.js'
+// import { RateLimitMiddleware } from './middleware/RateLimitMiddleware.js'
 
 /**
  * Application Composition
@@ -35,7 +38,10 @@ const ScalarLayer = Layer.unwrapEffect(
   })
 )
 
-// Compose HTTP server with custom request logging middleware and API
+// Compose HTTP server with request logging middleware
+// Note: Additional middleware (SecurityHeaders, RequestSecurity, RateLimit) are defined
+// but not yet integrated into the middleware chain. They can be added by composing
+// with HttpMiddleware or by modifying the HttpApiBuilder.serve call.
 const HttpLive = HttpApiBuilder.serve(RequestLoggingMiddleware).pipe(
   Layer.provide(ScalarLayer),
   Layer.provide(HttpApiBuilder.middlewareCors()),

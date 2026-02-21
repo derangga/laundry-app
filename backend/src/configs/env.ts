@@ -39,3 +39,15 @@ export const ServerConfig = Config.all({
 export const BcryptConfig = Config.all({
   saltRounds: Config.integer('BCRYPT_ROUNDS').pipe(Config.withDefault(12)),
 })
+
+// Rate Limiting configuration (2 variables)
+export const RateLimitConfig = Config.all({
+  enabled: Config.boolean('RATE_LIMIT_ENABLED').pipe(Config.withDefault(true)),
+  skipAdmin: Config.boolean('RATE_LIMIT_SKIP_ADMIN').pipe(Config.withDefault(true)),
+})
+
+// Security configuration (2 variables)
+export const SecurityConfig = Config.all({
+  maxBodySize: Config.integer('MAX_BODY_SIZE').pipe(Config.withDefault(4 * 1024 * 1024)),
+  maxJsonDepth: Config.integer('MAX_JSON_DEPTH').pipe(Config.withDefault(10)),
+})

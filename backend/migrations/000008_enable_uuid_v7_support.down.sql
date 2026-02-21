@@ -1,0 +1,1 @@
+-- No-op: uuidv7() is a built-in function, nothing to rollback

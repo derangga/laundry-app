@@ -1,5 +1,5 @@
 CREATE TABLE services (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     name VARCHAR(255) NOT NULL,
     price DECIMAL(12, 2) NOT NULL,
     unit_type VARCHAR(10) NOT NULL CHECK (unit_type IN ('kg', 'set')),

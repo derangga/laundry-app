@@ -1,4 +1,5 @@
 import { HttpApi, OpenApi } from '@effect/platform'
+import { HealthGroup } from './HealthApi'
 import { AuthGroup } from './AuthApi'
 import { CustomerGroup } from './CustomerApi'
 import { ServiceGroup } from './ServiceApi'
@@ -7,6 +8,7 @@ import { ReceiptGroup } from './ReceiptApi'
 import { AnalyticsGroup } from './AnalyticsApi'
 
 export class AppApi extends HttpApi.make('AppApi')
+  .add(HealthGroup)
   .add(AuthGroup)
   .add(CustomerGroup)
   .add(ServiceGroup)
