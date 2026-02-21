@@ -33,7 +33,7 @@ export const createTestUsers = async (): Promise<{ admin: TestUser; staff: TestU
   )
 
   const adminUser = {
-    id: UserId.make('test-admin-id'),
+    id: UserId.make('019401e5-5b6e-7000-8000-000000000001'),
     email: 'admin@example.com',
     password_hash: hashedPassword,
     name: 'Admin User',
@@ -43,7 +43,7 @@ export const createTestUsers = async (): Promise<{ admin: TestUser; staff: TestU
   } as unknown as User
 
   const staffUser = {
-    id: UserId.make('test-staff-id'),
+    id: UserId.make('019401e5-5b6f-7000-8000-000000000002'),
     email: 'staff@example.com',
     password_hash: hashedPassword,
     name: 'Staff User',
@@ -59,8 +59,8 @@ export const createTestUsers = async (): Promise<{ admin: TestUser; staff: TestU
 }
 
 export const expiredRefreshToken = {
-  id: RefreshTokenId.make('expired-token-id'),
-  user_id: UserId.make('test-admin-id'),
+  id: RefreshTokenId.make('019401e5-5b70-7000-8000-000000000003'),
+  user_id: UserId.make('019401e5-5b6e-7000-8000-000000000001'),
   token_hash: 'expired-token-hash',
   expires_at: new Date('2020-01-01'),
   created_at: new Date('2020-01-01'),

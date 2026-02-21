@@ -233,3 +233,36 @@ export class EmptyOrderError extends Schema.TaggedError<EmptyOrderError>()(
   },
   HttpApiSchema.annotations({ status: 422 })
 ) {}
+
+// ============================================================================
+// Security Errors (413, 415, 429)
+// ============================================================================
+
+export class RateLimitExceeded extends Schema.TaggedError<RateLimitExceeded>()(
+  'RateLimitExceeded',
+  {
+    message: Schema.String,
+    retryAfter: Schema.Number,
+    limit: Schema.Number,
+  },
+  HttpApiSchema.annotations({ status: 429 })
+) {}
+
+export class PayloadTooLarge extends Schema.TaggedError<PayloadTooLarge>()(
+  'PayloadTooLarge',
+  {
+    message: Schema.String,
+    size: Schema.Number,
+    limit: Schema.Number,
+  },
+  HttpApiSchema.annotations({ status: 413 })
+) {}
+
+export class InvalidContentType extends Schema.TaggedError<InvalidContentType>()(
+  'InvalidContentType',
+  {
+    message: Schema.String,
+    contentType: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 415 })
+) {}

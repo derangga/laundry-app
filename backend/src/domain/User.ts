@@ -18,8 +18,13 @@ export class User extends Model.Class<User>('User')({
   updated_at: Model.DateTimeUpdateFromDate,
 }) {}
 
+const EmailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+
 export class CreateUserInput extends Schema.Class<CreateUserInput>('CreateUserInput')({
-  email: Schema.String.pipe(Schema.nonEmptyString()),
+  email: Schema.String.pipe(
+    Schema.nonEmptyString(),
+    Schema.pattern(EmailPattern, { message: () => 'Invalid email format' })
+  ),
   password: Schema.String.pipe(Schema.nonEmptyString()),
   name: Schema.String.pipe(Schema.nonEmptyString()),
   role: UserRole,

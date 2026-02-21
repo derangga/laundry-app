@@ -7,8 +7,8 @@ export const RequestLoggingMiddleware = HttpMiddleware.make((app) =>
     const logger = yield* AppLogger
     const request = yield* HttpServerRequest.HttpServerRequest
 
-    // Skip logging for health check endpoint
-    if (request.url === '/health') {
+    // Skip logging for health check endpoints
+    if (request.url === '/health' || request.url === '/health/db') {
       return yield* app
     }
 

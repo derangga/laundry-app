@@ -1,6 +1,7 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Layer } from 'effect'
 import { AppApi } from '@api/AppApi'
+import { HealthHandlersLive } from '@handlers/HealthHandlers'
 import { CustomerHandlersLive } from '@handlers/CustomerHandlers'
 import { AuthHandlersLive } from '@handlers/AuthHandlers'
 import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
@@ -24,6 +25,7 @@ import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
+import { RateLimitService } from 'src/usecase/security/RateLimitService'
 import { AppLogger } from 'src/http/Logger'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
@@ -31,6 +33,7 @@ import { ReceiptService } from '@usecase/receipt/ReceiptService'
 import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
 
 const HandlersLive = Layer.mergeAll(
+  HealthHandlersLive,
   AuthHandlersLive,
   CustomerHandlersLive,
   ServiceHandlersLive,
@@ -68,6 +71,7 @@ const InfraLive = Layer.mergeAll(
   JwtService.Default,
   TokenGenerator.Default,
   PasswordService.Default,
+  RateLimitService.Default,
   AppLogger.Default
 )
 
