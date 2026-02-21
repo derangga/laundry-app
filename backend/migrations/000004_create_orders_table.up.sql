@@ -1,5 +1,5 @@
 CREATE TABLE orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     order_number VARCHAR(50) NOT NULL UNIQUE,
     customer_id UUID NOT NULL REFERENCES customers(id),
     status VARCHAR(20) NOT NULL CHECK (status IN ('received', 'in_progress', 'ready', 'delivered')) DEFAULT 'received',

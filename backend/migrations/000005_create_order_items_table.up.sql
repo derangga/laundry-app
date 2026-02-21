@@ -1,5 +1,5 @@
 CREATE TABLE order_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     service_id UUID NOT NULL REFERENCES services(id),
     quantity DECIMAL(10, 2) NOT NULL,

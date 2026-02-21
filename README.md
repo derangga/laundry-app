@@ -16,7 +16,7 @@ A modern web application for managing laundry business operations. Streamline cu
 ### Backend
 - **Runtime**: [Bun](https://bun.sh/)
 - **Framework**: [Effect TypeScript](https://effect.website/) (`@effect/platform-bun`, `@effect/sql-pg`, `effect/Schema`)
-- **Database**: PostgreSQL (direct SQL, no ORM)
+- **Database**: PostgreSQL 18 (direct SQL, no ORM, UUID v7 for primary keys)
 - **Authentication**: JWT access tokens + refresh tokens in httpOnly cookies
 
 ### Frontend
@@ -25,11 +25,10 @@ A modern web application for managing laundry business operations. Streamline cu
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) — JavaScript runtime
-- [PostgreSQL](https://www.postgresql.org/) — Database server
-- [golang-migrate](https://github.com/golang-migrate/migrate) — Required for database migrations
+- **[Bun](https://bun.sh/)** — JavaScript runtime and package manager
+- **[Docker](https://www.docker.com/)** & **Docker Compose** — For running PostgreSQL in a container
 
-## Installation
+## Quick Start
 
 1. **Clone the repository**
 
@@ -44,57 +43,149 @@ cd laundry-app
 bun install
 ```
 
-3. **Create PostgreSQL database**
+3. **Set up database password**
+
+Create the secrets directory and password file:
 
 ```bash
-createdb laundry_app
+mkdir -p secrets
+echo "postgres_dev_password" > secrets/db_password.txt
 ```
 
-4. **Create environment file**
+4. **Start PostgreSQL**
 
-Create a `.env` file in the `backend` directory:
+```bash
+docker-compose up -d postgres
+```
+
+Wait for the container to be healthy (~10 seconds).
+
+5. **Run database migrations**
+
+```bash
+for file in backend/migrations/00000[1-8]*_*.up.sql; do
+  docker exec -i laundry_postgres psql -U laundry_app_prod -d laundry_app_prod < "$file"
+done
+```
+
+6. **Create environment file**
+
+Create `backend/.env`:
 
 ```env
-# Database (required)
+# Database Configuration (matches Docker setup)
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your_password
-DATABASE_NAME=laundry_app
+DATABASE_USER=laundry_app_prod
+DATABASE_PASSWORD=postgres_dev_password
+DATABASE_NAME=laundry_app_prod
 
-# JWT (required - use a strong secret)
-JWT_SECRET=your-super-secret-key
+# JWT Configuration (use a strong secret in production)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# Optional Configuration
+PORT=3000
+HOST=127.0.0.1
+NODE_ENV=development
+BCRYPT_ROUNDS=12
 ```
 
-5. **Run migrations**
-
-```bash
-cd backend
-bun run migrate:up
-```
-
-6. **Start development server**
+7. **Start development servers**
 
 ```bash
 bun run dev
 ```
 
 The application will be available at:
-- Frontend: http://localhost:3100
-- Backend API: http://localhost:3000
+- **Frontend**: http://localhost:3100
+- **Backend API**: http://127.0.0.1:3000
+- **API Health**: http://127.0.0.1:3000/health
+
+## Development Workflow
+
+### Starting the Application
+
+```bash
+# Start PostgreSQL (if not already running)
+docker-compose up -d postgres
+
+# Start backend and frontend dev servers
+bun run dev
+```
+
+### Stopping the Application
+
+```bash
+# Stop dev servers (Ctrl+C in the terminal where bun run dev is running)
+
+# Stop PostgreSQL
+docker-compose down
+```
+
+### Database Management
+
+**View database logs:**
+
+```bash
+docker logs -f laundry_postgres
+```
+
+**Connect to PostgreSQL shell:**
+
+```bash
+docker exec -it laundry_postgres psql -U laundry_app_prod -d laundry_app_prod
+```
+
+**Reset database** (WARNING: destroys all data):
+
+```bash
+# Stop and remove everything
+docker-compose down -v
+
+# Restart PostgreSQL
+docker-compose up -d postgres
+
+# Re-run migrations
+for file in backend/migrations/00000[1-8]*_*.up.sql; do
+  docker exec -i laundry_postgres psql -U laundry_app_prod -d laundry_app_prod < "$file"
+done
+```
+
+**Check PostgreSQL version:**
+
+```bash
+docker exec laundry_postgres psql -U laundry_app_prod -d laundry_app_prod -c "SELECT version();"
+```
+
+### Running Tests
+
+```bash
+# Backend tests
+cd backend
+bun run test
+
+# Type checking (backend + frontend)
+bun run typecheck
+
+# Frontend linting
+cd frontend
+bun run lint
+```
 
 ## Environment Variables
 
 ### Required
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_HOST` | PostgreSQL server host |
-| `DATABASE_PORT` | PostgreSQL server port |
-| `DATABASE_USER` | PostgreSQL username |
-| `DATABASE_PASSWORD` | PostgreSQL password |
-| `DATABASE_NAME` | Database name |
-| `JWT_SECRET` | Secret key for JWT signing |
+| Variable | Description | Default/Example |
+|----------|-------------|-----------------|
+| `DATABASE_HOST` | PostgreSQL server host | `localhost` |
+| `DATABASE_PORT` | PostgreSQL server port | `5432` |
+| `DATABASE_USER` | PostgreSQL username | `laundry_app_prod` |
+| `DATABASE_PASSWORD` | PostgreSQL password | `postgres_dev_password` |
+| `DATABASE_NAME` | Database name | `laundry_app_prod` |
+| `JWT_SECRET` | Secret key for JWT signing | *required* |
 
 ### Optional
 
