@@ -45,9 +45,7 @@ export const HealthHandlersLive = HttpApiBuilder.group(AppApi, 'Health', (handle
         const now = yield* DateTime.now
 
         // Test database connection
-        const result = yield* testConnection.pipe(
-          Effect.catchAll(() => Effect.succeed(false))
-        )
+        const result = yield* testConnection.pipe(Effect.catchAll(() => Effect.succeed(false)))
 
         const latencyMs = Date.now() - start
 

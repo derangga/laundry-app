@@ -34,8 +34,7 @@ export const SecurityHeadersMiddleware = HttpMiddleware.make((app) =>
 
     // HSTS header only in production (requires HTTPS)
     if (isProduction) {
-      securityHeaders['Strict-Transport-Security'] =
-        'max-age=31536000; includeSubDomains; preload'
+      securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
     }
 
     return HttpServerResponse.setHeaders(response, securityHeaders)

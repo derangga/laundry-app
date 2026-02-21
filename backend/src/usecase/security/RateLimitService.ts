@@ -63,10 +63,7 @@ export class RateLimitService extends Effect.Service<RateLimitService>()('RateLi
     })
 
     // Start cleanup fiber (runs in background)
-    yield* cleanup.pipe(
-      Effect.repeat(Schedule.fixed(Duration.minutes(1))),
-      Effect.forkDaemon
-    )
+    yield* cleanup.pipe(Effect.repeat(Schedule.fixed(Duration.minutes(1))), Effect.forkDaemon)
 
     /**
      * Check rate limit for a key
@@ -126,10 +123,7 @@ export class RateLimitService extends Effect.Service<RateLimitService>()('RateLi
     /**
      * Get current limit info for a key (for adding headers)
      */
-    const getLimitInfo = (
-      key: string,
-      strategy: RateLimitStrategy
-    ): Effect.Effect<RateLimitInfo> =>
+    const getLimitInfo = (key: string, strategy: RateLimitStrategy): Effect.Effect<RateLimitInfo> =>
       Effect.gen(function* () {
         const now = Date.now()
         const currentStore = yield* Ref.get(store)
