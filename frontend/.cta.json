@@ -3,14 +3,18 @@
   "mode": "file-router",
   "typescript": true,
   "packageManager": "bun",
+  "includeExamples": false,
   "tailwind": true,
   "addOnOptions": {},
-  "git": true,
+  "envVarValues": {},
+  "git": false,
+  "routerOnly": false,
   "version": 1,
   "framework": "react-cra",
   "chosenAddOns": [
     "eslint",
+    "shadcn",
     "table",
-    "shadcn"
+    "tanstack-query"
   ]
 }
