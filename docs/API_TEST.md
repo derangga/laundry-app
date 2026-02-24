@@ -1,6 +1,6 @@
 # API Testing with curl
 
-This document provides curl request examples for testing all API endpoints (20 total).
+This document provides curl request examples for testing all API endpoints (21 total).
 
 ## Prerequisites
 
@@ -448,6 +448,65 @@ curl -X POST http://localhost:3000/api/auth/logout \
 {
   "success": true,
   "message": "Logged out successfully"
+}
+```
+
+---
+
+### GET /api/auth/me - Get Current User
+
+**Endpoint:** `GET /api/auth/me`
+**Authentication:** Required (Bearer token)
+**Status Code:** 200 OK on success
+
+#### Request
+
+```bash
+curl -X GET http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer $AUTH_TOKEN"
+```
+
+#### Success Response (200)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "staff@laundry.com",
+  "name": "John Doe",
+  "role": "staff"
+}
+```
+
+#### Error Response (401 - No Token)
+
+```bash
+curl -X GET http://localhost:3000/api/auth/me
+```
+
+Response:
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication required"
+  }
+}
+```
+
+#### Error Response (401 - Invalid/Expired Token)
+
+```bash
+curl -X GET http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer invalid-token-here"
+```
+
+Response:
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or expired token"
+  }
 }
 ```
 
@@ -1500,10 +1559,10 @@ curl -i -X POST http://localhost:3000/api/auth/login \
 
 ### Endpoint Summary
 
-**Total: 20 endpoints**
+**Total: 21 endpoints**
 
 - **Health (2):** GET /health, GET /health/db
-- **Auth (5):** bootstrap, register, login, refresh, logout
+- **Auth (6):** bootstrap, register, login, refresh, logout, me
 - **Customers (3):** search by phone, create, get by ID
 - **Orders (5):** create, list, get by ID, update status, update payment
 - **Services (4):** list, create, update, delete

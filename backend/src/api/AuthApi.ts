@@ -6,6 +6,7 @@ import {
   BootstrapInput,
   AuthResponse,
   LogoutResult,
+  AuthenticatedUser,
 } from '@domain/Auth'
 import { CreateUserInput, UserWithoutPassword } from '@domain/User'
 import {
@@ -55,4 +56,10 @@ export const AuthGroup = HttpApiGroup.make('Auth')
       .addSuccess(UserWithoutPassword)
       .addError(ValidationError)
       .addError(BootstrapNotAllowed)
+  )
+  .add(
+    HttpApiEndpoint.get('me', '/api/auth/me')
+      .addSuccess(AuthenticatedUser)
+      .addError(Unauthorized)
+      .middleware(AuthMiddleware)
   )
