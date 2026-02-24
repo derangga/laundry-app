@@ -16,6 +16,7 @@
     "migrate:down": "bun migrations/index.ts down"
   },
   "dependencies": {
+    "@laundry-app/shared": "workspace:*",
     "@effect/experimental": "^0.58.0",
     "@effect/platform": "^0.72.2",
     "@effect/platform-bun": "^0.53.1",

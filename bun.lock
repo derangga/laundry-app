@@ -14,6 +14,7 @@
         "@effect/platform-bun": "^0.53.1",
         "@effect/sql": "^0.24.3",
         "@effect/sql-pg": "^0.24.4",
+        "@laundry-app/shared": "workspace:*",
         "@node-rs/bcrypt": "^1.10.7",
         "effect": "^3.19.16",
         "jose": "^5.10.0",
@@ -33,6 +34,7 @@
       "name": "@laundry-app/frontend",
       "dependencies": {
         "@faker-js/faker": "^10.0.0",
+        "@laundry-app/shared": "workspace:*",
         "@tailwindcss/vite": "^4.1.18",
         "@tanstack/match-sorter-utils": "^8.19.4",
         "@tanstack/react-devtools": "^0.7.0",
@@ -46,6 +48,7 @@
         "@tanstack/router-plugin": "^1.132.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "effect": "^3.19.16",
         "lucide-react": "^0.575.0",
         "next-themes": "^0.4.6",
         "radix-ui": "^1.4.3",
@@ -72,6 +75,13 @@
         "vite": "^7.1.7",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.0.5",
+      },
+    },
+    "packages/shared": {
+      "name": "@laundry-app/shared",
+      "version": "0.0.1",
+      "dependencies": {
+        "effect": "^3.19.16",
       },
     },
   },
@@ -263,6 +273,8 @@
     "@laundry-app/backend": ["@laundry-app/backend@workspace:backend"],
 
     "@laundry-app/frontend": ["@laundry-app/frontend@workspace:frontend"],
+
+    "@laundry-app/shared": ["@laundry-app/shared@workspace:packages/shared"],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@0.2.12", "", { "dependencies": { "@emnapi/core": "^1.4.3", "@emnapi/runtime": "^1.4.3", "@tybys/wasm-util": "^0.10.0" } }, "sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ=="],
 

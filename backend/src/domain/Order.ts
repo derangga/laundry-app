@@ -1,22 +1,31 @@
+export {
+  OrderId,
+  OrderItemId,
+  OrderStatus,
+  PaymentStatus,
+  CreateOrderItemInput,
+  CreateOrderInput,
+  UpdateOrderStatusInput,
+  UpdatePaymentStatusInput,
+  OrderWithDetails,
+  OrderSummary,
+  OrderItemWithService,
+  OrderResponse,
+  OrderItemResponse,
+  OrderWithItemsResponse,
+} from '@laundry-app/shared'
+
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
-import { CustomerId } from './Customer.js'
-import { UserId } from './User.js'
-import { ServiceId, UnitType } from './LaundryService.js'
-import { DecimalNumber } from './common/DecimalNumber.js'
-import { DateTimeUtcString } from './common/DateTimeUtcString.js'
-
-export const OrderId = Schema.String.pipe(Schema.brand('OrderId'))
-export type OrderId = typeof OrderId.Type
-
-export const OrderItemId = Schema.String.pipe(Schema.brand('OrderItemId'))
-export type OrderItemId = typeof OrderItemId.Type
-
-export const OrderStatus = Schema.Literal('received', 'in_progress', 'ready', 'delivered')
-export type OrderStatus = typeof OrderStatus.Type
-
-export const PaymentStatus = Schema.Literal('paid', 'unpaid')
-export type PaymentStatus = typeof PaymentStatus.Type
+import {
+  OrderId,
+  OrderItemId,
+  OrderStatus,
+  PaymentStatus,
+  CustomerId,
+} from '@laundry-app/shared'
+import { UserId } from '@laundry-app/shared'
+import { ServiceId, DecimalNumber } from '@laundry-app/shared'
 
 export class Order extends Model.Class<Order>('Order')({
   id: Model.Generated(OrderId),
@@ -38,105 +47,6 @@ export class OrderItem extends Model.Class<OrderItem>('OrderItem')({
   price_at_order: DecimalNumber,
   subtotal: DecimalNumber,
   created_at: Model.DateTimeInsertFromDate,
-}) {}
-
-export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>(
-  'CreateOrderItemInput'
-)({
-  service_id: ServiceId,
-  quantity: Schema.Number,
-}) {}
-
-export class CreateOrderInput extends Schema.Class<CreateOrderInput>('CreateOrderInput')({
-  customer_id: CustomerId,
-  items: Schema.Array(CreateOrderItemInput),
-  created_by: UserId,
-  payment_status: Schema.optionalWith(PaymentStatus, { default: () => 'unpaid' as const }),
-}) {}
-
-export class UpdateOrderStatusInput extends Schema.Class<UpdateOrderStatusInput>(
-  'UpdateOrderStatusInput'
-)({
-  status: OrderStatus,
-}) {}
-
-export class UpdatePaymentStatusInput extends Schema.Class<UpdatePaymentStatusInput>(
-  'UpdatePaymentStatusInput'
-)({
-  payment_status: PaymentStatus,
-}) {}
-
-export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithDetails')({
-  id: OrderId,
-  order_number: Schema.String,
-  customer_id: CustomerId,
-  customer_name: Schema.String,
-  customer_phone: Schema.String,
-  status: OrderStatus,
-  payment_status: PaymentStatus,
-  total_price: DecimalNumber,
-  created_by: UserId,
-  created_by_name: Schema.String,
-  created_at: DateTimeUtcString,
-  updated_at: DateTimeUtcString,
-}) {}
-
-export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
-  id: OrderId,
-  order_number: Schema.String,
-  total_price: DecimalNumber,
-  payment_status: PaymentStatus,
-  created_at: DateTimeUtcString,
-}) {}
-
-export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
-  'OrderItemWithService'
-)({
-  id: OrderItemId,
-  order_id: OrderId,
-  service_id: ServiceId,
-  service_name: Schema.String,
-  unit_type: UnitType,
-  quantity: DecimalNumber,
-  price_at_order: DecimalNumber,
-  subtotal: DecimalNumber,
-  created_at: DateTimeUtcString,
-}) {}
-
-// HTTP Response Models
-export class OrderResponse extends Schema.Class<OrderResponse>('OrderResponse')({
-  id: Schema.String,
-  order_number: Schema.String,
-  customer_id: Schema.String,
-  status: OrderStatus,
-  payment_status: PaymentStatus,
-  total_price: Schema.Number,
-  created_by: Schema.String,
-  created_at: DateTimeUtcString,
-  updated_at: DateTimeUtcString,
-}) {}
-
-export class OrderItemResponse extends Schema.Class<OrderItemResponse>('OrderItemResponse')({
-  id: Schema.String,
-  service_id: Schema.String,
-  quantity: Schema.Number,
-  price_at_order: Schema.Number,
-  subtotal: Schema.Number,
-}) {}
-
-export class OrderWithItemsResponse extends Schema.Class<OrderWithItemsResponse>(
-  'OrderWithItemsResponse'
-)({
-  id: Schema.String,
-  order_number: Schema.String,
-  customer_id: Schema.String,
-  status: OrderStatus,
-  payment_status: PaymentStatus,
-  total_price: Schema.Number,
-  created_by: Schema.String,
-  created_at: DateTimeUtcString,
-  updated_at: DateTimeUtcString,
-  items: Schema.Array(OrderItemResponse),
 }) {}
 
 export class OrderFilterOptions extends Schema.Class<OrderFilterOptions>('OrderFilterOptions')({

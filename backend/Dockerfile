@@ -16,12 +16,16 @@ COPY bun.lock package.json ./
 # Copy workspace package.json files (both needed for workspace resolution)
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+COPY packages/shared/package.json ./packages/shared/
 
 # Install dependencies at root level (workspace-aware)
 RUN bun install --frozen-lockfile
 
-# Copy backend source code only
+# Copy backend source code
 COPY backend/ ./backend/
+
+# Copy shared package source code (required for build-time imports)
+COPY packages/shared/ ./packages/shared/
 
 # Build application
 WORKDIR /app/backend
