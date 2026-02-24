@@ -478,7 +478,10 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 
 - **Access Tokens**: JWT, short-lived (15 minutes), contain user ID and role, signed with secret
 - **Refresh Tokens**: Random tokens, long-lived (7-30 days), stored in database, rotated on use
-- **Storage**: httpOnly cookies for both tokens (XSS protection)
+- **Transport Method**: Both tokens returned in response body (`AuthResponse { accessToken, refreshToken, user }`)
+- **Client Storage**: Client manages token storage (recommended: access token in memory, refresh token in localStorage)
+- **Authentication**: Access token sent via `Authorization: Bearer <token>` header (verified by `AuthMiddleware`)
+- **Refresh**: Refresh token sent in request body `{ refreshToken }` (cookie fallback supported for backward compatibility)
 - **Rotation**: Issue new refresh token on each refresh (limits replay window)
 
 **Authorization (RBAC)**:
@@ -559,10 +562,10 @@ CREATE TABLE refresh_tokens (
 
 **Authentication Flow**:
 
-1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token → Return both in httpOnly cookies
-2. API Request: Extract access token → Verify signature → Extract user/role → Inject into Effect Context
-3. Refresh: Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new tokens
-4. Logout: Revoke refresh token in database → Clear cookies
+1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token hash in database → Return `AuthResponse { accessToken, refreshToken, user }` in response body
+2. API Request: Client sends `Authorization: Bearer <accessToken>` → `AuthMiddleware` verifies JWT signature → Extract user/role → Inject `CurrentUser` into Effect Context
+3. Refresh: Client sends `{ refreshToken }` in request body (or cookie fallback) → Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new `AuthResponse`
+4. Logout: Client sends `Authorization: Bearer <accessToken>` + optional `{ refreshToken }` → Revoke refresh token in database
 
 **Authorization Implementation**:
 

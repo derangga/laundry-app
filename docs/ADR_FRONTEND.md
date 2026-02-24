@@ -44,11 +44,12 @@ This ADR documents the architectural decisions for the laundry management applic
 
 The backend uses JWT access tokens (15min expiry, Bearer header) and refresh tokens (7 days, sent in request body). The frontend must store tokens, attach them to API requests, handle transparent refresh when access tokens expire, and redirect to login when the session is fully expired.
 
-Key backend constraints discovered during analysis:
-- **`GET /api/auth/me` endpoint** — being added in backend phase 14 (see `docs/backend_roadmap/phase_14.md`). Returns `{ id, email, name, role }` from the JWT token
-- **`setAuthCookies`/`clearAuthCookies` are dead code** — the backend does NOT set httpOnly cookies
-- **Refresh endpoint** accepts `{ refreshToken }` in the request body
-- **Login/refresh both return** `AuthResponse { accessToken, refreshToken, user: { id, email, name, role } }`
+Key backend implementation verified by code review:
+- **`GET /api/auth/me` endpoint** — being added in backend phase 14 (`docs/backend_roadmap/phase_14.md`). Returns `{ id, email, name, role }` from the JWT token
+- **`AuthMiddleware`** uses `HttpApiSecurity.bearer` — reads from `Authorization: Bearer` header, NOT cookies
+- **Cookie helpers exist but are unused** — `setAuthCookies`/`clearAuthCookies` defined in `CookieHelper.ts` but never called in `AuthHandlers.ts` (line 24: "Cookies are managed by the client")
+- **Tokens returned in response body** — login/refresh return `AuthResponse { accessToken, refreshToken, user }`
+- **Refresh endpoint** accepts `{ refreshToken }` in request body (cookie fallback exists via `extractRefreshTokenFromCookie` but not primary)
 
 #### Decision
 
@@ -62,9 +63,9 @@ Build a custom auth layer:
 #### Rationale
 
 - **In-memory access token**: Short-lived (15min), no XSS exposure via localStorage/sessionStorage
-- **localStorage for refresh token**: The backend does not set httpOnly cookies, so the frontend must persist the refresh token somewhere to survive page refreshes. localStorage is the pragmatic choice for this app's threat model
+- **localStorage for refresh token**: The backend returns tokens in response body (not cookies), so the frontend manages storage. localStorage is chosen over sessionStorage to survive page refresh. This is acceptable for an internal staff/admin app with controlled access.
 - **TanStack Query for user data**: `useCurrentUser()` calls `GET /api/auth/me` — provides reactive access to user info without a separate state library. Invalidated on login/logout
-- **No Better Auth**: The backend already owns the full JWT system with custom endpoints. Better Auth requires its own server endpoints (`/api/auth/sign-in/email`) which are incompatible with the existing backend
+- **No Better Auth**: The backend already owns the full JWT system with custom endpoints. Better Auth requires its own server endpoints (`/api/auth/sign-in/email`) which are incompatible with the existing Effect backend API
 
 #### Implementation
 
@@ -505,6 +506,8 @@ export function fetchOrders(): Promise<OrderWithDetails[]> {
 - **Plain TypeScript interfaces** (original plan): Simple to write but duplicates backend types, high drift risk, no runtime validation option
 - **Full Effect on frontend**: Using Effect runtime for API calls — too heavy for a simple React SPA, unnecessary complexity
 - **Codegen from OpenAPI**: The backend doesn't generate OpenAPI specs, and adding generation would require additional tooling and build steps
+
+**Update (2026-02-24)**: After authentication implementation review, confirmed that shared package is correctly set up. Frontend imports types from `@laundry-app/shared` for all API contracts. No changes needed.
 
 ---
 

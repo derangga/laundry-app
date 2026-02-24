@@ -60,6 +60,7 @@ Functions:
 
 Hooks:
 - `useCurrentUser()` — `useQuery({ queryKey: authKeys.user, queryFn: getMeFn, staleTime: Infinity, retry: false })`. Calls `GET /api/auth/me` to get user data. Falls back gracefully if endpoint returns 401 (not authenticated)
+  - **Note**: `staleTime: Infinity` means the query won't auto-refetch. The Phase 2 dashboard layout's `beforeLoad` must manually trigger `fetchQuery` to ensure fresh user data on page loads and handle authentication flow correctly.
 - `useLogin()` — `useMutation` that calls `loginFn`, on success: store tokens, invalidate `authKeys.user` query (triggers re-fetch from `/me`), navigate to `/`, toast "Welcome back, {name}"
 - `useLogout()` — `useMutation` that calls `logoutFn`, on settle: clear tokens, remove user from query cache, navigate to `/login`
 

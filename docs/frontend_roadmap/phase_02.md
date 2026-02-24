@@ -13,10 +13,12 @@
 **Create `frontend/src/routes/_dashboard.tsx`:**
 - Pathless layout route using `createFileRoute('/_dashboard')`
 - `beforeLoad` hook:
-  1. Try `context.queryClient.getQueryData(authKeys.user)` for cached user
-  2. If no cached user, read refreshToken from localStorage
-  3. If refreshToken exists, call `refreshFn(refreshToken)` → store new tokens, set user in cache
-  4. If all fail, `throw redirect({ to: '/login' })`
+  1. Check if accessToken exists in memory via `getAccessToken()`
+  2. If yes, attempt `context.queryClient.fetchQuery()` with `getMeFn` (calls `GET /api/auth/me` if cache empty)
+  3. If `/me` succeeds, proceed to route
+  4. If no accessToken or `/me` fails (401), read refreshToken from localStorage
+  5. If refreshToken exists, call `refreshFn(refreshToken)` → store new tokens, cache user via `setQueryData`
+  6. If refresh fails, `clearTokens()` and `throw redirect({ to: '/login' })`
 - Component renders the sidebar-inset layout:
   ```
   <SidebarProvider>
