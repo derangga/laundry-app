@@ -478,7 +478,10 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 
 - **Access Tokens**: JWT, short-lived (15 minutes), contain user ID and role, signed with secret
 - **Refresh Tokens**: Random tokens, long-lived (7-30 days), stored in database, rotated on use
-- **Storage**: httpOnly cookies for both tokens (XSS protection)
+- **Transport Method**: Both tokens returned in response body (`AuthResponse { accessToken, refreshToken, user }`)
+- **Client Storage**: Client manages token storage (recommended: access token in memory, refresh token in localStorage)
+- **Authentication**: Access token sent via `Authorization: Bearer <token>` header (verified by `AuthMiddleware`)
+- **Refresh**: Refresh token sent in request body `{ refreshToken }` (cookie fallback supported for backward compatibility)
 - **Rotation**: Issue new refresh token on each refresh (limits replay window)
 
 **Authorization (RBAC)**:
@@ -559,10 +562,10 @@ CREATE TABLE refresh_tokens (
 
 **Authentication Flow**:
 
-1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token → Return both in httpOnly cookies
-2. API Request: Extract access token → Verify signature → Extract user/role → Inject into Effect Context
-3. Refresh: Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new tokens
-4. Logout: Revoke refresh token in database → Clear cookies
+1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token hash in database → Return `AuthResponse { accessToken, refreshToken, user }` in response body
+2. API Request: Client sends `Authorization: Bearer <accessToken>` → `AuthMiddleware` verifies JWT signature → Extract user/role → Inject `CurrentUser` into Effect Context
+3. Refresh: Client sends `{ refreshToken }` in request body (or cookie fallback) → Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new `AuthResponse`
+4. Logout: Client sends `Authorization: Bearer <accessToken>` + optional `{ refreshToken }` → Revoke refresh token in database
 
 **Authorization Implementation**:
 
@@ -1502,6 +1505,60 @@ parseResult.pipe(
 - Verify error messages are helpful
 - Test edge cases (empty strings, null, undefined, etc.)
 
+### Decision 8: Shared Schema Package
+
+#### Context
+
+The frontend needs the same type definitions used by the backend for API request/response contracts. Duplicating these as plain TypeScript interfaces in the frontend risks drift — any backend schema change (renamed field, new enum value, changed optionality) requires a synchronized manual update on the frontend.
+
+#### Decision
+
+Extract public Schema types (branded IDs, `Schema.Class` DTOs, `Schema.Literal` enums) to a `@laundry-app/shared` workspace package (`packages/shared/`). The backend re-exports these types from its domain files so existing backend imports remain unchanged.
+
+**What moves to shared:**
+- Branded IDs: `UserId`, `CustomerId`, `ServiceId`, `OrderId`, `OrderItemId`
+- Enum literals: `UserRole`, `OrderStatus`, `PaymentStatus`, `UnitType`, `AnalyticsPaymentFilter`
+- Request DTOs: `LoginInput`, `CreateUserInput`, `CreateCustomerInput`, `CreateOrderInput`, etc.
+- Response DTOs: `AuthResponse`, `CustomerResponse`, `OrderWithDetails`, `WeeklyAnalyticsResponse`, etc.
+- Common schemas: `DecimalNumber`, `DateTimeUtcString`
+
+**What stays in backend:**
+- `Model.Class` entities (`User`, `Customer`, `Order`, `OrderItem`, `LaundryService`) — depend on `@effect/sql`
+- `Context.Tag` services (`CurrentUser`) — internal DI concern
+- Error classes (`CustomerNotFound`, `OrderNotFound`, etc.) — backend-only error handling
+- Internal types (`JwtPayload`, `TokenPair`, `WeeklyRow`, `OrderFilterOptions`, `RefreshToken`)
+- Utility services (`OrderStatusValidator`, `OrderNumberGenerator`, `PhoneNumber`)
+
+#### Rationale
+
+- **Single source of truth**: One schema definition drives both backend validation and frontend types
+- **No breaking changes**: Backend domain files re-export from shared, so all existing `import { X } from '@domain/...'` paths continue to work
+- **Minimal dependency**: Shared package depends only on `effect` — no `@effect/platform` or `@effect/sql`
+- **Tree-shakeable**: Frontend bundler (Vite) can tree-shake unused schemas
+
+#### Alternatives Considered
+
+- **Plain TypeScript interfaces on frontend**: Simple to write, but duplicates definitions and introduces drift risk. No runtime validation option
+- **Full Effect on frontend**: Would allow direct Schema.decode usage, but too heavy — the frontend uses plain fetch + TanStack Query
+- **Codegen from OpenAPI**: Backend doesn't generate OpenAPI specs; adding generation requires tooling and build step maintenance
+
+#### Consequences
+
+**Positive**:
+- Type-safe API contracts between frontend and backend
+- Frontend gets branded IDs, literal unions, and exact optionality from schemas
+- Runtime validation available if frontend chooses to use `Schema.decode`
+- Backend imports unchanged (re-export pattern)
+
+**Negative**:
+- New workspace dependency to manage
+- Shared package must be kept dependency-light (only `effect`)
+- Changes to shared types affect both frontend and backend (intended, but requires awareness)
+
+#### Implementation Notes
+
+See `docs/shared/phase_01.md` for the full implementation roadmap including file inventory, type classification table, and re-export patterns.
+
 ---
 
 ## 3. Technology Stack Summary
@@ -1555,10 +1612,26 @@ parseResult.pipe(
 ## 4. Project Structure Overview
 
 ```
+/packages/shared/                # @laundry-app/shared — public Effect Schema types
+├── src/
+│   ├── common/
+│   │   ├── decimal-number.ts   # DecimalNumber transform
+│   │   └── datetime.ts         # DateTimeUtcString
+│   ├── user.ts                 # UserId, UserRole, CreateUserInput, ...
+│   ├── auth.ts                 # LoginInput, AuthResponse, ...
+│   ├── customer.ts             # CustomerId, CustomerResponse, ...
+│   ├── service.ts              # ServiceId, UnitType, ...
+│   ├── order.ts                # OrderStatus, PaymentStatus, OrderWithDetails, ...
+│   ├── analytics.ts            # WeeklyAnalyticsResponse, DashboardStatsResponse, ...
+│   ├── receipt.ts              # ReceiptItem, ReceiptResponse
+│   └── index.ts                # Barrel export
+├── package.json
+└── tsconfig.json
+
 /backend/
 ├── src/
 │   ├── configs/           # Configuration
-│   ├── domain/           # Business entities, errors, domain services
+│   ├── domain/           # Internal types (Model.Class) + re-exports from @laundry-app/shared
 │   ├── usecase/          # Business logic
 │   ├── middleware/       # AuthMiddleware
 │   ├── http/             # HTTP server and router
