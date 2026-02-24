@@ -14,6 +14,9 @@ import {
   BootstrapNotAllowed,
   UserAlreadyExists,
 } from '@domain/http/HttpErrors'
+import { UserRepository } from 'src/repositories/UserRepository'
+import { CurrentUser } from '@domain/CurrentUser'
+import { AuthenticatedUser } from '@domain/Auth'
 
 /**
  * Auth API Handlers
@@ -212,6 +215,43 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             })
           })
         )
+      })
+    )
+
+    /**
+     * Get current authenticated user
+     * GET /api/auth/me
+     * Protected: Requires valid access token (via AuthMiddleware)
+     * Returns: AuthenticatedUser (without password or timestamps)
+     * Errors: 401 (unauthorized or user not found)
+     *
+     * Note: CurrentUser context is provided by AuthMiddleware. The JWT payload
+     * contains (id, email, role) but not name, so we fetch from database.
+     */
+    .handle('me', () =>
+      Effect.gen(function* () {
+        const currentUser = yield* CurrentUser
+        const userRepo = yield* UserRepository
+
+        // Fetch user by ID to get name field
+        const userOption = yield* userRepo.findById(currentUser.id)
+
+        // If user not found in database (edge case: user deleted after token issued)
+        if (Option.isNone(userOption)) {
+          return yield* Effect.fail(
+            new Unauthorized({ message: 'User not found' })
+          )
+        }
+
+        const user = userOption.value
+
+        // Return AuthenticatedUser (matches login response format)
+        return AuthenticatedUser.make({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        })
       })
     )
 )

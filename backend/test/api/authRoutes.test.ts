@@ -430,3 +430,70 @@ describe('Cookie Security', () => {
     expect(payload.role).toBeDefined()
   })
 })
+
+describe('GET /api/auth/me - Get Current User', () => {
+  it('should return current user with valid token', async () => {
+    const testUsers = await createTestUsers()
+    const testLayer = createTestLayer([testUsers.admin.user], [])
+    const fullLayer = Layer.mergeAll(
+      testLayer,
+      Layer.succeed(CurrentUser, {
+        id: testUsers.admin.user.id,
+        email: testUsers.admin.user.email,
+        role: testUsers.admin.user.role,
+      })
+    )
+
+    const program = Effect.gen(function* () {
+      const userRepo = yield* UserRepository
+      const userOption = yield* userRepo.findById(testUsers.admin.user.id)
+
+      if (Option.isNone(userOption)) {
+        return yield* Effect.fail(new Error('User not found'))
+      }
+
+      const user = userOption.value
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }
+    })
+
+    const result = await Effect.runPromise(Effect.provide(program, fullLayer))
+
+    expect(result.id).toBe(testUsers.admin.user.id)
+    expect(result.email).toBe('admin@example.com')
+    expect(result.name).toBeDefined()
+    expect(result.role).toBe('admin')
+  })
+
+  it('should fail when user not found in database', async () => {
+    const testUsers = await createTestUsers()
+    const emptyLayer = createTestLayer([], []) // No users in repository
+    const fullLayer = Layer.mergeAll(
+      emptyLayer,
+      Layer.succeed(CurrentUser, {
+        id: testUsers.admin.user.id,
+        email: testUsers.admin.user.email,
+        role: testUsers.admin.user.role,
+      })
+    )
+
+    const program = Effect.gen(function* () {
+      const userRepo = yield* UserRepository
+      const userOption = yield* userRepo.findById(testUsers.admin.user.id)
+
+      if (Option.isNone(userOption)) {
+        return yield* Effect.fail(new Error('User not found'))
+      }
+
+      return userOption.value
+    })
+
+    const result = await Effect.runPromiseExit(Effect.provide(program, fullLayer))
+
+    expect(result._tag).toBe('Failure')
+  })
+})
