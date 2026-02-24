@@ -238,9 +238,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
 
         // If user not found in database (edge case: user deleted after token issued)
         if (Option.isNone(userOption)) {
-          return yield* Effect.fail(
-            new Unauthorized({ message: 'User not found' })
-          )
+          return yield* Effect.fail(new Unauthorized({ message: 'User not found' }))
         }
 
         const user = userOption.value
