@@ -17,13 +17,7 @@ export {
 
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
-import {
-  OrderId,
-  OrderItemId,
-  OrderStatus,
-  PaymentStatus,
-  CustomerId,
-} from '@laundry-app/shared'
+import { OrderId, OrderItemId, OrderStatus, PaymentStatus, CustomerId } from '@laundry-app/shared'
 import { UserId } from '@laundry-app/shared'
 import { ServiceId, DecimalNumber } from '@laundry-app/shared'
 
