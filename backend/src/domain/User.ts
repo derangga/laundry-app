@@ -1,12 +1,14 @@
+export {
+  UserId,
+  UserRole,
+  CreateUserInput,
+  UserWithoutPassword,
+  UserBasicInfo,
+} from '@laundry-app/shared'
+
 import { Schema } from 'effect'
 import { Model } from '@effect/sql'
-import { DateTimeUtcString } from './common/DateTimeUtcString.js'
-
-export const UserId = Schema.String.pipe(Schema.brand('UserId'))
-export type UserId = typeof UserId.Type
-
-export const UserRole = Schema.Literal('admin', 'staff')
-export type UserRole = typeof UserRole.Type
+import { UserId, UserRole } from '@laundry-app/shared'
 
 export class User extends Model.Class<User>('User')({
   id: Model.Generated(UserId),
@@ -16,31 +18,4 @@ export class User extends Model.Class<User>('User')({
   role: UserRole,
   created_at: Model.DateTimeInsertFromDate,
   updated_at: Model.DateTimeUpdateFromDate,
-}) {}
-
-const EmailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-
-export class CreateUserInput extends Schema.Class<CreateUserInput>('CreateUserInput')({
-  email: Schema.String.pipe(
-    Schema.nonEmptyString(),
-    Schema.pattern(EmailPattern, { message: () => 'Invalid email format' })
-  ),
-  password: Schema.String.pipe(Schema.nonEmptyString()),
-  name: Schema.String.pipe(Schema.nonEmptyString()),
-  role: UserRole,
-}) {}
-
-export class UserWithoutPassword extends Schema.Class<UserWithoutPassword>('UserWithoutPassword')({
-  id: UserId,
-  email: Schema.String.pipe(Schema.nonEmptyString()),
-  name: Schema.String.pipe(Schema.nonEmptyString()),
-  role: UserRole,
-  created_at: DateTimeUtcString,
-  updated_at: DateTimeUtcString,
-}) {}
-
-export class UserBasicInfo extends Schema.Class<UserBasicInfo>('UserBasicInfo')({
-  id: UserId,
-  name: Schema.String,
-  email: Schema.String,
 }) {}
