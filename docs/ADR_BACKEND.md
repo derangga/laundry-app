@@ -478,10 +478,10 @@ Implement JWT-based authentication with refresh token pattern, role-based access
 
 - **Access Tokens**: JWT, short-lived (15 minutes), contain user ID and role, signed with secret
 - **Refresh Tokens**: Random tokens, long-lived (7-30 days), stored in database, rotated on use
-- **Transport Method**: Both tokens returned in response body (`AuthResponse { accessToken, refreshToken, user }`)
-- **Client Storage**: Client manages token storage (recommended: access token in memory, refresh token in localStorage)
-- **Authentication**: Access token sent via `Authorization: Bearer <token>` header (verified by `AuthMiddleware`)
-- **Refresh**: Refresh token sent in request body `{ refreshToken }` (cookie fallback supported for backward compatibility)
+- **Transport Method**: Tokens set as httpOnly cookies via `Set-Cookie` headers on login, refresh, and logout. Also returned in response body (`AuthResponse { accessToken, refreshToken, user }`) for non-browser clients.
+- **Client Storage**: Browser stores tokens automatically in httpOnly cookies. No client-side token management needed. Non-browser clients manage tokens manually from response body.
+- **Authentication**: Access token via httpOnly cookie (primary for browsers) OR `Authorization: Bearer <token>` header (for non-browser clients). `AuthMiddleware` supports both via dual security scheme — Bearer takes priority.
+- **Refresh**: Refresh token via httpOnly cookie on path `/api/auth` (primary for browsers). Body fallback `{ refreshToken }` for non-browser clients.
 - **Rotation**: Issue new refresh token on each refresh (limits replay window)
 
 **Authorization (RBAC)**:
@@ -562,10 +562,10 @@ CREATE TABLE refresh_tokens (
 
 **Authentication Flow**:
 
-1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token hash in database → Return `AuthResponse { accessToken, refreshToken, user }` in response body
-2. API Request: Client sends `Authorization: Bearer <accessToken>` → `AuthMiddleware` verifies JWT signature → Extract user/role → Inject `CurrentUser` into Effect Context
-3. Refresh: Client sends `{ refreshToken }` in request body (or cookie fallback) → Validate refresh token → Check not revoked → Generate new tokens → Rotate refresh token → Return new `AuthResponse`
-4. Logout: Client sends `Authorization: Bearer <accessToken>` + optional `{ refreshToken }` → Revoke refresh token in database
+1. Login: Validate credentials → Generate access + refresh tokens → Store refresh token hash in database → Set httpOnly cookies (`accessToken` Path=/api, `refreshToken` Path=/api/auth) → Return `AuthResponse { accessToken, refreshToken, user }` in response body
+2. API Request: Browser sends cookies automatically (or non-browser client sends `Authorization: Bearer <accessToken>`) → `AuthMiddleware` verifies JWT from cookie or Bearer header (Bearer takes priority) → Extract user/role → Inject `CurrentUser` into Effect Context
+3. Refresh: Browser sends refresh token cookie automatically to `/api/auth/refresh` (or non-browser client sends `{ refreshToken }` in body) → Validate refresh token (body first, cookie fallback) → Check not revoked → Generate new tokens → Set new httpOnly cookies → Return new `AuthResponse`
+4. Logout: Browser sends cookies automatically (or non-browser client sends Bearer header) → Revoke refresh token in database → Clear cookies via `Set-Cookie` with `Max-Age=0`
 
 **Authorization Implementation**:
 
@@ -582,7 +582,7 @@ const requireAdmin = Effect.gen(function* () {
 })
 ```
 
-**AuthMiddleware using HttpApiMiddleware.Tag pattern**:
+**AuthMiddleware using HttpApiMiddleware.Tag pattern (dual security: Bearer + Cookie)**:
 
 ```typescript
 import { HttpApiMiddleware, HttpApiSecurity } from '@effect/platform'
@@ -596,6 +596,7 @@ export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('Aut
   provides: CurrentUser,
   security: {
     bearer: HttpApiSecurity.bearer,
+    cookie: HttpApiSecurity.apiKey({ key: 'accessToken', in: 'cookie' }),
   },
 }) {}
 
@@ -604,20 +605,22 @@ export const AuthMiddlewareLive = Layer.effect(
   Effect.gen(function* () {
     const jwtService = yield* JwtService
 
-    return {
-      bearer: (token) =>
-        Effect.gen(function* () {
-          const tokenValue = Redacted.value(token)
-          const payload = yield* jwtService
-            .verifyAccessToken(tokenValue)
-            .pipe(Effect.mapError((error) => new Unauthorized({ message: error.message })))
+    const verifyToken = (tokenValue: string) =>
+      Effect.gen(function* () {
+        const payload = yield* jwtService
+          .verifyAccessToken(tokenValue)
+          .pipe(Effect.mapError((error) => new Unauthorized({ message: error.message })))
 
-          return {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.role,
-          } satisfies CurrentUserData
-        }),
+        return {
+          id: payload.sub,
+          email: payload.email,
+          role: payload.role,
+        } satisfies CurrentUserData
+      })
+
+    return {
+      bearer: (token) => verifyToken(Redacted.value(token)),
+      cookie: (token) => verifyToken(Redacted.value(token)),
     }
   })
 )
@@ -646,10 +649,13 @@ HttpApiEndpoint.post('logout', '/api/auth/logout').middleware(AuthMiddleware) //
 
 - JWT secret from environment variable (long, random)
 - Password hashing with bcrypt or argon2 (cost factor ≥ 10)
-- HTTPS-only cookies in production
+- **httpOnly cookies**: Tokens stored in httpOnly cookies — JavaScript cannot read them, eliminating XSS token theft
+- **SameSite=Strict**: Cookies only sent on same-site requests — prevents CSRF attacks without additional CSRF tokens
+- **Cookie path scoping**: Access token cookie scoped to `Path=/api` (sent to all API routes); refresh token cookie scoped to `Path=/api/auth` (only sent to auth endpoints)
+- **Secure flag**: Cookies marked `Secure` in production (HTTPS-only)
+- CORS configured with `credentials: true` and explicit `allowedOrigins` (via `CORS_ORIGIN` env var)
 - Refresh token hashing before storage
 - Rate limiting on login/refresh endpoints
-- CSRF protection if needed (SameSite cookies may suffice)
 
 ---
 

@@ -42,66 +42,67 @@ This ADR documents the architectural decisions for the laundry management applic
 
 #### Context
 
-The backend uses JWT access tokens (15min expiry, Bearer header) and refresh tokens (7 days, sent in request body). The frontend must store tokens, attach them to API requests, handle transparent refresh when access tokens expire, and redirect to login when the session is fully expired.
+The backend uses JWT access tokens (15min expiry) and refresh tokens (7 days). As of backend phase 15, the backend sets httpOnly cookies on login/refresh/logout via `Set-Cookie` headers. Tokens are also returned in the response body for non-browser clients. The `AuthMiddleware` supports dual security: httpOnly cookie (primary for browsers) and `Authorization: Bearer` header (for non-browser clients).
 
-Key backend implementation verified by code review:
-- **`GET /api/auth/me` endpoint** — being added in backend phase 14 (`docs/backend_roadmap/phase_14.md`). Returns `{ id, email, name, role }` from the JWT token
-- **`AuthMiddleware`** uses `HttpApiSecurity.bearer` — reads from `Authorization: Bearer` header, NOT cookies
-- **Cookie helpers exist but are unused** — `setAuthCookies`/`clearAuthCookies` defined in `CookieHelper.ts` but never called in `AuthHandlers.ts` (line 24: "Cookies are managed by the client")
-- **Tokens returned in response body** — login/refresh return `AuthResponse { accessToken, refreshToken, user }`
-- **Refresh endpoint** accepts `{ refreshToken }` in request body (cookie fallback exists via `extractRefreshTokenFromCookie` but not primary)
+Key backend implementation:
+- **`GET /api/auth/me` endpoint** — added in backend phase 14. Returns `{ id, email, name, role }` from the JWT token
+- **`AuthMiddleware`** supports dual security: `HttpApiSecurity.apiKey({ key: 'accessToken', in: 'cookie' })` and `HttpApiSecurity.bearer` — Bearer takes priority
+- **httpOnly cookies set by backend** — `AuthHandlers.ts` calls `appendAuthCookies()` on login/refresh and `appendClearAuthCookies()` on logout
+- **Cookie attributes**: `HttpOnly; Secure; SameSite=Strict` — JavaScript cannot read tokens, CSRF protection via SameSite
+- **CORS**: Configured with `credentials: true` and explicit `allowedOrigins`
 
 #### Decision
 
-Build a custom auth layer:
-- Store the **access token in memory** (module-scoped variable) — immune to XSS, cleared on page refresh
-- Store the **refresh token in localStorage** — survives page refresh, 7-day lifetime
-- Cache **user profile data** in TanStack Query via `GET /api/auth/me` (added in backend phase 14)
-- On page load: call `GET /api/auth/me` (if access token exists) → if 401, attempt refresh → restore session
+Tokens stored in httpOnly cookies managed by the backend. The frontend determines auth state via `GET /api/auth/me`. No client-side token management:
+- **No token storage in JavaScript** — httpOnly cookies are invisible to JS, eliminating XSS token theft
+- **Browser sends cookies automatically** — `credentials: 'include'` on all fetch requests
+- Cache **user profile data** in TanStack Query via `GET /api/auth/me`
+- On page load: call `GET /api/auth/me` (cookie sent automatically) → if 401, attempt refresh (cookie sent automatically) → restore session or redirect to login
 - On 401: auto-refresh once and retry the original request
 
 #### Rationale
 
-- **In-memory access token**: Short-lived (15min), no XSS exposure via localStorage/sessionStorage
-- **localStorage for refresh token**: The backend returns tokens in response body (not cookies), so the frontend manages storage. localStorage is chosen over sessionStorage to survive page refresh. This is acceptable for an internal staff/admin app with controlled access.
+- **httpOnly cookies = maximum XSS protection**: Both access and refresh tokens are in httpOnly cookies — JavaScript cannot read them at all. This is strictly more secure than the previous approach (in-memory access token + localStorage refresh token)
+- **No manual token management**: The frontend doesn't store, read, or attach tokens. The browser handles cookie transmission automatically. This eliminates an entire category of auth bugs.
+- **SameSite=Strict**: Cookies are only sent on same-site requests, providing CSRF protection without additional CSRF tokens
 - **TanStack Query for user data**: `useCurrentUser()` calls `GET /api/auth/me` — provides reactive access to user info without a separate state library. Invalidated on login/logout
 - **No Better Auth**: The backend already owns the full JWT system with custom endpoints. Better Auth requires its own server endpoints (`/api/auth/sign-in/email`) which are incompatible with the existing Effect backend API
 
 #### Implementation
 
 ```
-frontend/src/lib/auth.ts          — getAccessToken(), setAccessToken(), getRefreshToken(), setRefreshToken(), clearTokens()
-frontend/src/lib/api-client.ts    — apiClient() with Bearer header, 401 auto-refresh, retry logic
-frontend/src/api/auth.ts          — authKeys, loginFn, refreshFn, logoutFn, useCurrentUser, useLogin, useLogout
+frontend/src/lib/auth.ts          — Deleted or minimal comment (no token management needed)
+frontend/src/lib/api-client.ts    — apiClient() with credentials:'include', 401 auto-refresh (empty body), retry logic
+frontend/src/api/auth.ts          — authKeys, loginFn, refreshFn (no params), logoutFn (no params), useCurrentUser (always enabled), useLogin, useLogout
 ```
 
 #### Auth Flow
 
 ```
-Page Load → GET /api/auth/me (if accessToken exists in memory)
-  → Success: cache user in TanStack Query, proceed to dashboard
-  → 401: read refreshToken from localStorage
-    → POST /api/auth/refresh { refreshToken }
-      → Success: store new tokens, cache user, proceed to dashboard
-      → Failure: clear tokens, redirect to /login
+Page Load → GET /api/auth/me (cookie sent automatically by browser)
+  → 200: cache user in TanStack Query, proceed to dashboard
+  → 401: POST /api/auth/refresh {} (cookie sent automatically)
+    → 200: new cookies set by backend, retry /me, proceed to dashboard
+    → Failure: redirect to /login
 
 Login → POST /api/auth/login { email, password }
-  → Success: store tokens (memory + localStorage), cache user, redirect to /
+  → Success: cookies set by backend via Set-Cookie headers, cache user, redirect to /
   → Failure: show Sonner toast "Wrong email or password"
 
-API Request → attach Authorization: Bearer <accessToken>
-  → 401 Response: attempt refresh → retry original request
-    → Refresh fails: clear tokens, redirect to /login
+API Request → fetch with credentials:'include' (cookie sent automatically)
+  → 401 Response: POST /api/auth/refresh {} → retry original request
+    → Refresh fails: redirect to /login
 
-Logout → POST /api/auth/logout { refreshToken } with Bearer header
-  → Clear all tokens, remove user from query cache, redirect to /login
+Logout → POST /api/auth/logout {} (cookie sent automatically)
+  → Backend: revoke token in DB, clear cookies via Set-Cookie with Max-Age=0
+  → Frontend: remove user from query cache, redirect to /login
 ```
 
 #### Alternatives Considered
 
 - **Better Auth library**: Full-stack solution requiring its own server endpoints — incompatible with existing backend
-- **localStorage for access token**: XSS-vulnerable for the short-lived token; unnecessary since memory works
-- **Cookie-only**: Backend doesn't set httpOnly cookies (dead code), so this isn't an option without backend changes
+- **In-memory access token + localStorage refresh token** (previous approach): Access token in memory was XSS-immune, but refresh token in localStorage was XSS-vulnerable. httpOnly cookies are strictly more secure for both tokens.
+- **sessionStorage for refresh token**: More secure than localStorage (clears on tab close), but worse UX — users lose session when closing the tab. httpOnly cookies provide both security and persistence.
 
 ---
 
@@ -215,11 +216,10 @@ frontend/src/api/analytics.ts     — Analytics endpoints + hooks
 
 **apiClient responsibilities:**
 1. Prepend base URL (`http://localhost:3000`)
-2. Attach `Authorization: Bearer <token>` header
-3. Set `Content-Type: application/json`
-4. On 401: attempt `POST /api/auth/refresh` with body `{ refreshToken }`, retry original request
-5. Parse JSON response
-6. Throw typed `ApiError { status, code, message }` on non-OK responses
+2. Set `Content-Type: application/json` and `credentials: 'include'` (httpOnly cookies sent automatically)
+3. On 401: attempt `POST /api/auth/refresh` with empty body `{}` (refresh token cookie sent automatically), retry original request
+4. Parse JSON response
+5. Throw typed `ApiError { status, code, message }` on non-OK responses
 
 **Each API module exports:**
 1. Query key factory (e.g., `orderKeys`)
