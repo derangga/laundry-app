@@ -2,6 +2,7 @@
  * API client with automatic token refresh and typed errors.
  */
 
+import { Schema, Effect } from 'effect'
 import {
   getAccessToken,
   setAccessToken,
@@ -23,6 +24,30 @@ export class ApiError extends Error {
   ) {
     super(message)
     this.name = 'ApiError'
+  }
+}
+
+/**
+ * Helper to validate response data against a schema
+ * Throws ApiError with validation details if validation fails
+ */
+async function validateResponse<T, TInput>(
+  schema: Schema.Schema<T, TInput, never>,
+  data: unknown,
+  path: string,
+): Promise<T> {
+  try {
+    const decode = Schema.decodeUnknown(schema)
+    return await Effect.runPromise(decode(data))
+  } catch (error) {
+    // Format validation error message
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown validation error'
+    throw new ApiError(
+      500,
+      'VALIDATION_ERROR',
+      `Invalid response from ${path}\nValidation error: ${errorMessage}`,
+    )
   }
 }
 
@@ -76,8 +101,9 @@ async function refreshTokens(): Promise<boolean> {
 /**
  * Core API client function with automatic token refresh
  */
-export async function apiClient<T>(
+export async function apiClient<T, TInput = T>(
   path: string,
+  schema?: Schema.Schema<T, TInput, never>,
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE_URL}${path}`
@@ -151,31 +177,54 @@ export async function apiClient<T>(
     )
   }
 
-  // Parse and return JSON response
-  return response.json()
+  // Parse JSON response
+  const data = await response.json()
+
+  // Validate response if schema provided
+  if (schema) {
+    return validateResponse(schema, data, path)
+  }
+
+  return data
 }
 
 /**
  * Convenience helpers for common HTTP methods
  */
 export const api = {
-  get: <T>(path: string, options?: RequestInit) =>
-    apiClient<T>(path, { ...options, method: 'GET' }),
+  get: <T, TInput = T>(
+    path: string,
+    schema?: Schema.Schema<T, TInput, never>,
+    options?: RequestInit,
+  ) => apiClient<T, TInput>(path, schema, { ...options, method: 'GET' }),
 
-  post: <T>(path: string, data?: any, options?: RequestInit) =>
-    apiClient<T>(path, {
+  post: <T, TInput = T>(
+    path: string,
+    data?: any,
+    schema?: Schema.Schema<T, TInput, never>,
+    options?: RequestInit,
+  ) =>
+    apiClient<T, TInput>(path, schema, {
       ...options,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  put: <T>(path: string, data?: any, options?: RequestInit) =>
-    apiClient<T>(path, {
+  put: <T, TInput = T>(
+    path: string,
+    data?: any,
+    schema?: Schema.Schema<T, TInput, never>,
+    options?: RequestInit,
+  ) =>
+    apiClient<T, TInput>(path, schema, {
       ...options,
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     }),
 
-  del: <T>(path: string, options?: RequestInit) =>
-    apiClient<T>(path, { ...options, method: 'DELETE' }),
+  del: <T, TInput = T>(
+    path: string,
+    schema?: Schema.Schema<T, TInput, never>,
+    options?: RequestInit,
+  ) => apiClient<T, TInput>(path, schema, { ...options, method: 'DELETE' }),
 }

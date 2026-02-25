@@ -5,8 +5,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import type {
-  LoginInput,
+import type { LoginInput } from '@laundry-app/shared'
+import {
   AuthResponse,
   AuthenticatedUser,
   LogoutResult,
@@ -25,8 +25,8 @@ import {
  * Query keys factory for auth-related queries
  */
 export const authKeys = {
-  all: ['auth'] as const,
-  user: ['auth', 'user'] as const,
+  all: ['auth'],
+  user: ['auth', 'user'],
 }
 
 /**
@@ -34,19 +34,19 @@ export const authKeys = {
  */
 
 export async function loginFn(input: LoginInput): Promise<AuthResponse> {
-  return api.post<AuthResponse>('/api/auth/login', input)
+  return api.post('/api/auth/login', input, AuthResponse)
 }
 
 export async function refreshFn(refreshToken: string): Promise<AuthResponse> {
-  return api.post<AuthResponse>('/api/auth/refresh', { refreshToken })
+  return api.post('/api/auth/refresh', { refreshToken }, AuthResponse)
 }
 
 export async function logoutFn(refreshToken: string): Promise<LogoutResult> {
-  return api.post<LogoutResult>('/api/auth/logout', { refreshToken })
+  return api.post('/api/auth/logout', { refreshToken }, LogoutResult)
 }
 
 export async function getMeFn(): Promise<AuthenticatedUser> {
-  return api.get<AuthenticatedUser>('/api/auth/me')
+  return api.get('/api/auth/me', AuthenticatedUser)
 }
 
 /**
