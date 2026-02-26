@@ -13,12 +13,12 @@
 **Create `frontend/src/routes/_dashboard.tsx`:**
 - Pathless layout route using `createFileRoute('/_dashboard')`
 - `beforeLoad` hook:
-  1. Check if accessToken exists in memory via `getAccessToken()`
-  2. If yes, attempt `context.queryClient.fetchQuery()` with `getMeFn` (calls `GET /api/auth/me` if cache empty)
-  3. If `/me` succeeds, proceed to route
-  4. If no accessToken or `/me` fails (401), read refreshToken from localStorage
-  5. If refreshToken exists, call `refreshFn(refreshToken)` → store new tokens, cache user via `setQueryData`
-  6. If refresh fails, `clearTokens()` and `throw redirect({ to: '/login' })`
+  1. Attempt `context.queryClient.fetchQuery()` with `getMeFn` (calls `GET /api/auth/me` with httpOnly cookies)
+  2. If `/me` succeeds (200), cache user and proceed to route
+  3. If `/me` fails (401), the api-client automatically attempts `refreshFn()` (empty body, httpOnly cookie sent automatically)
+  4. If refresh succeeds: backend sets new cookies via Set-Cookie, retry `/me` succeeds, cache user, proceed to route
+  5. If refresh fails: `throw redirect({ to: '/login' })`
+  6. Note: No manual token management needed - cookies handled by browser automatically
 - Component renders the sidebar-inset layout:
   ```
   <SidebarProvider>
@@ -31,6 +31,15 @@
     </SidebarInset>
   </SidebarProvider>
   ```
+
+**Note on Authentication Flow:**
+The `beforeLoad` hook only needs to call `getMeFn()` via `queryClient.fetchQuery()`. The api-client in `frontend/src/lib/api-client.ts` automatically handles token refresh on 401 responses:
+- On 401: api-client calls `POST /api/auth/refresh` with empty body (refresh token cookie sent automatically)
+- On refresh success: backend sets new cookies via Set-Cookie headers, original request is retried
+- On refresh failure: api-client throws 401 error, which triggers the redirect to `/login` in the beforeLoad catch block
+- All cookie transmission is automatic via `credentials: 'include'` - no manual token management required
+
+See `docs/ADR_FRONTEND.md` Decision 1 for the full authentication architecture.
 
 ### 2.2 Create App Sidebar Component
 
@@ -129,4 +138,4 @@
 
 ## Dependencies
 
-- **Phase 1**: `useCurrentUser()`, `useLogout()`, `authKeys`, `refreshFn`, token store functions, Toaster in root layout
+- **Phase 1**: `useCurrentUser()`, `useLogout()`, `authKeys`, `getMeFn`, `refreshFn`, Toaster in root layout
