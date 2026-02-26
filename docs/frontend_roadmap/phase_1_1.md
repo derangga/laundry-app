@@ -1,5 +1,7 @@
 # Phase 1.1: Migrate to httpOnly Cookie Authentication
 
+**Status**: ✅ COMPLETE (2026-02-26)
+
 **Goal**: Simplify the frontend auth layer by removing all manual token management. Tokens are now stored in httpOnly cookies set by the backend — the browser sends them automatically, and JavaScript never touches them.
 
 **Prerequisites**: Backend phase 15 complete (httpOnly cookie auth)
@@ -234,15 +236,15 @@ beforeLoad: async ({ context }) => {
 
 ## Acceptance Criteria
 
-- [ ] No references to `getAccessToken`, `setAccessToken`, `getRefreshToken`, `setRefreshToken`, or `clearTokens` in the frontend codebase
-- [ ] No `Authorization: Bearer` header construction in `api-client.ts`
-- [ ] All API requests use `credentials: 'include'` (cookies sent automatically)
-- [ ] Login via browser: cookies visible in DevTools > Application > Cookies
-- [ ] Page refresh: no redirect to login (cookie persists across refreshes)
-- [ ] Logout: cookies cleared in DevTools
-- [ ] `useCurrentUser()` works without token guards
-- [ ] `bun run typecheck` passes for frontend
-- [ ] All existing frontend behavior (login, logout, page refresh, auto-refresh) works the same way from the user's perspective
+- [x] No references to `getAccessToken`, `setAccessToken`, `getRefreshToken`, `setRefreshToken`, or `clearTokens` in the frontend codebase
+- [x] No `Authorization: Bearer` header construction in `api-client.ts`
+- [x] All API requests use `credentials: 'include'` (cookies sent automatically)
+- [x] Login via browser: cookies visible in DevTools > Application > Cookies
+- [x] Page refresh: no redirect to login (cookie persists across refreshes)
+- [x] Logout: cookies cleared in DevTools
+- [x] `useCurrentUser()` works without token guards
+- [x] `bun run typecheck` passes for frontend
+- [x] All existing frontend behavior (login, logout, page refresh, auto-refresh) works the same way from the user's perspective
 
 ## Dependencies
 

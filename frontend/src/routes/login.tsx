@@ -5,13 +5,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { useLogin, getMeFn, refreshFn } from '@/api/auth'
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from '@/lib/auth'
+import { useLogin, getMeFn } from '@/api/auth'
 import {
   Card,
   CardContent,
@@ -24,31 +18,17 @@ import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async () => {
-    // Check 1: If user already has access token, verify it's valid
-    const accessToken = getAccessToken()
-    if (accessToken) {
-      try {
-        await getMeFn() // Verify access token is still valid
-        throw redirect({ to: '/' }) // User is logged in → redirect to home
-      } catch {
-        // Access token is invalid/expired, continue to check refresh token
+    try {
+      // Cookie sent automatically - if valid session exists, redirect to dashboard
+      await getMeFn()
+      throw redirect({ to: '/' })
+    } catch (e) {
+      // Check if it's a redirect being thrown
+      if (e && typeof e === 'object' && 'isRedirect' in e) {
+        throw e
       }
+      // No valid session - show login form
     }
-
-    // Check 2: Attempt to restore session from refresh token
-    const refreshToken = getRefreshToken()
-    if (refreshToken) {
-      try {
-        const authResponse = await refreshFn(refreshToken)
-        setAccessToken(authResponse.accessToken)
-        setRefreshToken(authResponse.refreshToken)
-        throw redirect({ to: '/' }) // Session restored → redirect to home
-      } catch {
-        // Refresh failed - show login form
-      }
-    }
-
-    // No valid session → show login form
   },
   component: LoginPage,
 })

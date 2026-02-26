@@ -13,13 +13,6 @@ import {
 } from '@laundry-app/shared'
 
 import { api, ApiError } from '@/lib/api-client'
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-  clearTokens,
-} from '@/lib/auth'
 
 /**
  * Query keys factory for auth-related queries
@@ -37,12 +30,12 @@ export async function loginFn(input: LoginInput): Promise<AuthResponse> {
   return api.post('/api/auth/login', input, AuthResponse)
 }
 
-export async function refreshFn(refreshToken: string): Promise<AuthResponse> {
-  return api.post('/api/auth/refresh', { refreshToken }, AuthResponse)
+export async function refreshFn(): Promise<AuthResponse> {
+  return api.post('/api/auth/refresh', {}, AuthResponse)
 }
 
-export async function logoutFn(refreshToken: string): Promise<LogoutResult> {
-  return api.post('/api/auth/logout', { refreshToken }, LogoutResult)
+export async function logoutFn(): Promise<LogoutResult> {
+  return api.post('/api/auth/logout', {}, LogoutResult)
 }
 
 export async function getMeFn(): Promise<AuthenticatedUser> {
@@ -55,7 +48,6 @@ export async function getMeFn(): Promise<AuthenticatedUser> {
 
 /**
  * Get current authenticated user
- * Only fetches if access token exists
  */
 export function useCurrentUser() {
   return useQuery({
@@ -63,7 +55,7 @@ export function useCurrentUser() {
     queryFn: getMeFn,
     staleTime: Infinity,
     retry: false,
-    enabled: !!getAccessToken(),
+    // Always enabled - let 401 trigger redirect via error boundary
   })
 }
 
@@ -78,9 +70,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: loginFn,
     onSuccess: (data) => {
-      // Store tokens
-      setAccessToken(data.accessToken)
-      setRefreshToken(data.refreshToken)
+      // Cookies set by backend via Set-Cookie headers
 
       // Set user in cache
       queryClient.setQueryData(authKeys.user, data.user)
@@ -111,23 +101,16 @@ export function useLogin() {
 
 /**
  * Logout mutation
- * Clears tokens and user data
+ * Clears cookies and user data
  */
 export function useLogout() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   return useMutation({
-    mutationFn: async () => {
-      const refreshToken = getRefreshToken()
-      if (!refreshToken) {
-        throw new Error('No refresh token')
-      }
-      return logoutFn(refreshToken)
-    },
+    mutationFn: logoutFn,
     onSettled: () => {
-      // Clear tokens and user data (runs even on error)
-      clearTokens()
+      // Cookies cleared by backend via Set-Cookie with Max-Age=0
       queryClient.removeQueries({ queryKey: authKeys.user })
 
       // Navigate to login
