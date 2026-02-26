@@ -1,5 +1,5 @@
-import { HttpServerRequest, HttpServerResponse } from '@effect/platform'
-import { Effect, Option } from 'effect'
+import { HttpApp, HttpServerRequest, HttpServerResponse } from '@effect/platform'
+import { Duration, Effect, Option } from 'effect'
 import { ServerConfig } from '@configs/env'
 
 interface CookieOptions {
@@ -42,9 +42,114 @@ const formatCookie = (name: string, value: string, options: CookieOptions): stri
 }
 
 /**
+ * Append Set-Cookie headers for access and refresh tokens using PreResponseHandler.
+ * Uses HttpApp.appendPreResponseHandler so handlers don't need to manage response objects.
+ *
+ * - accessToken cookie: Path=/api, Max-Age=900 (15 minutes)
+ * - refreshToken cookie: Path=/api/auth, Max-Age=604800 (7 days)
+ */
+export const appendAuthCookies = (accessToken: string, refreshToken: string) =>
+  Effect.gen(function* () {
+    const baseOptions = yield* getEnvBasedCookieOptions
+
+    yield* HttpApp.appendPreResponseHandler((_req, response) =>
+      HttpServerResponse.setCookie(response, 'accessToken', accessToken, {
+        ...baseOptions,
+        path: '/api',
+        maxAge: Duration.seconds(900),
+      }).pipe(
+        Effect.flatMap((resp) =>
+          HttpServerResponse.setCookie(resp, 'refreshToken', refreshToken, {
+            ...baseOptions,
+            path: '/api/auth',
+            maxAge: Duration.seconds(604800),
+          })
+        ),
+        Effect.orDie
+      )
+    )
+  }).pipe(Effect.orDie)
+
+/**
+ * Append Set-Cookie headers that clear auth cookies (Max-Age=0, Expires=epoch).
+ * Used during logout.
+ */
+export const appendClearAuthCookies = () =>
+  Effect.gen(function* () {
+    const baseOptions = yield* getEnvBasedCookieOptions
+
+    yield* HttpApp.appendPreResponseHandler((_req, response) =>
+      HttpServerResponse.setCookie(response, 'accessToken', '', {
+        ...baseOptions,
+        path: '/api',
+        maxAge: Duration.seconds(0),
+        expires: new Date(0),
+      }).pipe(
+        Effect.flatMap((resp) =>
+          HttpServerResponse.setCookie(resp, 'refreshToken', '', {
+            ...baseOptions,
+            path: '/api/auth',
+            maxAge: Duration.seconds(0),
+            expires: new Date(0),
+          })
+        ),
+        Effect.orDie
+      )
+    )
+  }).pipe(Effect.orDie)
+
+/**
+ * Extract a named cookie value from request headers.
+ * Returns Option.some(value) if found, Option.none() otherwise.
+ */
+const extractCookieValue = (
+  request: HttpServerRequest.HttpServerRequest,
+  name: string
+): Option.Option<string> => {
+  const cookieHeader = request.headers['cookie']
+
+  if (!cookieHeader) {
+    return Option.none()
+  }
+
+  // Parse cookie header (format: "name1=value1; name2=value2")
+  const cookies = cookieHeader.split(';').reduce(
+    (acc, cookie) => {
+      const [cookieName, ...valueParts] = cookie.trim().split('=')
+      if (cookieName && valueParts.length > 0) {
+        acc[cookieName] = valueParts.join('=')
+      }
+      return acc
+    },
+    {} as Record<string, string>
+  )
+
+  const value = cookies[name]
+  return value ? Option.some(value) : Option.none()
+}
+
+/**
+ * Extract access token from request cookies.
+ * Returns Option.some(token) if found, Option.none() otherwise.
+ */
+export const extractAccessTokenFromCookie = (
+  request: HttpServerRequest.HttpServerRequest
+): Option.Option<string> => extractCookieValue(request, 'accessToken')
+
+/**
+ * Extract refresh token from request cookies.
+ * Returns Option.some(token) if found, Option.none() otherwise.
+ */
+export const extractRefreshTokenFromCookie = (
+  request: HttpServerRequest.HttpServerRequest
+): Option.Option<string> => extractCookieValue(request, 'refreshToken')
+
+/**
+ * @deprecated Use `appendAuthCookies` instead. This function requires managing response objects directly.
+ *
  * Set authentication cookies in the HTTP response
- * - accessToken: 15 minutes expiry, available on all paths
- * - refreshToken: 7 days expiry, only sent to /api/auth/refresh
+ * - accessToken: 15 minutes expiry, available on /api paths
+ * - refreshToken: 7 days expiry, only sent to /api/auth paths
  */
 export const setAuthCookies = (
   response: HttpServerResponse.HttpServerResponse,
@@ -56,13 +161,13 @@ export const setAuthCookies = (
 
     const accessTokenCookie = formatCookie('accessToken', accessToken, {
       ...baseOptions,
-      path: '/',
+      path: '/api',
       maxAge: 900, // 15 minutes (matches JWT expiry)
     })
 
     const refreshTokenCookie = formatCookie('refreshToken', refreshToken, {
       ...baseOptions,
-      path: '/api/auth/refresh',
+      path: '/api/auth',
       maxAge: 604800, // 7 days (matches refresh token expiry)
     })
 
@@ -72,6 +177,8 @@ export const setAuthCookies = (
   })
 
 /**
+ * @deprecated Use `appendClearAuthCookies` instead. This function requires managing response objects directly.
+ *
  * Clear authentication cookies on logout
  * Sets maxAge=0 and expires to epoch to ensure immediate deletion
  */
@@ -81,14 +188,14 @@ export const clearAuthCookies = (response: HttpServerResponse.HttpServerResponse
 
     const clearAccessToken = formatCookie('accessToken', '', {
       ...baseOptions,
-      path: '/',
+      path: '/api',
       maxAge: 0,
       expires: new Date(0),
     })
 
     const clearRefreshToken = formatCookie('refreshToken', '', {
       ...baseOptions,
-      path: '/api/auth/refresh',
+      path: '/api/auth',
       maxAge: 0,
       expires: new Date(0),
     })
@@ -97,32 +204,3 @@ export const clearAuthCookies = (response: HttpServerResponse.HttpServerResponse
       'Set-Cookie': [clearAccessToken, clearRefreshToken],
     })
   })
-
-/**
- * Extract refresh token from request cookies
- * Returns Option.some(token) if found, Option.none() otherwise
- */
-export const extractRefreshTokenFromCookie = (
-  request: HttpServerRequest.HttpServerRequest
-): Option.Option<string> => {
-  const cookieHeader = request.headers['cookie']
-
-  if (!cookieHeader) {
-    return Option.none()
-  }
-
-  // Parse cookie header (format: "name1=value1; name2=value2")
-  const cookies = cookieHeader.split(';').reduce(
-    (acc, cookie) => {
-      const [name, ...valueParts] = cookie.trim().split('=')
-      if (name && valueParts.length > 0) {
-        acc[name] = valueParts.join('=')
-      }
-      return acc
-    },
-    {} as Record<string, string>
-  )
-
-  const refreshToken = cookies['refreshToken']
-  return refreshToken ? Option.some(refreshToken) : Option.none()
-}

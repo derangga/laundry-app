@@ -9,6 +9,8 @@ export const TestConfigProvider = ConfigProvider.fromMap(
     ['JWT_ACCESS_EXPIRY', '15m'],
     ['JWT_REFRESH_EXPIRY', '7d'],
     ['BCRYPT_ROUNDS', '4'],
+    ['NODE_ENV', 'development'],
+    ['CORS_ORIGIN', 'http://localhost:3001'],
   ])
 )
 

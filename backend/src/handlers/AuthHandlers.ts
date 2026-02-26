@@ -6,7 +6,11 @@ import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
 import { RegisterUserUseCase } from 'src/usecase/auth/RegisterUserUseCase'
 import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
-import { extractRefreshTokenFromCookie } from 'src/http/CookieHelper'
+import {
+  appendAuthCookies,
+  appendClearAuthCookies,
+  extractRefreshTokenFromCookie,
+} from 'src/http/CookieHelper'
 import {
   InvalidCredentials,
   Unauthorized,
@@ -24,8 +28,8 @@ import { AuthenticatedUser } from '@domain/Auth'
  * Implements handlers for authentication endpoints using HttpApiBuilder.
  * Automatically validates payloads and handles errors.
  *
- * Note: Cookies are managed by the client using the tokens returned in the response body.
- * Handlers return data only; HttpApiBuilder handles response construction.
+ * Handlers set httpOnly cookies via appendPreResponseHandler for browser clients.
+ * Response body still includes tokens for backward compatibility with non-browser clients.
  *
  * Error mapping pattern:
  * - Domain errors are caught and mapped to HTTP errors with status codes
@@ -48,7 +52,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
         const loginUseCase = yield* LoginUseCase
 
         // Execute login use case and map errors
-        return yield* loginUseCase.execute(payload).pipe(
+        const result = yield* loginUseCase.execute(payload).pipe(
           Effect.mapError((error) => {
             if (error && typeof error === 'object' && '_tag' in error) {
               if ((error as any)._tag === 'InvalidCredentialsError') {
@@ -63,6 +67,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             })
           })
         )
+
+        // Set httpOnly cookies for browser clients
+        yield* appendAuthCookies(result.accessToken, result.refreshToken)
+
+        return result
       })
     )
 
@@ -81,15 +90,16 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
         const refreshUseCase = yield* RefreshTokenUseCase
         const request = yield* HttpServerRequest.HttpServerRequest
 
-        // Try to get refresh token from Authorization header first, fall back to payload
+        // Resolve refresh token: body takes priority, cookie is fallback
         const cookieToken = extractRefreshTokenFromCookie(request)
-        const refreshToken = yield* Option.match(cookieToken, {
-          onNone: () => Effect.succeed(payload.refreshToken),
-          onSome: (token) => Effect.succeed(token),
-        })
+        const refreshToken = payload.refreshToken ?? Option.getOrUndefined(cookieToken)
+
+        if (!refreshToken) {
+          return yield* Effect.fail(new Unauthorized({ message: 'No refresh token provided' }))
+        }
 
         // Execute refresh use case and map errors
-        return yield* refreshUseCase.execute({ refreshToken }).pipe(
+        const result = yield* refreshUseCase.execute({ refreshToken }).pipe(
           Effect.mapError((error) => {
             if (error && typeof error === 'object' && '_tag' in error) {
               const tag = (error as any)._tag
@@ -103,6 +113,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             return new ValidationError({ message })
           })
         )
+
+        // Set new httpOnly cookies for browser clients
+        yield* appendAuthCookies(result.accessToken, result.refreshToken)
+
+        return result
       })
     )
 
@@ -127,7 +142,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
         const refreshToken = Option.getOrUndefined(cookieToken) || payload.refreshToken
 
         // Execute logout use case (CurrentUser context provided by middleware)
-        return yield* logoutUseCase
+        const result = yield* logoutUseCase
           .execute({
             refreshToken,
             logoutAll: payload.logoutAll,
@@ -146,6 +161,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
               return new ValidationError({ message })
             })
           )
+
+        // Clear httpOnly cookies
+        yield* appendClearAuthCookies()
+
+        return result
       })
     )
 

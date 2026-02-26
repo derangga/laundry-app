@@ -38,13 +38,24 @@ const ScalarLayer = Layer.unwrapEffect(
   })
 )
 
+// CORS layer with credentials support for cookie-based auth
+const CorsLayer = Layer.unwrapEffect(
+  Effect.gen(function* () {
+    const { corsOrigin } = yield* ServerConfig
+    return HttpApiBuilder.middlewareCors({
+      allowedOrigins: [corsOrigin],
+      credentials: true,
+    })
+  }).pipe(Effect.orDie)
+)
+
 // Compose HTTP server with request logging middleware
 // Note: Additional middleware (SecurityHeaders, RequestSecurity, RateLimit) are defined
 // but not yet integrated into the middleware chain. They can be added by composing
 // with HttpMiddleware or by modifying the HttpApiBuilder.serve call.
 const HttpLive = HttpApiBuilder.serve(RequestLoggingMiddleware).pipe(
   Layer.provide(ScalarLayer),
-  Layer.provide(HttpApiBuilder.middlewareCors()),
+  Layer.provide(CorsLayer),
   Layer.provide(ApiLayer),
   Layer.provide(AppLogger.Default),
   HttpServer.withLogAddress,

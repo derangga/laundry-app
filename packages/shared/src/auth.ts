@@ -61,7 +61,7 @@ export class LogoutResult extends Schema.Class<LogoutResult>('LogoutResult')({
  * Requires a valid refresh token to generate new access token.
  */
 export class RefreshTokenInput extends Schema.Class<RefreshTokenInput>('RefreshTokenInput')({
-  refreshToken: Schema.String,
+  refreshToken: Schema.optional(Schema.String),
 }) {}
 
 /**

@@ -33,6 +33,7 @@ export const ServerConfig = Config.all({
     'json',
     'pretty'
   )('LOG_FORMAT').pipe(Config.withDefault('pretty' as const)),
+  corsOrigin: Config.string('CORS_ORIGIN').pipe(Config.withDefault('http://localhost:3001')),
 })
 
 // Bcrypt configuration (1 variable)
