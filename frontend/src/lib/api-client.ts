@@ -3,13 +3,6 @@
  */
 
 import { Schema, Effect } from 'effect'
-import {
-  getAccessToken,
-  setAccessToken,
-  getRefreshToken,
-  setRefreshToken,
-  clearTokens,
-} from './auth'
 
 const API_BASE_URL = 'http://localhost:3000'
 
@@ -55,17 +48,12 @@ async function validateResponse<T, TInput>(
 let isRefreshing = false
 
 /**
- * Refresh tokens using the refresh token from localStorage
+ * Refresh tokens using httpOnly cookie
  * @returns true if refresh succeeded, false otherwise
  */
 async function refreshTokens(): Promise<boolean> {
   // Prevent concurrent refresh attempts
   if (isRefreshing) {
-    return false
-  }
-
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) {
     return false
   }
 
@@ -77,21 +65,13 @@ async function refreshTokens(): Promise<boolean> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({}), // Empty body - refresh token sent via cookie
       credentials: 'include',
     })
 
-    if (!response.ok) {
-      clearTokens()
-      return false
-    }
-
-    const data = await response.json()
-    setAccessToken(data.accessToken)
-    setRefreshToken(data.refreshToken)
-    return true
-  } catch (error) {
-    clearTokens()
+    // No token storage needed - new cookies set by backend via Set-Cookie headers
+    return response.ok
+  } catch {
     return false
   } finally {
     isRefreshing = false
@@ -107,7 +87,6 @@ export async function apiClient<T, TInput = T>(
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE_URL}${path}`
-  const token = getAccessToken()
 
   // Build headers
   const headers: Record<string, string> = {
@@ -123,10 +102,7 @@ export async function apiClient<T, TInput = T>(
     })
   }
 
-  // Add Authorization header if token exists
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
+  // No Authorization header needed - httpOnly cookies sent automatically
 
   // Make the request
   let response = await fetch(url, {
@@ -140,12 +116,7 @@ export async function apiClient<T, TInput = T>(
     const refreshed = await refreshTokens()
 
     if (refreshed) {
-      // Retry the original request with the new token
-      const newToken = getAccessToken()
-      if (newToken) {
-        headers['Authorization'] = `Bearer ${newToken}`
-      }
-
+      // Retry the original request - new cookies already set by refresh endpoint
       response = await fetch(url, {
         ...options,
         headers,

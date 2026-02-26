@@ -11,8 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint",
-    "format": "prettier --check .",
-    "check": "prettier --write . && eslint --fix"
+    "format": "prettier --write .",
+    "check": "prettier --check . && eslint --fix"
   },
   "dependencies": {
     "@faker-js/faker": "^10.0.0",
