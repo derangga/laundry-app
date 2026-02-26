@@ -95,9 +95,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
         const refreshToken = payload.refreshToken ?? Option.getOrUndefined(cookieToken)
 
         if (!refreshToken) {
-          return yield* Effect.fail(
-            new Unauthorized({ message: 'No refresh token provided' })
-          )
+          return yield* Effect.fail(new Unauthorized({ message: 'No refresh token provided' }))
         }
 
         // Execute refresh use case and map errors
