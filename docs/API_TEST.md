@@ -1522,11 +1522,70 @@ curl -i -X POST http://localhost:3000/api/auth/login \
   }'
 ```
 
+## Cookie-Based Authentication
+
+The API supports httpOnly cookie authentication alongside Bearer token auth. When you login, the server sets `accessToken` and `refreshToken` cookies automatically. Browser clients use these cookies transparently; non-browser clients (curl, Postman) can continue using Bearer tokens.
+
+### Login (saves cookies to file)
+
+```bash
+curl -v -c cookies.txt -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@laundry.com",
+    "password": "AdminPass123"
+  }'
+```
+
+Verify `Set-Cookie` headers in response:
+- `accessToken=...; HttpOnly; SameSite=strict; Path=/api; Max-Age=900`
+- `refreshToken=...; HttpOnly; SameSite=strict; Path=/api/auth; Max-Age=604800`
+
+### Get Current User (cookie auth, no Bearer header needed)
+
+```bash
+curl -v -b cookies.txt http://localhost:3000/api/auth/me
+```
+
+### Refresh Token (cookie-based, empty body)
+
+```bash
+curl -v -c cookies.txt -b cookies.txt -X POST http://localhost:3000/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+New `Set-Cookie` headers are returned with rotated tokens.
+
+### Logout (clears cookies)
+
+```bash
+curl -v -b cookies.txt -X POST http://localhost:3000/api/auth/logout \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Verify `Set-Cookie` headers have `Max-Age=0` to clear cookies.
+
+### CORS Preflight
+
+```bash
+curl -v -X OPTIONS http://localhost:3000/api/auth/login \
+  -H "Origin: http://localhost:3001"
+```
+
+Verify `Access-Control-Allow-Credentials: true` in response.
+
+> **Note:** Bearer token authentication (`Authorization: Bearer <token>`) still works for all endpoints. Cookie auth is an addition, not a replacement.
+
+---
+
 ## Notes
 
 ### Authentication
 
-- **Auth Token Format:** JWT tokens are included in the `Authorization: Bearer <token>` header
+- **Auth Token Format:** JWT tokens are included in the `Authorization: Bearer <token>` header or via httpOnly cookies
+- **Cookie Auth:** Browser clients can use httpOnly cookies set automatically on login/refresh
 - **Admin Endpoints:** Services (POST/PUT/DELETE) and Analytics endpoints require admin role
 - **Protected Endpoints:** Order management and receipts require authentication
 - **Public Endpoints:** Health checks, customer management, and service listing are public

@@ -27,6 +27,11 @@ export const refreshTokens = (
     const jwtService = yield* JwtService
     const tokenGenerator = yield* TokenGenerator
 
+    // Validate refresh token is present
+    if (!input.refreshToken) {
+      return yield* Effect.fail(InvalidTokenError.invalid())
+    }
+
     // Hash the incoming refresh token
     const hashedToken = yield* tokenGenerator.hash(input.refreshToken)
 
