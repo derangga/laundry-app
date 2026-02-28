@@ -21,7 +21,7 @@ export const JwtConfig = Config.all({
 // Server configuration (5 variables) - for HTTP server and observability
 export const ServerConfig = Config.all({
   port: Config.integer('PORT').pipe(Config.withDefault(3000)),
-  host: Config.string('HOST').pipe(Config.withDefault('0.0.0.0')),
+  host: Config.string('HOST'),
   nodeEnv: Config.string('NODE_ENV').pipe(Config.withDefault('development')),
   logLevel: Config.literal(
     'debug',
@@ -33,7 +33,7 @@ export const ServerConfig = Config.all({
     'json',
     'pretty'
   )('LOG_FORMAT').pipe(Config.withDefault('pretty' as const)),
-  corsOrigin: Config.string('CORS_ORIGIN').pipe(Config.withDefault('http://localhost:3001')),
+  corsOrigin: Config.string('CORS_ORIGIN'),
 })
 
 // Bcrypt configuration (1 variable)

@@ -14,11 +14,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
 export function NavUser() {
   const { data: user } = useCurrentUser()
   const logoutMutation = useLogout()
+  const { isMobile } = useSidebar()
 
   if (!user) {
     return null
@@ -59,8 +61,8 @@ export function NavUser() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side="bottom"
             align="end"
+            side={isMobile ? 'bottom' : 'right'}
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
@@ -85,6 +87,7 @@ export function NavUser() {
             <DropdownMenuItem
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
+              variant="destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Log out

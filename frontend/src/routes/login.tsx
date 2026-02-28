@@ -2,10 +2,10 @@
  * Login page with session restoration
  */
 
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { useLogin, getMeFn } from '@/api/auth'
+import { useLogin } from '@/api/auth'
 import {
   Card,
   CardContent,
@@ -15,20 +15,11 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { loginPageMiddleware } from '@/lib/auth-middleware'
 
 export const Route = createFileRoute('/login')({
-  beforeLoad: async () => {
-    try {
-      // Cookie sent automatically - if valid session exists, redirect to dashboard
-      await getMeFn()
-      throw redirect({ to: '/' })
-    } catch (e) {
-      // Check if it's a redirect being thrown
-      if (e && typeof e === 'object' && 'isRedirect' in e) {
-        throw e
-      }
-      // No valid session - show login form
-    }
+  server: {
+    middleware: [loginPageMiddleware],
   },
   component: LoginPage,
 })
