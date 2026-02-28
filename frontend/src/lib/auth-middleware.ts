@@ -1,7 +1,7 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { getCookie } from '@tanstack/react-start/server'
 import { redirect } from '@tanstack/react-router'
-import { Effect } from 'effect'
+import { Effect, Option } from 'effect'
 import {
   AccessTokenInvalidError,
   NetworkError,
@@ -34,7 +34,7 @@ function validateAccessToken(
 
 function processRefreshToken(
   cookieHeader: string,
-): Effect.Effect<boolean, never> {
+): Effect.Effect<Response, NetworkError | RefreshTokenFailedError> {
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () =>
@@ -53,8 +53,8 @@ function processRefreshToken(
       yield* new RefreshTokenFailedError({ status: response.status })
     }
 
-    return true
-  }).pipe(Effect.catchAll(() => Effect.succeed(false)))
+    return response
+  })
 }
 
 export const authMiddleware = createMiddleware().server(
@@ -81,11 +81,17 @@ export const authMiddleware = createMiddleware().server(
     }
 
     const refreshResult = await Effect.runPromise(
-      processRefreshToken(cookieHeader),
+      Effect.option(processRefreshToken(cookieHeader)),
     )
 
-    if (refreshResult) {
-      return next()
+    if (Option.isSome(refreshResult)) {
+      const result = await next()
+      refreshResult.value.headers.forEach((value, key) => {
+        if (key.toLowerCase() === 'set-cookie') {
+          result.response.headers.append('set-cookie', value)
+        }
+      })
+      return result
     }
 
     throw redirect({ to: '/login' })
