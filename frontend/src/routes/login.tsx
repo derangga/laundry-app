@@ -15,12 +15,8 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { loginPageMiddleware } from '@/lib/auth-middleware'
 
 export const Route = createFileRoute('/login')({
-  server: {
-    middleware: [loginPageMiddleware],
-  },
   component: LoginPage,
 })
 

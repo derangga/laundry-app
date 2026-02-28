@@ -8,12 +8,8 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { authMiddleware } from '@/lib/auth-middleware'
 
 export const Route = createFileRoute('/_dashboard')({
-  server: {
-    middleware: [authMiddleware],
-  },
   component: DashboardLayout,
 })
 
