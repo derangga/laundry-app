@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { UserWithoutPassword } from '@laundry-app/shared'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/constants'
 
 interface StaffColumnCallbacks {
   onEdit: (staff: UserWithoutPassword) => void
@@ -23,14 +24,7 @@ export function getStaffColumns(
     {
       accessorKey: 'created_at',
       header: 'Created At',
-      cell: ({ row }) => {
-        const date = new Date(row.original.created_at)
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        })
-      },
+      cell: ({ row }) => formatDate(row.original.created_at),
     },
     {
       id: 'actions',
