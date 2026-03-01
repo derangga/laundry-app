@@ -8,6 +8,7 @@ import { ServiceHandlersLive } from '@handlers/ServiceHandlers'
 import { OrderHandlersLive } from '@handlers/OrderHandlers'
 import { ReceiptHandlersLive } from '@handlers/ReceiptHandlers'
 import { AnalyticsHandlersLive } from '@handlers/AnalyticsHandlers'
+import { UserHandlersLive } from '@handlers/UserHandlers'
 import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
@@ -31,6 +32,9 @@ import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { OrderService } from 'src/usecase/order/OrderService'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
 import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
+import { ListUsersUseCase } from 'src/usecase/user/ListUsersUseCase'
+import { UpdateUserUseCase } from 'src/usecase/user/UpdateUserUseCase'
+import { DeleteUserUseCase } from 'src/usecase/user/DeleteUserUseCase'
 
 const HandlersLive = Layer.mergeAll(
   HealthHandlersLive,
@@ -39,7 +43,8 @@ const HandlersLive = Layer.mergeAll(
   ServiceHandlersLive,
   OrderHandlersLive,
   ReceiptHandlersLive,
-  AnalyticsHandlersLive
+  AnalyticsHandlersLive,
+  UserHandlersLive
 )
 
 const MiddlewareLive = Layer.mergeAll(AuthMiddlewareLive, AuthAdminMiddlewareLive)
@@ -54,7 +59,10 @@ const UseCasesLive = Layer.mergeAll(
   CustomerService.Default,
   LaundryServiceService.Default,
   ReceiptService.Default,
-  AnalyticsService.Default
+  AnalyticsService.Default,
+  ListUsersUseCase.Default,
+  UpdateUserUseCase.Default,
+  DeleteUserUseCase.Default
 )
 
 const RepositoriesLive = Layer.mergeAll(

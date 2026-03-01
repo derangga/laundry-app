@@ -55,3 +55,19 @@ export class UserBasicInfo extends Schema.Class<UserBasicInfo>('UserBasicInfo')(
   name: Schema.String,
   email: Schema.String,
 }) {}
+
+/**
+ * Input schema for updating an existing user.
+ * Both fields are optional — at least one must be provided.
+ */
+export class UpdateUserInput extends Schema.Class<UpdateUserInput>('UpdateUserInput')({
+  name: Schema.optional(Schema.String.pipe(Schema.nonEmptyString())),
+  email: Schema.optional(
+    Schema.String.pipe(
+      Schema.nonEmptyString(),
+      Schema.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+        message: () => 'Invalid email format',
+      })
+    )
+  ),
+}) {}

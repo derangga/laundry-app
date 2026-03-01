@@ -1,6 +1,6 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { User, UserId, UserWithoutPassword, UserBasicInfo } from '../domain/User'
+import { User, UserId, UserWithoutPassword, UserBasicInfo, UserUpdateData } from '../domain/User'
 
 export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {
@@ -16,7 +16,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
     // Custom methods with explicit columns
     const update = (
       id: UserId,
-      data: Partial<{ email: string; password_hash: string; name: string; role: string }>
+      data: UserUpdateData
     ): Effect.Effect<Option.Option<User>, SqlError.SqlError> => {
       const updates: string[] = []
       const params: Array<string | UserId> = []
@@ -46,7 +46,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       updates.push(`updated_at = NOW()`)
       params.push(id)
 
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL RETURNING *`
 
       return sql.unsafe<User>(query, params).pipe(
         Effect.map((rows) => {
@@ -58,7 +58,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
 
     const findByEmail = (email: string): Effect.Effect<Option.Option<User>, SqlError.SqlError> =>
       sql<User>`
-        SELECT id, email, password_hash, name, role, created_at, updated_at
+        SELECT id, email, password_hash, name, role, created_at, updated_at, deleted_at
         FROM users
         WHERE email = ${email}
       `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
@@ -86,6 +86,24 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         SELECT EXISTS(SELECT 1 FROM users) as exists
       `.pipe(Effect.map((rows) => rows[0]?.exists ?? false))
 
+    const findAll = (): Effect.Effect<UserWithoutPassword[], SqlError.SqlError> =>
+      sql<UserWithoutPassword>`
+        SELECT id, email, name, role, created_at, updated_at
+        FROM users
+        WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
+      `.pipe(Effect.map((rows) => Array.from(rows)))
+
+    const softDelete = (
+      id: UserId
+    ): Effect.Effect<Option.Option<UserWithoutPassword>, SqlError.SqlError> =>
+      sql<UserWithoutPassword>`
+        UPDATE users
+        SET deleted_at = NOW(), updated_at = NOW()
+        WHERE id = ${id} AND deleted_at IS NULL
+        RETURNING id, email, name, role, created_at, updated_at
+      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+
     return {
       // Base CRUD from makeRepository
       findById: repo.findById,
@@ -98,6 +116,8 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       findByIdWithoutPassword,
       findBasicInfo,
       hasAnyUsers,
+      findAll,
+      softDelete,
     } as const
   }),
 }) {}
