@@ -5,14 +5,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import type { LoginInput } from '@laundry-app/shared'
+import type { LoginInput, CreateUserInput } from '@laundry-app/shared'
 import {
   AuthResponse,
   AuthenticatedUser,
   LogoutResult,
+  UserWithoutPassword,
 } from '@laundry-app/shared'
 
 import { api, ApiError } from '@/lib/api-client'
+import { userKeys } from '@/api/users'
 
 /**
  * Query keys factory for auth-related queries
@@ -40,6 +42,12 @@ export async function logoutFn(): Promise<LogoutResult> {
 
 export async function getMeFn(): Promise<AuthenticatedUser> {
   return api.get('/api/auth/me', AuthenticatedUser)
+}
+
+export async function registerUserFn(
+  input: CreateUserInput,
+): Promise<UserWithoutPassword> {
+  return api.post('/api/auth/register', input, UserWithoutPassword)
 }
 
 /**
@@ -94,6 +102,28 @@ export function useLogin() {
         toast.error('Wrong email or password')
       } else {
         toast.error('Something went wrong. Please try again.')
+      }
+    },
+  })
+}
+
+/**
+ * Register user mutation
+ * Admin-only: creates a new staff or admin account
+ */
+export function useRegisterUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: registerUserFn,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.list() })
+      toast.success(`${data.name} has been registered successfully.`)
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.error('A user with this email already exists.')
+      } else {
+        toast.error('Failed to register user. Please try again.')
       }
     },
   })
