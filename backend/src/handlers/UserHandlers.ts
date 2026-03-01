@@ -1,11 +1,16 @@
-import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
+import { HttpApiBuilder } from '@effect/platform'
 import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { ListUsersUseCase } from 'src/usecase/user/ListUsersUseCase'
 import { UpdateUserUseCase } from 'src/usecase/user/UpdateUserUseCase'
 import { DeleteUserUseCase } from 'src/usecase/user/DeleteUserUseCase'
 import { UserId } from '@domain/User'
-import { UserNotFound, UserAlreadyExists, ValidationError } from '@domain/http/HttpErrors'
+import {
+  UserNotFound,
+  UserAlreadyExists,
+  ValidationError,
+  RetrieveDataEror,
+} from '@domain/http/HttpErrors'
 
 export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers) =>
   handlers
@@ -18,7 +23,12 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
     .handle('listUsers', () =>
       Effect.gen(function* () {
         const listUsersUseCase = yield* ListUsersUseCase
-        return yield* listUsersUseCase.execute().pipe(Effect.orDie)
+        return yield* listUsersUseCase.execute().pipe(
+          Effect.mapError((cause) => {
+            console.log(cause)
+            return new RetrieveDataEror({ message: cause.message })
+          })
+        )
       })
     )
 
@@ -29,29 +39,18 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
      * Payload: UpdateUserInput
      * Returns: UserWithoutPassword
      */
-    .handle('updateUser', ({ payload }) =>
+    .handle('updateUser', ({ path, payload }) =>
       Effect.gen(function* () {
         const updateUserUseCase = yield* UpdateUserUseCase
-        const request = yield* HttpServerRequest.HttpServerRequest
 
-        const url = new URL(request.url, 'http://localhost')
-        const pathParts = url.pathname.split('/').filter(Boolean)
-        const id = pathParts[pathParts.length - 1]
-
-        if (!id) {
-          return yield* Effect.fail(
-            new ValidationError({ message: 'User ID is required', field: 'id' })
-          )
-        }
-
-        return yield* updateUserUseCase.execute(UserId.make(id), payload).pipe(
+        return yield* updateUserUseCase.execute(UserId.make(path.id), payload).pipe(
           Effect.mapError((error) => {
             if (error && typeof error === 'object' && '_tag' in error) {
               const tag = (error as any)._tag
               if (tag === 'UserNotFoundError') {
                 return new UserNotFound({
-                  message: (error as any).message || `User not found with id: ${id}`,
-                  userId: id,
+                  message: (error as any).message || `User not found with id: ${path.id}`,
+                  userId: path.id,
                 })
               }
               if (tag === 'UserAlreadyExistsError') {
@@ -74,29 +73,18 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
      * Protected: Requires admin role
      * Returns: UserWithoutPassword
      */
-    .handle('deleteUser', () =>
+    .handle('deleteUser', ({ path }) =>
       Effect.gen(function* () {
         const deleteUserUseCase = yield* DeleteUserUseCase
-        const request = yield* HttpServerRequest.HttpServerRequest
 
-        const url = new URL(request.url, 'http://localhost')
-        const pathParts = url.pathname.split('/').filter(Boolean)
-        const id = pathParts[pathParts.length - 1]
-
-        if (!id) {
-          return yield* Effect.fail(
-            new ValidationError({ message: 'User ID is required', field: 'id' })
-          )
-        }
-
-        return yield* deleteUserUseCase.execute(UserId.make(id)).pipe(
+        return yield* deleteUserUseCase.execute(UserId.make(path.id)).pipe(
           Effect.mapError((error) => {
             if (error && typeof error === 'object' && '_tag' in error) {
               const tag = (error as any)._tag
               if (tag === 'UserNotFoundError') {
                 return new UserNotFound({
-                  message: (error as any).message || `User not found with id: ${id}`,
-                  userId: id,
+                  message: (error as any).message || `User not found with id: ${path.id}`,
+                  userId: path.id,
                 })
               }
             }

@@ -39,15 +39,7 @@ const updateUser = (
       return yield* Effect.fail(UserNotFoundError.byId(id))
     }
 
-    const user = result.value
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-    }
+    return result.value
   })
 
 export class UpdateUserUseCase extends Effect.Service<UpdateUserUseCase>()('UpdateUserUseCase', {

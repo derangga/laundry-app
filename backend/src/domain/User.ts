@@ -7,9 +7,26 @@ export {
   UserBasicInfo,
 } from '@laundry-app/shared'
 
-import { Schema } from 'effect'
+import { Schema, DateTime } from 'effect'
 import { Model } from '@effect/sql'
 import { UserId, UserRole } from '@laundry-app/shared'
+
+// Schema that accepts JS Date objects from PostgreSQL and converts to DateTime.Utc
+const DateTimeUtcFromDate = Schema.transform(Schema.DateFromSelf, Schema.DateTimeUtcFromSelf, {
+  strict: true,
+  decode: (date) => DateTime.unsafeFromDate(date),
+  encode: (dt) => DateTime.toDate(dt),
+})
+
+// DB-specific decode schema — same shape as UserWithoutPassword but accepts Date objects
+export const UserWithoutPasswordFromDb = Schema.Struct({
+  id: UserId,
+  email: Schema.String.pipe(Schema.nonEmptyString()),
+  name: Schema.String.pipe(Schema.nonEmptyString()),
+  role: UserRole,
+  created_at: DateTimeUtcFromDate,
+  updated_at: DateTimeUtcFromDate,
+})
 
 export class User extends Model.Class<User>('User')({
   id: Model.Generated(UserId),
