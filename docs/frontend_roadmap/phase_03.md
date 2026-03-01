@@ -1,5 +1,7 @@
 # Phase 3: Home Dashboard — Active Orders Table
 
+**Status**: ✅ Done
+
 **Goal**: Build the home dashboard page showing a table of orders with status "received" and "in_progress" using TanStack Table and TanStack Query. Include status/payment badges and action buttons for updating status and payment.
 
 **Prerequisites**: Phase 2 complete (dashboard layout, sidebar, route structure), shared package (`docs/shared/phase_01.md`)
@@ -161,19 +163,19 @@ The column definitions accept callback props or use mutations directly. "Advance
 
 ## Acceptance Criteria
 
-- [ ] Home page shows a table of orders with status "received" and "in_progress" only
-- [ ] Table columns: Order #, Customer, Status, Payment, Total, Date, Actions
-- [ ] Status badges are color-coded (blue=received, amber=in_progress, purple=ready, green=delivered)
-- [ ] Payment badges show paid (green) / unpaid (red)
-- [ ] Currency formatted as "Rp 45,000"
-- [ ] Date formatted in Indonesian locale
-- [ ] Clicking "Advance Status" opens confirmation dialog then updates via API
-- [ ] Clicking "Toggle Payment" updates payment status via API
-- [ ] Table auto-refreshes every 30 seconds
-- [ ] Loading state shows skeleton rows
-- [ ] Empty state shows "No active orders" when no orders match
-- [ ] Toast notifications on successful status/payment updates
-- [ ] Toast notifications on API errors
+- [x] Home page shows a table of orders with status "received" and "in_progress" only
+- [x] Table columns: Order #, Customer, Status, Payment, Total, Date, Actions
+- [x] Status badges are color-coded (blue=received, amber=in_progress, purple=ready, green=delivered)
+- [x] Payment badges show paid (green) / unpaid (red)
+- [x] Currency formatted as "Rp 45,000"
+- [x] Date formatted in Indonesian locale
+- [x] Clicking "Advance Status" opens confirmation dialog then updates via API
+- [x] Clicking "Toggle Payment" updates payment status via API
+- [x] Table auto-refreshes every 30 seconds
+- [x] Loading state shows skeleton rows
+- [x] Empty state shows "No active orders" when no orders match
+- [x] Toast notifications on successful status/payment updates
+- [x] Toast notifications on API errors
 
 ## Dependencies
 

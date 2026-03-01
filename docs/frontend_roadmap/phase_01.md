@@ -1,5 +1,7 @@
 # Phase 1: Auth Foundation
 
+**Status**: ✅ Done
+
 **Goal**: Build the authentication infrastructure — API client with token management, auth store, login page, and route protection scaffolding.
 
 **Prerequisites**: Shared package phase must be complete (`docs/shared/phase_01.md`)
@@ -101,17 +103,17 @@ Hooks:
 
 ## Acceptance Criteria
 
-- [ ] Login page renders at `/login` with email and password fields
-- [ ] Submitting valid credentials stores accessToken in memory and refreshToken in localStorage
-- [ ] Submitting valid credentials redirects to `/`
-- [ ] Submitting invalid credentials shows Sonner toast "Wrong email or password"
-- [ ] `apiClient` attaches Bearer token to all requests
-- [ ] 401 responses trigger auto-refresh (POST /api/auth/refresh with body) and retry
-- [ ] Failed refresh clears all tokens and redirects to `/login`
-- [ ] Page refresh recovers session: reads refreshToken from localStorage → calls refresh → restores user
-- [ ] `useCurrentUser()` calls `GET /api/auth/me` and returns user data when authenticated, undefined when not
-- [ ] Toaster component renders in the root layout
-- [ ] `<Header />` removed from root layout
+- [x] Login page renders at `/login` with email and password fields
+- [x] Submitting valid credentials stores accessToken in memory and refreshToken in localStorage
+- [x] Submitting valid credentials redirects to `/`
+- [x] Submitting invalid credentials shows Sonner toast "Wrong email or password"
+- [x] `apiClient` attaches Bearer token to all requests
+- [x] 401 responses trigger auto-refresh (POST /api/auth/refresh with body) and retry
+- [x] Failed refresh clears all tokens and redirects to `/login`
+- [x] Page refresh recovers session: reads refreshToken from localStorage → calls refresh → restores user
+- [x] `useCurrentUser()` calls `GET /api/auth/me` and returns user data when authenticated, undefined when not
+- [x] Toaster component renders in the root layout
+- [x] `<Header />` removed from root layout
 
 ## Dependencies
 
