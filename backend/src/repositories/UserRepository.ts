@@ -1,6 +1,13 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { User, UserId, UserWithoutPassword, UserWithoutPasswordFromDb, UserBasicInfo, UserUpdateData } from '../domain/User'
+import {
+  User,
+  UserId,
+  UserWithoutPassword,
+  UserWithoutPasswordFromDb,
+  UserBasicInfo,
+  UserUpdateData,
+} from '../domain/User'
 
 export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {
@@ -50,9 +57,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
 
       return sql.unsafe(query, params).pipe(
         Effect.flatMap((rows) =>
-          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(
-            Effect.orDie
-          )
+          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(Effect.orDie)
         ),
         Effect.map((rows) => Option.fromNullable(rows[0]))
       )
@@ -74,9 +79,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         WHERE id = ${id}
       `.pipe(
         Effect.flatMap((rows) =>
-          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(
-            Effect.orDie
-          )
+          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(Effect.orDie)
         ),
         Effect.map((rows) => Option.fromNullable(rows[0]))
       )
@@ -103,9 +106,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         ORDER BY created_at DESC
       `.pipe(
         Effect.flatMap((rows) =>
-          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(
-            Effect.orDie
-          )
+          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(Effect.orDie)
         ),
         Effect.map((rows) => Array.from(rows))
       )
@@ -120,9 +121,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         RETURNING id, email, name, role, created_at, updated_at
       `.pipe(
         Effect.flatMap((rows) =>
-          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(
-            Effect.orDie
-          )
+          Schema.decodeUnknown(Schema.Array(UserWithoutPasswordFromDb))(rows).pipe(Effect.orDie)
         ),
         Effect.map((rows) => Option.fromNullable(rows[0]))
       )
