@@ -1,5 +1,7 @@
 # Phase 4: History Order Page
 
+**Status**: ✅ Done
+
 **Goal**: Build the full order history page with status and payment filters, client-side pagination, and the same table/badge components from Phase 3.
 
 **Prerequisites**: Phase 3 complete (order domain types, orders API, data table, badges, column definitions)
@@ -64,16 +66,16 @@
 
 ## Acceptance Criteria
 
-- [ ] History page shows all orders (all statuses)
-- [ ] Status filter dropdown filters orders by status
-- [ ] Payment filter dropdown filters orders by payment status
-- [ ] Filters are reflected in URL search params (`/history?status=received&payment_status=unpaid`)
-- [ ] Navigating back/forward preserves filter state
-- [ ] Pagination: previous/next buttons, page size selector
-- [ ] "Showing X to Y of Z results" text is accurate
-- [ ] Status and payment update actions work from this page
-- [ ] Loading and empty states display correctly
-- [ ] Reuses column definitions, badges, and data-table from Phase 3
+- [x] History page shows all orders (all statuses)
+- [x] Status filter dropdown filters orders by status
+- [x] Payment filter dropdown filters orders by payment status
+- [x] Filters are reflected in URL search params (`/history?status=received&payment_status=unpaid`)
+- [x] Navigating back/forward preserves filter state
+- [x] Pagination: previous/next buttons, page size selector
+- [x] "Showing X to Y of Z results" text is accurate
+- [x] Status and payment update actions work from this page
+- [x] Loading and empty states display correctly
+- [x] Reuses column definitions, badges, and data-table from Phase 3
 
 ## Dependencies
 

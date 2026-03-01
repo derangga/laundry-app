@@ -1,5 +1,7 @@
 # Phase 2: App Shell — Dashboard Layout
 
+**Status**: ✅ Done
+
 **Goal**: Build the authenticated dashboard layout with shadcn sidebar-inset pattern, sidebar navigation with role-based menu items, NavUser footer, and route structure with placeholders.
 
 **Prerequisites**: Phase 1 complete (auth infrastructure, login page, useCurrentUser, useLogout hooks)
@@ -123,18 +125,18 @@ See `docs/ADR_FRONTEND.md` Decision 1 for the full authentication architecture.
 
 ## Acceptance Criteria
 
-- [ ] Navigating to `/` when authenticated shows dashboard layout with sidebar
-- [ ] Navigating to `/` when NOT authenticated redirects to `/login`
-- [ ] Sidebar displays: Home, History Order (always visible), Analytics, Manage Staff (admin only)
-- [ ] Active route is visually highlighted in the sidebar
-- [ ] NavUser footer shows avatar initials, user name, and email
-- [ ] Clicking "Log out" in NavUser dropdown logs out and redirects to `/login`
-- [ ] Sidebar is collapsible (shadcn sidebar built-in behavior)
-- [ ] Sidebar collapses to sheet on mobile (via `useIsMobile()` hook)
-- [ ] Breadcrumb shows current page name in the header
-- [ ] Admin-only placeholder routes redirect staff users to `/`
-- [ ] All placeholder pages render their heading text
-- [ ] Old Header component and demo data are removed
+- [x] Navigating to `/` when authenticated shows dashboard layout with sidebar
+- [x] Navigating to `/` when NOT authenticated redirects to `/login`
+- [x] Sidebar displays: Home, History Order (always visible), Analytics, Manage Staff (admin only)
+- [x] Active route is visually highlighted in the sidebar
+- [x] NavUser footer shows avatar initials, user name, and email
+- [x] Clicking "Log out" in NavUser dropdown logs out and redirects to `/login`
+- [x] Sidebar is collapsible (shadcn sidebar built-in behavior)
+- [x] Sidebar collapses to sheet on mobile (via `useIsMobile()` hook)
+- [x] Breadcrumb shows current page name in the header
+- [x] Admin-only placeholder routes redirect staff users to `/`
+- [x] All placeholder pages render their heading text
+- [x] Old Header component and demo data are removed
 
 ## Dependencies
 

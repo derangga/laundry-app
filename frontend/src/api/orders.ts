@@ -51,6 +51,31 @@ export async function updatePaymentStatusFn(
  * TanStack Query Hooks
  */
 
+export type OrderFilters = {
+  status?: OrderStatus
+  payment_status?: PaymentStatus
+}
+
+/**
+ * Fetch all orders with optional client-side filtering
+ */
+export function useOrders(filters?: OrderFilters) {
+  return useQuery({
+    queryKey: orderKeys.list(filters),
+    queryFn: fetchOrders,
+    select: (data) => {
+      let result = data
+      if (filters?.status)
+        result = result.filter((o) => o.status === filters.status)
+      if (filters?.payment_status)
+        result = result.filter(
+          (o) => o.payment_status === filters.payment_status,
+        )
+      return result
+    },
+  })
+}
+
 /**
  * Fetch active orders (received or in_progress), auto-refreshing every 30s
  */
