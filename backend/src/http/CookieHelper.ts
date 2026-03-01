@@ -21,7 +21,7 @@ export const getEnvBasedCookieOptions = Effect.gen(function* () {
   return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict' as const,
+    sameSite: isProduction ? ('strict' as const) : ('lax' as const),
   }
 })
 
@@ -45,7 +45,7 @@ const formatCookie = (name: string, value: string, options: CookieOptions): stri
  * Append Set-Cookie headers for access and refresh tokens using PreResponseHandler.
  * Uses HttpApp.appendPreResponseHandler so handlers don't need to manage response objects.
  *
- * - accessToken cookie: Path=/api, Max-Age=900 (15 minutes)
+ * - accessToken cookie: Path=/, Max-Age=900 (15 minutes)
  * - refreshToken cookie: Path=/api/auth, Max-Age=604800 (7 days)
  */
 export const appendAuthCookies = (accessToken: string, refreshToken: string) =>
@@ -55,13 +55,13 @@ export const appendAuthCookies = (accessToken: string, refreshToken: string) =>
     yield* HttpApp.appendPreResponseHandler((_req, response) =>
       HttpServerResponse.setCookie(response, 'accessToken', accessToken, {
         ...baseOptions,
-        path: '/api',
+        path: '/',
         maxAge: Duration.seconds(900),
       }).pipe(
         Effect.flatMap((resp) =>
           HttpServerResponse.setCookie(resp, 'refreshToken', refreshToken, {
             ...baseOptions,
-            path: '/api/auth',
+            path: '/',
             maxAge: Duration.seconds(604800),
           })
         ),
@@ -81,7 +81,7 @@ export const appendClearAuthCookies = () =>
     yield* HttpApp.appendPreResponseHandler((_req, response) =>
       HttpServerResponse.setCookie(response, 'accessToken', '', {
         ...baseOptions,
-        path: '/api',
+        path: '/',
         maxAge: Duration.seconds(0),
         expires: new Date(0),
       }).pipe(
@@ -148,7 +148,7 @@ export const extractRefreshTokenFromCookie = (
  * @deprecated Use `appendAuthCookies` instead. This function requires managing response objects directly.
  *
  * Set authentication cookies in the HTTP response
- * - accessToken: 15 minutes expiry, available on /api paths
+ * - accessToken: 15 minutes expiry, available on all paths
  * - refreshToken: 7 days expiry, only sent to /api/auth paths
  */
 export const setAuthCookies = (
@@ -161,7 +161,7 @@ export const setAuthCookies = (
 
     const accessTokenCookie = formatCookie('accessToken', accessToken, {
       ...baseOptions,
-      path: '/api',
+      path: '/',
       maxAge: 900, // 15 minutes (matches JWT expiry)
     })
 
@@ -188,7 +188,7 @@ export const clearAuthCookies = (response: HttpServerResponse.HttpServerResponse
 
     const clearAccessToken = formatCookie('accessToken', '', {
       ...baseOptions,
-      path: '/api',
+      path: '/',
       maxAge: 0,
       expires: new Date(0),
     })

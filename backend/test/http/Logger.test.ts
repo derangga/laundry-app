@@ -10,6 +10,7 @@ const TestConfig = Layer.setConfigProvider(
       ['HOST', '0.0.0.0'],
       ['LOG_LEVEL', 'debug'],
       ['LOG_FORMAT', 'pretty'],
+      ['CORS_ORIGIN', 'http://localhost'],
     ])
   )
 )
