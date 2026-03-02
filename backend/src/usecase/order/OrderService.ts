@@ -8,7 +8,14 @@ import { validateStatusTransition } from '@domain/OrderStatusValidator'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { OrderStatus, PaymentStatus, OrderId, CreateOrderInput, CreateWalkInOrderInput, Order } from '@domain/Order'
+import {
+  OrderStatus,
+  PaymentStatus,
+  OrderId,
+  CreateOrderInput,
+  CreateWalkInOrderInput,
+  Order,
+} from '@domain/Order'
 import { CreateCustomerInput } from '@domain/Customer'
 import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
@@ -130,9 +137,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         const exists = yield* customerService.checkExists(data.customer_phone)
 
         if (exists) {
-          return yield* Effect.fail(
-            new CustomerAlreadyExists({ phone: data.customer_phone })
-          )
+          return yield* Effect.fail(new CustomerAlreadyExists({ phone: data.customer_phone }))
         }
 
         // Create the customer
@@ -166,5 +171,10 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
       findByCustomerId,
     }
   }),
-  dependencies: [OrderRepository.Default, OrderItemRepository.Default, ServiceRepository.Default, CustomerService.Default],
+  dependencies: [
+    OrderRepository.Default,
+    OrderItemRepository.Default,
+    ServiceRepository.Default,
+    CustomerService.Default,
+  ],
 }) {}
