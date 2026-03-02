@@ -20,30 +20,15 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
   handlers
     /**
      * Search customer by phone number (query parameter)
-     * GET /api/customers?phone={phone}
+     * GET /api/customers/search?phone={phone}
      * Returns: Customer
      * Errors: 400 (validation), 404 (not found)
      */
-    .handle('searchByPhone', () =>
+    .handle('searchByPhone', ({ urlParams }) =>
       Effect.gen(function* () {
         const customerService = yield* CustomerService
-        const request = yield* HttpServerRequest.HttpServerRequest
 
-        // Extract phone query parameter
-        const url = new URL(request.url, 'http://localhost')
-        const phone = url.searchParams.get('phone')
-
-        if (!phone) {
-          return yield* Effect.fail(
-            new ValidationError({
-              message: 'Phone query parameter is required',
-              field: 'phone',
-            })
-          )
-        }
-
-        // Find customer, map domain error to HTTP error
-        return yield* customerService.findByPhone(phone).pipe(
+        return yield* customerService.findByPhone(urlParams.phone).pipe(
           Effect.mapError((error) => {
             if (error._tag === 'CustomerNotFound') {
               return new CustomerNotFound({
