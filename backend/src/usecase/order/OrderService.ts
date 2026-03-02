@@ -2,11 +2,21 @@ import { Effect, Option } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
+import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { generateOrderNumber } from '@domain/OrderNumberGenerator'
 import { validateStatusTransition } from '@domain/OrderStatusValidator'
 import { OrderNotFound, EmptyOrderError } from '@domain/OrderErrors'
+import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { OrderStatus, PaymentStatus, OrderId, CreateOrderInput, Order } from '@domain/Order'
+import {
+  OrderStatus,
+  PaymentStatus,
+  OrderId,
+  CreateOrderInput,
+  CreateWalkInOrderInput,
+  Order,
+} from '@domain/Order'
+import { CreateCustomerInput } from '@domain/Customer'
 import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -16,6 +26,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
     const orderRepo = yield* OrderRepository
     const orderItemRepo = yield* OrderItemRepository
     const serviceRepo = yield* ServiceRepository
+    const customerService = yield* CustomerService
 
     const calculateTotal = (items: Array<{ quantity: number; priceAtOrder: number }>): number => {
       return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
@@ -120,15 +131,50 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
       })
 
+    const createWalkIn = (data: CreateWalkInOrderInput, createdBy: UserId) =>
+      Effect.gen(function* () {
+        // Check if customer already exists with this phone
+        const exists = yield* customerService.checkExists(data.customer_phone)
+
+        if (exists) {
+          return yield* Effect.fail(new CustomerAlreadyExists({ phone: data.customer_phone }))
+        }
+
+        // Create the customer
+        const customer = yield* customerService.create(
+          new CreateCustomerInput({
+            name: data.customer_name,
+            phone: data.customer_phone,
+            address: data.customer_address,
+          })
+        )
+
+        // Create the order using existing create method
+        return yield* create(
+          new CreateOrderInput({
+            customer_id: customer.id as CustomerId,
+            items: data.items,
+            created_by: createdBy as UserId,
+            payment_status: data.payment_status,
+          })
+        )
+      })
+
     const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id))
 
     return {
       create,
+      createWalkIn,
       findById,
       updateStatus,
       updatePaymentStatus,
       findByCustomerId,
     }
   }),
-  dependencies: [OrderRepository.Default, OrderItemRepository.Default, ServiceRepository.Default],
+  dependencies: [
+    OrderRepository.Default,
+    OrderItemRepository.Default,
+    ServiceRepository.Default,
+    CustomerService.Default,
+  ],
 }) {}

@@ -48,6 +48,21 @@ export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>('Cr
 }) {}
 
 /**
+ * Input schema for creating a walk-in order.
+ * Creates a new customer and order in one step.
+ * If the phone already exists, the caller should use the regular POST /api/orders instead.
+ */
+export class CreateWalkInOrderInput extends Schema.Class<CreateWalkInOrderInput>(
+  'CreateWalkInOrderInput'
+)({
+  customer_name: Schema.String.pipe(Schema.nonEmptyString()),
+  customer_phone: Schema.String.pipe(Schema.nonEmptyString()),
+  customer_address: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+  items: Schema.Array(CreateOrderItemInput),
+  payment_status: Schema.optionalWith(PaymentStatus, { default: () => 'unpaid' as const }),
+}) {}
+
+/**
  * Input schema for creating a new order.
  * Contains customer, items, creator, and optional payment status.
  */

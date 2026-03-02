@@ -5,6 +5,7 @@ export {
   PaymentStatus,
   CreateOrderItemInput,
   CreateOrderInput,
+  CreateWalkInOrderInput,
   UpdateOrderStatusInput,
   UpdatePaymentStatusInput,
   OrderWithDetails,

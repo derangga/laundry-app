@@ -19,6 +19,7 @@ import {
   OrderNotFound,
   InvalidOrderStatus,
   EmptyOrderError,
+  CustomerAlreadyExists,
   ValidationError,
 } from '@domain/http/HttpErrors'
 
@@ -34,6 +35,65 @@ import {
  */
 export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handlers) =>
   handlers
+    /**
+     * Create walk-in order (new customer + order in one step)
+     * POST /api/orders/walk-in
+     * Payload: CreateWalkInOrderInput (automatically validated by HttpApiBuilder)
+     * Returns: OrderResponse (201 Created)
+     * Errors: 409 (customer exists), 422 (empty order), 400 (validation)
+     */
+    .handle('createWalkIn', ({ payload }) =>
+      Effect.gen(function* () {
+        const orderService = yield* OrderService
+        const currentUser = yield* CurrentUser
+
+        const order = yield* orderService.createWalkIn(payload, currentUser.id)
+
+        return OrderResponse.make({
+          id: order.id,
+          order_number: order.order_number,
+          customer_id: order.customer_id,
+          status: order.status,
+          payment_status: order.payment_status,
+          total_price: order.total_price,
+          created_by: order.created_by,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+        })
+      }).pipe(
+        Effect.catchTags({
+          CustomerAlreadyExists: (error) =>
+            Effect.fail(
+              new CustomerAlreadyExists({
+                message: `Customer already exists with phone: ${error.phone}. Use POST /api/orders instead.`,
+                phone: error.phone,
+              })
+            ),
+          EmptyOrderError: (error) => Effect.fail(new EmptyOrderError({ message: error.message })),
+          ServiceNotFound: (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Service not found: ${error.serviceId}`,
+                field: 'items',
+              })
+            ),
+          InvalidPhoneNumber: (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: error.message,
+                field: 'customer_phone',
+              })
+            ),
+          SqlError: (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: error.message || 'Failed to create walk-in order',
+              })
+            ),
+        })
+      )
+    )
+
     /**
      * Create new order
      * POST /api/orders
@@ -53,21 +113,20 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
             created_by: currentUser.id,
           })
           .pipe(
-            Effect.mapError((error) => {
-              if (error._tag === 'EmptyOrderError') {
-                return new EmptyOrderError({
+            Effect.catchTags({
+              EmptyOrderError: (error) =>
+                new EmptyOrderError({
                   message: error.message,
-                })
-              }
-              if (error._tag === 'ServiceNotFound') {
-                return new ValidationError({
+                }),
+              ServiceNotFound: (error) =>
+                new ValidationError({
                   message: `Service not found: ${error.serviceId}`,
                   field: 'items',
-                })
-              }
-              return new ValidationError({
-                message: error.message || 'Failed to create order',
-              })
+                }),
+              SqlError: () =>
+                new ValidationError({
+                  message: 'Failed to create order',
+                }),
             })
           )
 
@@ -247,23 +306,22 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
 
         // Update status
         yield* orderService.updateStatus(OrderId.make(id), payload.status).pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'OrderNotFound') {
-              return new OrderNotFound({
+          Effect.catchTags({
+            OrderNotFound: () =>
+              new OrderNotFound({
                 message: `Order not found with id: ${id}`,
                 orderId: id,
-              })
-            }
-            if (error._tag === 'InvalidOrderTransition') {
-              return new InvalidOrderStatus({
+              }),
+            InvalidOrderTransition: (error) =>
+              new InvalidOrderStatus({
                 message: `Invalid status transition from ${error.from} to ${error.to}`,
                 currentStatus: error.from,
                 attemptedStatus: error.to,
-              })
-            }
-            return new ValidationError({
-              message: error.message || 'Failed to update order status',
-            })
+              }),
+            SqlError: () =>
+              new ValidationError({
+                message: 'Failed to create order',
+              }),
           })
         )
 
