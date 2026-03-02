@@ -47,6 +47,32 @@ export async function updatePaymentStatusFn(
   return api.put(`/api/orders/${id}/payment`, input, OrderResponse)
 }
 
+export interface CreateOrderParams {
+  customer_id: string
+  items: { service_id: string; quantity: number }[]
+  created_by: string
+  payment_status?: 'paid' | 'unpaid'
+}
+
+export async function createOrderFn(
+  input: CreateOrderParams,
+): Promise<OrderResponse> {
+  return api.post('/api/orders', input, OrderResponse)
+}
+
+export interface CreateWalkInOrderParams {
+  customer_name: string
+  customer_phone: string
+  items: { service_id: string; quantity: number }[]
+  payment_status?: 'paid' | 'unpaid'
+}
+
+export async function createWalkInOrderFn(
+  input: CreateWalkInOrderParams,
+): Promise<OrderResponse> {
+  return api.post('/api/orders/walk-in', input, OrderResponse)
+}
+
 /**
  * TanStack Query Hooks
  */
@@ -101,6 +127,42 @@ export function useUpdateOrderStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Order status updated')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/**
+ * Mutation to create a new order for an existing customer
+ */
+export function useCreateOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createOrderFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all })
+      toast.success('Order created successfully')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/**
+ * Mutation to create a walk-in order (new customer + order)
+ */
+export function useCreateWalkInOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createWalkInOrderFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all })
+      toast.success('Customer registered and order created')
     },
     onError: (error: Error) => {
       toast.error(error.message)

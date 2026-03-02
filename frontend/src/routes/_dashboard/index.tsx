@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Inbox } from 'lucide-react'
+import { ChevronDown, Inbox } from 'lucide-react'
 
-import type { OrderStatus, PaymentStatus } from '@laundry-app/shared'
+import type { OrderStatus } from '@laundry-app/shared'
 
 import {
   AlertDialog,
@@ -14,9 +14,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { DataTable } from '@/components/shared/data-table'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
+import { CreateOrderDialog } from '@/components/features/orders/create-order-dialog'
+import { CreateOrderWithCustomerDialog } from '@/components/features/orders/create-order-with-customer-dialog'
 import { getOrderColumns } from '@/components/features/orders/order-table-columns'
 import {
   useActiveOrders,
@@ -47,6 +56,8 @@ function DashboardHome() {
   const updatePaymentStatus = useUpdatePaymentStatus()
 
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog | null>(null)
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false)
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false)
 
   const columns = getOrderColumns({
     onAdvanceStatus: (orderId, nextStatus) => {
@@ -55,20 +66,39 @@ function DashboardHome() {
     onTogglePayment: (orderId, newPaymentStatus) => {
       updatePaymentStatus.mutate({
         id: orderId,
-        payment_status: newPaymentStatus as PaymentStatus,
+        payment_status: newPaymentStatus,
       })
     },
   })
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center gap-3">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        {activeOrders !== undefined && (
-          <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium">
-            {activeOrders.length} active
-          </span>
-        )}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          {activeOrders !== undefined && (
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium">
+              {activeOrders.length} active
+            </span>
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              + New Order
+              <ChevronDown className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setOrderDialogOpen(true)}>
+              New Order
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRegisterDialogOpen(true)}>
+              New Order + Register Customer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {isLoading ? (
@@ -127,6 +157,15 @@ function DashboardHome() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateOrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+      />
+      <CreateOrderWithCustomerDialog
+        open={registerDialogOpen}
+        onOpenChange={setRegisterDialogOpen}
+      />
     </div>
   )
 }
