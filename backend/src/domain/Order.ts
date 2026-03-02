@@ -20,7 +20,7 @@ import { Schema } from 'effect'
 import { Model } from '@effect/sql'
 import { OrderId, OrderItemId, OrderStatus, PaymentStatus, CustomerId } from '@laundry-app/shared'
 import { UserId } from '@laundry-app/shared'
-import { ServiceId, DecimalNumber, UnitType, DateTimeUtcFromDate } from '@laundry-app/shared'
+import { ServiceId, DecimalNumber, UnitType } from '@laundry-app/shared'
 
 export class Order extends Model.Class<Order>('Order')({
   id: Model.Generated(OrderId),
@@ -57,8 +57,8 @@ export class OrderWithDetailsFromDb extends Schema.Class<OrderWithDetailsFromDb>
   total_price: DecimalNumber,
   created_by: UserId,
   created_by_name: Schema.String,
-  created_at: DateTimeUtcFromDate,
-  updated_at: DateTimeUtcFromDate,
+  created_at: Schema.DateTimeUtcFromDate,
+  updated_at: Schema.DateTimeUtcFromDate,
 }) {}
 
 export class OrderSummaryFromDb extends Schema.Class<OrderSummaryFromDb>('OrderSummaryFromDb')({
@@ -66,7 +66,7 @@ export class OrderSummaryFromDb extends Schema.Class<OrderSummaryFromDb>('OrderS
   order_number: Schema.String,
   total_price: DecimalNumber,
   payment_status: PaymentStatus,
-  created_at: DateTimeUtcFromDate,
+  created_at: Schema.DateTimeUtcFromDate,
 }) {}
 
 export class OrderItemWithServiceFromDb extends Schema.Class<OrderItemWithServiceFromDb>(
@@ -80,7 +80,7 @@ export class OrderItemWithServiceFromDb extends Schema.Class<OrderItemWithServic
   quantity: DecimalNumber,
   price_at_order: DecimalNumber,
   subtotal: DecimalNumber,
-  created_at: DateTimeUtcFromDate,
+  created_at: Schema.DateTimeUtcFromDate,
 }) {}
 
 export class OrderFilterOptions extends Schema.Class<OrderFilterOptions>('OrderFilterOptions')({
