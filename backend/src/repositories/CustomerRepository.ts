@@ -1,6 +1,12 @@
-import { Effect, Option } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { Customer, CustomerId, CustomerSummary, UpdateCustomerInput } from '../domain/Customer'
+import {
+  Customer,
+  CustomerId,
+  CustomerFromDb,
+  CustomerSummary,
+  UpdateCustomerInput,
+} from '../domain/Customer'
 
 export class CustomerRepository extends Effect.Service<CustomerRepository>()('CustomerRepository', {
   effect: Effect.gen(function* () {
@@ -13,31 +19,55 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
       idColumn: 'id',
     })
 
+    const decodeCustomer = Schema.decodeUnknown(CustomerFromDb)
+    const decodeCustomers = Schema.decodeUnknown(Schema.Array(CustomerFromDb))
+
     // Custom findById using raw SQL (Model.makeRepository has issues)
-    const findById = (id: CustomerId): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
-      sql<Customer>`
+    const findById = (
+      id: CustomerId
+    ): Effect.Effect<Option.Option<typeof CustomerFromDb.Type>, SqlError.SqlError> =>
+      sql`
         SELECT id, name, phone, address, created_at, updated_at
         FROM customers
         WHERE id = ${id}
-      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) =>
+          row
+            ? decodeCustomer(row).pipe(Effect.map(Option.some), Effect.orDie)
+            : Effect.succeed(Option.none())
+        )
+      )
 
     // Custom methods with explicit columns
     const findByPhone = (
       phone: string
-    ): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> =>
-      sql<Customer>`
+    ): Effect.Effect<Option.Option<typeof CustomerFromDb.Type>, SqlError.SqlError> =>
+      sql`
         SELECT id, name, phone, address, created_at, updated_at
         FROM customers
         WHERE phone = ${phone}
-      `.pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) =>
+          row
+            ? decodeCustomer(row).pipe(Effect.map(Option.some), Effect.orDie)
+            : Effect.succeed(Option.none())
+        )
+      )
 
-    const searchByName = (name: string): Effect.Effect<readonly Customer[], SqlError.SqlError> =>
-      sql<Customer>`
+    const searchByName = (
+      name: string
+    ): Effect.Effect<readonly (typeof CustomerFromDb.Type)[], SqlError.SqlError> =>
+      sql`
         SELECT id, name, phone, address, created_at, updated_at
         FROM customers
         WHERE name ILIKE ${'%' + name + '%'}
         ORDER BY name ASC
-      `.pipe(Effect.map((rows) => rows))
+      `.pipe(
+        Effect.flatMap((rows) => decodeCustomers(rows).pipe(Effect.orDie)),
+        Effect.map((rows) => Array.from(rows))
+      )
 
     const findSummaries = (): Effect.Effect<readonly CustomerSummary[], SqlError.SqlError> =>
       sql<CustomerSummary>`
@@ -49,7 +79,7 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
     const update = (
       id: CustomerId,
       data: UpdateCustomerInput
-    ): Effect.Effect<Option.Option<Customer>, SqlError.SqlError> => {
+    ): Effect.Effect<Option.Option<typeof CustomerFromDb.Type>, SqlError.SqlError> => {
       const updates: string[] = []
       const params: Array<string | CustomerId | null> = []
       let paramIndex = 1
@@ -68,7 +98,7 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
       }
 
       if (updates.length === 0) {
-        return repo.findById(id)
+        return findById(id)
       }
 
       updates.push(`updated_at = NOW()`)
@@ -76,9 +106,14 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
 
       const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, phone, address, created_at, updated_at`
 
-      return sql
-        .unsafe<Customer>(query, params)
-        .pipe(Effect.map((rows) => Option.fromNullable(rows[0])))
+      return sql.unsafe(query, params).pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) =>
+          row
+            ? decodeCustomer(row).pipe(Effect.map(Option.some), Effect.orDie)
+            : Effect.succeed(Option.none())
+        )
+      )
     }
 
     return {

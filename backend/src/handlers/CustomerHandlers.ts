@@ -1,5 +1,5 @@
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
-import { DateTime, Effect, Option } from 'effect'
+import { Effect, Option } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CustomerRepository } from '@repositories/CustomerRepository'
@@ -47,8 +47,8 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
           name: customer.name,
           phone: customer.phone,
           address: customer.address,
-          created_at: DateTime.unsafeFromDate(customer.created_at as unknown as Date),
-          updated_at: DateTime.unsafeFromDate(customer.updated_at as unknown as Date),
+          created_at: customer.created_at,
+          updated_at: customer.updated_at,
         })
       })
     )
@@ -145,8 +145,8 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
           name: customer.name,
           phone: customer.phone,
           address: customer.address,
-          created_at: DateTime.unsafeFromDate(customer.created_at as unknown as Date),
-          updated_at: DateTime.unsafeFromDate(customer.updated_at as unknown as Date),
+          created_at: customer.created_at,
+          updated_at: customer.updated_at,
         })
       })
     )
