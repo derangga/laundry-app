@@ -1,12 +1,12 @@
 import { Effect, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
-import { OrderItem, OrderItemWithService, OrderId } from '../domain/Order'
+import { OrderItem, OrderItemWithServiceFromDb, OrderId } from '../domain/Order'
 import { ServiceId } from '../domain/LaundryService'
 
 // Helper to decode SQL results through the schema
 const decodeOrderItems = Schema.decodeUnknown(Schema.Array(OrderItem))
 const decodeOrderItem = Schema.decodeUnknown(OrderItem)
-const decodeOrderItemsWithService = Schema.decodeUnknown(Schema.Array(OrderItemWithService))
+const decodeOrderItemsWithService = Schema.decodeUnknown(Schema.Array(OrderItemWithServiceFromDb))
 
 export interface OrderItemInsertData {
   order_id: OrderId
@@ -45,7 +45,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
 
       const findByOrderIdWithService = (
         orderId: OrderId
-      ): Effect.Effect<readonly OrderItemWithService[], SqlError.SqlError> =>
+      ): Effect.Effect<readonly OrderItemWithServiceFromDb[], SqlError.SqlError> =>
         sql`
           SELECT
             oi.id,

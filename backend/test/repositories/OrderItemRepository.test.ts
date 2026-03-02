@@ -29,7 +29,7 @@ const createMockOrderItemWithService = (
     quantity: 5,
     price_at_order: 10000,
     subtotal: 50000,
-    created_at: '2024-01-01T00:00:00.000Z',
+    created_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as OrderItemWithService
 

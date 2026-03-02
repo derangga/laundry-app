@@ -40,8 +40,8 @@ const createMockOrderWithDetails = (overrides: Partial<OrderWithDetails> = {}): 
     total_price: 50000,
     created_by: 'user-123' as UserId,
     created_by_name: 'Admin User',
-    created_at: '2024-01-01T00:00:00.000Z',
-    updated_at: '2024-01-01T00:00:00.000Z',
+    created_at: new Date('2024-01-01T00:00:00.000Z'),
+    updated_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as OrderWithDetails
 
@@ -51,7 +51,7 @@ const createMockOrderSummary = (overrides: Partial<OrderSummary> = {}): OrderSum
     order_number: 'ORD-001',
     total_price: 50000,
     payment_status: 'paid' as PaymentStatus,
-    created_at: '2024-01-01T00:00:00.000Z',
+    created_at: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
   }) as unknown as OrderSummary
 

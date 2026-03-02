@@ -5,8 +5,8 @@ import {
   OrderId,
   OrderStatus,
   PaymentStatus,
-  OrderWithDetails,
-  OrderSummary,
+  OrderWithDetailsFromDb,
+  OrderSummaryFromDb,
   OrderFilterOptions,
 } from '../domain/Order'
 import { CustomerId } from '../domain/Customer'
@@ -14,8 +14,8 @@ import { CustomerId } from '../domain/Customer'
 // Helper to decode SQL results through the schema
 const decodeOrders = Schema.decodeUnknown(Schema.Array(Order))
 const decodeOrder = Schema.decodeUnknown(Order)
-const decodeOrdersWithDetails = Schema.decodeUnknown(Schema.Array(OrderWithDetails))
-const decodeOrderSummaries = Schema.decodeUnknown(Schema.Array(OrderSummary))
+const decodeOrdersWithDetails = Schema.decodeUnknown(Schema.Array(OrderWithDetailsFromDb))
+const decodeOrderSummaries = Schema.decodeUnknown(Schema.Array(OrderSummaryFromDb))
 
 // Default filter options with all fields set to none
 const defaultOrderFilterOptions = new OrderFilterOptions({
@@ -134,7 +134,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
 
     const findWithDetails = (
       options: OrderFilterOptions = defaultOrderFilterOptions
-    ): Effect.Effect<readonly OrderWithDetails[], SqlError.SqlError> => {
+    ): Effect.Effect<readonly OrderWithDetailsFromDb[], SqlError.SqlError> => {
       const conditions: string[] = []
       const params: Array<string | number | Date> = []
       let paramIndex = 1
@@ -213,7 +213,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
 
     const findSummaries = (
       options: OrderFilterOptions = defaultOrderFilterOptions
-    ): Effect.Effect<readonly OrderSummary[], SqlError.SqlError> => {
+    ): Effect.Effect<readonly OrderSummaryFromDb[], SqlError.SqlError> => {
       const conditions: string[] = []
       const params: Array<string | Date> = []
       let paramIndex = 1
