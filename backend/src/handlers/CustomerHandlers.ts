@@ -1,9 +1,9 @@
 import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
-import { Effect, Option } from 'effect'
+import { DateTime, Effect, Option } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { CustomerId } from '@domain/Customer'
+import { CustomerId, CustomerResponse } from '@domain/Customer'
 import { CustomerNotFound, CustomerAlreadyExists, ValidationError } from '@domain/http/HttpErrors'
 
 /**
@@ -28,7 +28,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
       Effect.gen(function* () {
         const customerService = yield* CustomerService
 
-        return yield* customerService.findByPhone(urlParams.phone).pipe(
+        const customer = yield* customerService.findByPhone(urlParams.phone).pipe(
           Effect.mapError((error) => {
             if (error._tag === 'CustomerNotFound') {
               return new CustomerNotFound({
@@ -41,6 +41,15 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
             })
           })
         )
+
+        return CustomerResponse.make({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          address: customer.address,
+          created_at: DateTime.unsafeFromDate(customer.created_at as unknown as Date),
+          updated_at: DateTime.unsafeFromDate(customer.updated_at as unknown as Date),
+        })
       })
     )
 
@@ -105,7 +114,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
         }
 
         // Find customer, handle all errors by converting to CustomerNotFound or ValidationError
-        return yield* repo.findById(CustomerId.make(id)).pipe(
+        const customer = yield* repo.findById(CustomerId.make(id)).pipe(
           Effect.andThen((customerOption) => {
             if (Option.isNone(customerOption)) {
               return Effect.fail(
@@ -130,6 +139,15 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
             return new ValidationError({ message })
           })
         )
+
+        return CustomerResponse.make({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          address: customer.address,
+          created_at: DateTime.unsafeFromDate(customer.created_at as unknown as Date),
+          updated_at: DateTime.unsafeFromDate(customer.updated_at as unknown as Date),
+        })
       })
     )
 )
