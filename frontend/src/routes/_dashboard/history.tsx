@@ -92,7 +92,10 @@ function HistoryPage() {
   }
 
   function handleReset() {
-    navigate({ to: '/history', search: { status: undefined, payment_status: undefined } })
+    navigate({
+      to: '/history',
+      search: { status: undefined, payment_status: undefined },
+    })
   }
 
   return (

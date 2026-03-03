@@ -14,6 +14,7 @@ export class LaundryServiceService extends Effect.Service<LaundryServiceService>
       const repo = yield* ServiceRepository
 
       const findActive = () => repo.findActive()
+      const findAll = () => repo.findAll()
 
       const findById = (id: ServiceId) =>
         Effect.gen(function* () {
@@ -48,6 +49,7 @@ export class LaundryServiceService extends Effect.Service<LaundryServiceService>
 
       return {
         findActive,
+        findAll,
         findById,
         create,
         update,

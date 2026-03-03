@@ -38,7 +38,12 @@ export const Route = createFileRoute('/_dashboard/services')({
 })
 
 function ServicesPage() {
-  const { data: services = [], isLoading, error, refetch } = useServices()
+  const {
+    data: services = [],
+    isLoading,
+    error,
+    refetch,
+  } = useServices({ include_inactive: true })
   const [editingService, setEditingService] =
     useState<LaundryServiceResponse | null>(null)
   const [deletingService, setDeletingService] =

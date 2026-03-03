@@ -19,13 +19,17 @@ import { toast } from 'sonner'
 
 export const serviceKeys = {
   all: ['services'] as const,
-  list: () => ['services', 'list'] as const,
+  list: (params?: { include_inactive?: boolean }) =>
+    ['services', 'list', params] as const,
 }
 
-export async function fetchServices(): Promise<
-  readonly LaundryServiceResponse[]
-> {
-  return api.get('/api/services', Schema.Array(LaundryServiceResponse))
+export async function fetchServices(params?: {
+  include_inactive?: boolean
+}): Promise<readonly LaundryServiceResponse[]> {
+  const url = params?.include_inactive
+    ? '/api/services?include_inactive=true'
+    : '/api/services'
+  return api.get(url, Schema.Array(LaundryServiceResponse))
 }
 
 export async function createServiceFn(
@@ -47,10 +51,10 @@ export async function deleteServiceFn(
   return api.del(`/api/services/${id}`, SuccessDeleteService)
 }
 
-export function useServices() {
+export function useServices(params?: { include_inactive?: boolean }) {
   return useQuery({
-    queryKey: serviceKeys.list(),
-    queryFn: fetchServices,
+    queryKey: serviceKeys.list(params),
+    queryFn: () => fetchServices(params),
     staleTime: 5 * 60_000,
   })
 }
@@ -60,7 +64,7 @@ export function useCreateService() {
   return useMutation({
     mutationFn: (input: CreateLaundryServiceInput) => createServiceFn(input),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.list() })
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all })
       toast.success(`Service "${data.name}" has been created.`)
     },
     onError: () => {
@@ -80,7 +84,7 @@ export function useUpdateService() {
       input: UpdateLaundryServiceInput
     }) => updateServiceFn(id, input),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.list() })
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all })
       toast.success(`Service "${data.name}" has been updated.`)
     },
     onError: () => {
@@ -94,7 +98,7 @@ export function useDeleteService() {
   return useMutation({
     mutationFn: (id: ServiceId) => deleteServiceFn(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.list() })
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all })
       toast.success('Service has been removed.')
     },
     onError: () => {
