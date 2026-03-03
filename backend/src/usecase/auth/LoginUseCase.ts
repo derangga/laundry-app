@@ -5,8 +5,9 @@ import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordService } from './PasswordService'
 import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
-import { InvalidCredentialsError } from '@domain/UserErrors'
+import { InvalidCredentialsError, InvalidTokenError } from '@domain/UserErrors'
 import { LoginInput, JwtPayload, LoginResult, AuthResponse, AuthenticatedUser } from '@domain/Auth'
+import { PasswordError } from '@domain/AuthError'
 
 export { LoginInput }
 
@@ -14,7 +15,7 @@ export const login = (
   input: LoginInput
 ): Effect.Effect<
   LoginResult,
-  InvalidCredentialsError | SqlError.SqlError | Error,
+  InvalidCredentialsError | SqlError.SqlError | PasswordError | InvalidTokenError,
   UserRepository | RefreshTokenRepository | PasswordService | JwtService | TokenGenerator
 > =>
   Effect.gen(function* () {

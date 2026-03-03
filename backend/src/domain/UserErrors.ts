@@ -50,6 +50,10 @@ export class RefreshTokenNotFoundError extends Data.TaggedError('RefreshTokenNot
     new RefreshTokenNotFoundError({ message: 'Refresh token not found or expired' })
 }
 
+export class RefreshTokenNotCreated extends Data.TaggedError('RefreshTokenNotCreated')<{
+  readonly message: string
+}> {}
+
 export class UnauthorizedError extends Data.TaggedError('UnauthorizedError')<{
   readonly message: string
 }> {

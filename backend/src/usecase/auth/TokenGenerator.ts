@@ -1,17 +1,21 @@
 import { Effect } from 'effect'
 import { createHash, randomBytes } from 'crypto'
+import { InvalidTokenError } from '@domain/UserErrors'
 
 export class TokenGenerator extends Effect.Service<TokenGenerator>()('TokenGenerator', {
   effect: Effect.gen(function* () {
-    const generateToken = (length = 32): Effect.Effect<string, Error> =>
-      Effect.sync(() => randomBytes(length).toString('hex'))
+    const generateToken = (length = 32): Effect.Effect<string, InvalidTokenError> =>
+      Effect.try({
+        try: () => randomBytes(length).toString('hex'),
+        catch: () => InvalidTokenError.malformed(),
+      })
 
     const hashToken = (token: string): Effect.Effect<string, never> =>
       Effect.sync(() => createHash('sha256').update(token).digest('hex'))
 
     const generateAndHash = (
       length = 32
-    ): Effect.Effect<{ rawToken: string; hashedToken: string }, Error> =>
+    ): Effect.Effect<{ rawToken: string; hashedToken: string }, InvalidTokenError> =>
       Effect.gen(function* () {
         const rawToken = yield* generateToken(length)
         const hashedToken = yield* hashToken(rawToken)

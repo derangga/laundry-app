@@ -2,6 +2,7 @@ import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
 import { RefreshToken, RefreshTokenId } from '../domain/RefreshToken'
 import { UserId } from '../domain/User'
+import { RefreshTokenNotCreated } from '@domain/UserErrors'
 
 export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepository>()(
   'RefreshTokenRepository',
@@ -43,7 +44,11 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
             return first !== undefined
               ? Effect.succeed(first)
               : Effect.fail(
-                  new SqlError.SqlError({ cause: new Error('Insert failed - no row returned') })
+                  new SqlError.SqlError({
+                    cause: new RefreshTokenNotCreated({
+                      message: 'Insert failed - no row returned',
+                    }),
+                  })
                 )
           })
         )

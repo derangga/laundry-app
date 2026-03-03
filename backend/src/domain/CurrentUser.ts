@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from 'effect'
 import { UserId, UserRole } from './User'
+import { UserNotFoundError } from './UserErrors'
 
 export interface CurrentUserData {
   readonly id: UserId
@@ -12,7 +13,7 @@ export class CurrentUser extends Context.Tag('CurrentUser')<CurrentUser, Current
     Effect.flatMap((option) =>
       option._tag === 'Some'
         ? Effect.succeed(option.value)
-        : Effect.fail(new Error('CurrentUser not available in context'))
+        : new UserNotFoundError({ message: 'CurrentUser not available in context' })
     )
   )
 
