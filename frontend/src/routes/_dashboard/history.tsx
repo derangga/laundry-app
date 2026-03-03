@@ -66,7 +66,7 @@ function HistoryPage() {
     onTogglePayment: (orderId, newPaymentStatus) => {
       updatePaymentStatus.mutate({
         id: orderId,
-        payment_status: newPaymentStatus as PaymentStatus,
+        payment_status: newPaymentStatus,
       })
     },
   })
@@ -75,8 +75,8 @@ function HistoryPage() {
     navigate({
       to: '/history',
       search: (prev) => ({
-        ...prev,
         status: value === 'all' ? undefined : value,
+        payment_status: prev.payment_status,
       }),
     })
   }
@@ -85,14 +85,14 @@ function HistoryPage() {
     navigate({
       to: '/history',
       search: (prev) => ({
-        ...prev,
+        status: prev.status,
         payment_status: value === 'all' ? undefined : value,
       }),
     })
   }
 
   function handleReset() {
-    navigate({ to: '/history', search: {} })
+    navigate({ to: '/history', search: { status: undefined, payment_status: undefined } })
   }
 
   return (
@@ -120,7 +120,7 @@ function HistoryPage() {
           description="Try adjusting your filters."
         />
       ) : (
-        <DataTable columns={columns} data={orders ?? []} pagination />
+        <DataTable columns={columns} data={[...(orders ?? [])]} pagination />
       )}
 
       <AlertDialog

@@ -1,7 +1,10 @@
-import { type ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { MoreHorizontal } from 'lucide-react'
-import type { OrderStatus, PaymentStatus } from '@laundry-app/shared'
-import { OrderWithDetails } from '@laundry-app/shared'
+import type {
+  OrderStatus,
+  OrderWithDetails,
+  PaymentStatus,
+} from '@laundry-app/shared'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -42,7 +45,7 @@ export function getOrderColumns(
   return [
     {
       accessorKey: 'order_number',
-      header: 'Order #',
+      header: 'Order',
       cell: ({ row }) => (
         <span className="font-bold font-mono">{row.original.order_number}</span>
       ),
