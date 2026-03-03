@@ -3,8 +3,8 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   flexRender,
-  type ColumnDef,
 } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import {
   Select,

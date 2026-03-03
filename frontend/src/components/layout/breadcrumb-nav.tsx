@@ -4,6 +4,7 @@ const routeLabels: Record<string, string> = {
   '/': 'Home',
   '/history': 'History Order',
   '/analytics': 'Analytics',
+  '/services': 'Services',
   '/staff': 'Manage Staff',
 }
 

@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as DashboardIndexRouteImport } from './routes/_dashboard/index'
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
+import { Route as DashboardServicesRouteImport } from './routes/_dashboard/services'
 import { Route as DashboardHistoryRouteImport } from './routes/_dashboard/history'
 import { Route as DashboardAnalyticsRouteImport } from './routes/_dashboard/analytics'
 
@@ -35,6 +36,11 @@ const DashboardStaffRoute = DashboardStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardServicesRoute = DashboardServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardHistoryRoute = DashboardHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -51,12 +57,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/analytics': typeof DashboardAnalyticsRoute
   '/history': typeof DashboardHistoryRoute
+  '/services': typeof DashboardServicesRoute
   '/staff': typeof DashboardStaffRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/analytics': typeof DashboardAnalyticsRoute
   '/history': typeof DashboardHistoryRoute
+  '/services': typeof DashboardServicesRoute
   '/staff': typeof DashboardStaffRoute
   '/': typeof DashboardIndexRoute
 }
@@ -66,20 +74,22 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_dashboard/analytics': typeof DashboardAnalyticsRoute
   '/_dashboard/history': typeof DashboardHistoryRoute
+  '/_dashboard/services': typeof DashboardServicesRoute
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/_dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/analytics' | '/history' | '/staff'
+  fullPaths: '/' | '/login' | '/analytics' | '/history' | '/services' | '/staff'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/analytics' | '/history' | '/staff' | '/'
+  to: '/login' | '/analytics' | '/history' | '/services' | '/staff' | '/'
   id:
     | '__root__'
     | '/_dashboard'
     | '/login'
     | '/_dashboard/analytics'
     | '/_dashboard/history'
+    | '/_dashboard/services'
     | '/_dashboard/staff'
     | '/_dashboard/'
   fileRoutesById: FileRoutesById
@@ -119,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardStaffRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/services': {
+      id: '/_dashboard/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof DashboardServicesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/history': {
       id: '/_dashboard/history'
       path: '/history'
@@ -139,6 +156,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardHistoryRoute: typeof DashboardHistoryRoute
+  DashboardServicesRoute: typeof DashboardServicesRoute
   DashboardStaffRoute: typeof DashboardStaffRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -146,6 +164,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardHistoryRoute: DashboardHistoryRoute,
+  DashboardServicesRoute: DashboardServicesRoute,
   DashboardStaffRoute: DashboardStaffRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

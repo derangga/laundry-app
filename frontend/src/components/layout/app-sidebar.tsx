@@ -1,5 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import { BarChart3, ClipboardList, Home, Users } from 'lucide-react'
+import {
+  BarChart3,
+  ClipboardList,
+  Home,
+  Users,
+  WashingMachine,
+} from 'lucide-react'
 
 import { useCurrentUser } from '@/api/auth'
 import {
@@ -35,6 +41,12 @@ const menuItems: MenuItem[] = [
     icon: ClipboardList,
     route: '/history',
     adminOnly: false,
+  },
+  {
+    label: 'Services',
+    icon: WashingMachine,
+    route: '/services',
+    adminOnly: true,
   },
   {
     label: 'Analytics',
