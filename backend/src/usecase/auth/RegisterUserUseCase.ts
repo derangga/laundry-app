@@ -4,6 +4,7 @@ import { UserRepository } from '@repositories/UserRepository'
 import { PasswordService } from './PasswordService'
 import { UserAlreadyExistsError } from '@domain/UserErrors'
 import { CreateUserInput, User, UserWithoutPassword } from '@domain/User'
+import { PasswordError } from '@domain/AuthError'
 
 export { CreateUserInput }
 type RegisterResult = UserWithoutPassword
@@ -12,7 +13,7 @@ export const register = (
   input: CreateUserInput
 ): Effect.Effect<
   RegisterResult,
-  UserAlreadyExistsError | SqlError.SqlError | Error,
+  UserAlreadyExistsError | PasswordError | SqlError.SqlError,
   UserRepository | PasswordService
 > =>
   Effect.gen(function* () {

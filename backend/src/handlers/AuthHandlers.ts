@@ -17,6 +17,7 @@ import {
   ValidationError,
   BootstrapNotAllowed,
   UserAlreadyExists,
+  InternalServerError,
 } from '@domain/http/HttpErrors'
 import { UserRepository } from 'src/repositories/UserRepository'
 import { CurrentUser } from '@domain/CurrentUser'
@@ -53,18 +54,12 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
 
         // Execute login use case and map errors
         const result = yield* loginUseCase.execute(payload).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              if ((error as any)._tag === 'InvalidCredentialsError') {
-                return new InvalidCredentials({
-                  message: (error as any).message || 'Invalid credentials',
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Login failed'
-            return new ValidationError({
-              message,
-            })
+          Effect.catchTags({
+            InvalidCredentialsError: () =>
+              new InvalidCredentials({ message: 'Invalid credentials' }),
+            PasswordError: () => new InvalidCredentials({ message: 'Invalid credentials' }),
+            InvalidTokenError: (cause) => new InternalServerError({ message: cause.message }),
+            SqlError: () => new ValidationError({ message: 'Login failed' }),
           })
         )
 
@@ -100,17 +95,12 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
 
         // Execute refresh use case and map errors
         const result = yield* refreshUseCase.execute({ refreshToken }).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'InvalidTokenError' || tag === 'RefreshTokenNotFoundError') {
-                return new Unauthorized({
-                  message: (error as any).message || 'Invalid or expired token',
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Token refresh failed'
-            return new ValidationError({ message })
+          Effect.catchTags({
+            InvalidTokenError: () => new Unauthorized({ message: 'Invalid or expired token' }),
+            RefreshTokenNotFoundError: () => new Unauthorized({ message: 'Invalid refresh token' }),
+            UserNotFoundError: () => new Unauthorized({ message: 'Malform refresh token' }),
+            RefreshTokenNotCreated: (cause) => new InternalServerError({ message: cause.message }),
+            SqlError: () => new InternalServerError({ message: 'Failed retrieve data' }),
           })
         )
 
@@ -148,17 +138,9 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             logoutAll: payload.logoutAll,
           })
           .pipe(
-            Effect.mapError((error) => {
-              if (error && typeof error === 'object' && '_tag' in error) {
-                const tag = (error as any)._tag
-                if (tag === 'RefreshTokenNotFoundError' || tag === 'UnauthorizedError') {
-                  return new Unauthorized({
-                    message: (error as any).message || 'Invalid refresh token',
-                  })
-                }
-              }
-              const message = error instanceof Error ? error.message : 'Logout failed'
-              return new ValidationError({ message })
+            Effect.catchTags({
+              UnauthorizedError: () => new Unauthorized({ message: 'Invalid refresh token' }),
+              SqlError: () => new InternalServerError({ message: 'Logout failed' }),
             })
           )
 
@@ -186,20 +168,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
 
         // Execute register use case and map errors
         return yield* registerUseCase.execute(payload).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'UserAlreadyExistsError') {
-                return new UserAlreadyExists({
-                  message: (error as any).message || 'User already exists',
-                  email: (error as any).email || '',
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Registration failed'
-            return new ValidationError({
-              message,
-            })
+          Effect.catchTags({
+            UserAlreadyExistsError: (cause) =>
+              new UserAlreadyExists({ message: 'User already exists', email: cause.email }),
+            PasswordError: (cause) => new ValidationError({ message: cause.message }),
+            SqlError: () => new ValidationError({ message: 'Registration failed' }),
           })
         )
       })

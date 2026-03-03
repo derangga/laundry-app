@@ -15,6 +15,7 @@ import {
   ValidationError,
   BootstrapNotAllowed,
   UserAlreadyExists,
+  InternalServerError,
 } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from 'src/middleware/AuthMiddleware'
 
@@ -25,20 +26,21 @@ export const AuthGroup = HttpApiGroup.make('Auth')
       .addSuccess(AuthResponse)
       .addError(InvalidCredentials)
       .addError(ValidationError)
+      .addError(InternalServerError)
   )
   .add(
     HttpApiEndpoint.post('refresh', '/api/auth/refresh')
       .setPayload(RefreshTokenInput)
       .addSuccess(AuthResponse)
       .addError(Unauthorized)
-      .addError(ValidationError)
+      .addError(InternalServerError)
   )
   .add(
     HttpApiEndpoint.post('logout', '/api/auth/logout')
       .setPayload(LogoutInput)
       .addSuccess(LogoutResult)
       .addError(Unauthorized)
-      .addError(ValidationError)
+      .addError(InternalServerError)
       .middleware(AuthMiddleware)
   )
   .add(

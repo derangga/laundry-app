@@ -29,16 +29,14 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
         const customerService = yield* CustomerService
 
         const customer = yield* customerService.findByPhone(urlParams.phone).pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'CustomerNotFound') {
-              return new CustomerNotFound({
-                message: `Customer not found with phone: ${error.phone}`,
-                phone: error.phone,
-              })
-            }
-            return new ValidationError({
-              message: error.message,
-            })
+          Effect.catchTags({
+            CustomerNotFound: (cause) =>
+              new CustomerNotFound({
+                message: `Customer not found with phone: ${cause.phone}`,
+                phone: cause.phone,
+              }),
+            InvalidPhoneNumber: (cause) => new ValidationError({ message: cause.message }),
+            SqlError: () => new ValidationError({ message: 'Failed search customers' }),
           })
         )
 
@@ -66,23 +64,19 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
 
         // Create customer, map domain errors to HTTP errors
         return yield* customerService.create(payload).pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'CustomerAlreadyExists') {
-              return new CustomerAlreadyExists({
-                message: `Customer already exists with phone: ${error.phone}`,
-                phone: error.phone,
-              })
-            }
-            if (error._tag === 'InvalidPhoneNumber') {
-              return new ValidationError({
-                message: error.message,
+          Effect.catchTags({
+            CustomerAlreadyExists: (cause) =>
+              new CustomerAlreadyExists({
+                message: `Customer already exists with phone: ${cause.phone}`,
+                phone: cause.phone,
+              }),
+            InvalidPhoneNumber: (cause) =>
+              new ValidationError({
+                message: cause.message,
                 field: 'phone',
-                details: { reason: error.reason },
-              })
-            }
-            return new ValidationError({
-              message: error.message,
-            })
+                details: { reason: cause.reason },
+              }),
+            SqlError: () => new ValidationError({ message: 'Failed create customers' }),
           })
         )
       })
@@ -126,17 +120,9 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
             }
             return Effect.succeed(customerOption.value)
           }),
-          Effect.mapError((error) => {
-            // If it's already a CustomerNotFound error, pass it through
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'CustomerNotFound') {
-                return error as CustomerNotFound
-              }
-            }
-            // Otherwise convert to validation error
-            const message = error instanceof Error ? error.message : 'Failed to retrieve customer'
-            return new ValidationError({ message })
+          Effect.catchTags({
+            CustomerNotFound: (cause) => new CustomerNotFound({ message: cause.message }),
+            SqlError: () => new ValidationError({ message: 'Failed to retrieve customer' }),
           })
         )
 

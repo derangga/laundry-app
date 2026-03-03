@@ -6,6 +6,7 @@ import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
 import {
   InvalidTokenError,
+  RefreshTokenNotCreated,
   RefreshTokenNotFoundError,
   UserNotFoundError,
 } from '../../domain/UserErrors'
@@ -18,7 +19,11 @@ export const refreshTokens = (
   input: RefreshTokenInput
 ): Effect.Effect<
   RefreshTokenResult,
-  InvalidTokenError | RefreshTokenNotFoundError | UserNotFoundError | SqlError.SqlError | Error,
+  | InvalidTokenError
+  | RefreshTokenNotFoundError
+  | RefreshTokenNotCreated
+  | UserNotFoundError
+  | SqlError.SqlError,
   UserRepository | RefreshTokenRepository | JwtService | TokenGenerator
 > =>
   Effect.gen(function* () {
