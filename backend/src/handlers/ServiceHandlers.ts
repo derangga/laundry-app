@@ -14,16 +14,18 @@ import { CurrentUser } from '@domain/CurrentUser'
 
 export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (handlers) =>
   handlers
-    .handle('list', () =>
+    .handle('list', ({ urlParams }) =>
       Effect.gen(function* () {
         const serviceService = yield* LaundryServiceService
-        return yield* serviceService
-          .findActive()
-          .pipe(
-            Effect.mapError(
-              () => new RetrieveDataEror({ message: 'failed get active laundry service' })
-            )
+        const findFn =
+          urlParams.include_inactive === 'true'
+            ? serviceService.findAll()
+            : serviceService.findActive()
+        return yield* findFn.pipe(
+          Effect.mapError(
+            () => new RetrieveDataEror({ message: 'failed get active laundry service' })
           )
+        )
       })
     )
 

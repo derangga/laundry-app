@@ -16,6 +16,9 @@ import {
 import { AuthAdminMiddleware } from 'src/middleware/AuthMiddleware'
 
 const ServiceIdParam = Schema.Struct({ id: Schema.String })
+const ServiceListParams = Schema.Struct({
+  include_inactive: Schema.optional(Schema.String),
+})
 
 export const ServiceGroup = HttpApiGroup.make('Services')
   .add(
@@ -45,6 +48,7 @@ export const ServiceGroup = HttpApiGroup.make('Services')
   .middlewareEndpoints(AuthAdminMiddleware)
   .add(
     HttpApiEndpoint.get('list', '/api/services')
+      .setUrlParams(ServiceListParams)
       .addSuccess(Schema.Array(LaundryServiceResponse))
       .addError(RetrieveDataEror)
   )
