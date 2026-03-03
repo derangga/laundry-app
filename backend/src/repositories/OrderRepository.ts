@@ -22,6 +22,7 @@ const defaultOrderFilterOptions = new OrderFilterOptions({
   customer_id: Option.none(),
   status: Option.none(),
   payment_status: Option.none(),
+  order_number: Option.none(),
   start_date: Option.none(),
   end_date: Option.none(),
   limit: Option.none(),
@@ -95,6 +96,12 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         params.push(paymentStatus)
       }
 
+      const orderNumber = Option.getOrUndefined(options.order_number)
+      if (orderNumber !== undefined) {
+        conditions.push(`order_number = $${paramIndex++}`)
+        params.push(orderNumber)
+      }
+
       const startDate = Option.getOrUndefined(options.start_date)
       if (startDate !== undefined) {
         conditions.push(`created_at >= $${paramIndex++}`)
@@ -155,6 +162,12 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       if (paymentStatus !== undefined) {
         conditions.push(`o.payment_status = $${paramIndex++}`)
         params.push(paymentStatus)
+      }
+
+      const orderNumber = Option.getOrUndefined(options.order_number)
+      if (orderNumber !== undefined) {
+        conditions.push(`o.order_number = $${paramIndex++}`)
+        params.push(orderNumber)
       }
 
       const startDate = Option.getOrUndefined(options.start_date)

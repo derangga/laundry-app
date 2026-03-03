@@ -87,6 +87,7 @@ export class OrderFilterOptions extends Schema.Class<OrderFilterOptions>('OrderF
   customer_id: Schema.Option(CustomerId),
   status: Schema.Option(OrderStatus),
   payment_status: Schema.Option(PaymentStatus),
+  order_number: Schema.Option(Schema.String),
   start_date: Schema.Option(Schema.Date),
   end_date: Schema.Option(Schema.Date),
   limit: Schema.Option(Schema.Number),

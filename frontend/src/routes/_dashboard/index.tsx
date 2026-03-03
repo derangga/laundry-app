@@ -115,7 +115,7 @@ function DashboardHome() {
           description="Orders with status received or in progress will appear here."
         />
       ) : (
-        <DataTable columns={columns} data={activeOrders ?? []} />
+        <DataTable columns={columns} data={[...(activeOrders ?? [])]} />
       )}
 
       <AlertDialog
