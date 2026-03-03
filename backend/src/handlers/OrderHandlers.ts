@@ -1,4 +1,4 @@
-import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
+import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option, Schema } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { OrderService } from 'src/usecase/order/OrderService'
@@ -151,61 +151,64 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
      * Returns: Array of OrderWithDetails
      * Errors: 400 (validation)
      */
-    .handle('list', () =>
+    .handle('list', ({ urlParams }) =>
       Effect.gen(function* () {
         const orderRepo = yield* OrderRepository
-        const request = yield* HttpServerRequest.HttpServerRequest
 
-        // Extract query parameters
-        const url = new URL(request.url, 'http://localhost')
-        const customerIdParam = url.searchParams.get('customer_id')
-        const statusParam = url.searchParams.get('status')
-        const paymentStatusParam = url.searchParams.get('payment_status')
+        // Build filter options from validated urlParams
+        const customerIdOption = urlParams.customer_id
+          ? Option.some(CustomerId.make(urlParams.customer_id))
+          : Option.none()
 
-        // Build filter options with proper Option types
-        let customerIdOption: Option.Option<CustomerId> = Option.none()
         let statusOption: Option.Option<OrderStatus> = Option.none()
-        let paymentStatusOption: Option.Option<PaymentStatus> = Option.none()
-
-        if (customerIdParam) {
-          customerIdOption = Option.some(CustomerId.make(customerIdParam))
-        }
-
-        if (statusParam) {
-          const statusDecode = Schema.decodeUnknownOption(OrderStatus)(statusParam)
+        if (urlParams.status) {
+          const statusDecode = Schema.decodeUnknownOption(OrderStatus)(urlParams.status)
           if (statusDecode._tag === 'Some') {
             statusOption = Option.some(statusDecode.value)
           } else {
             return yield* Effect.fail(
               new ValidationError({
-                message: `Invalid status value: ${statusParam}`,
+                message: `Invalid status value: ${urlParams.status}`,
                 field: 'status',
               })
             )
           }
         }
 
-        if (paymentStatusParam) {
-          const paymentDecode = Schema.decodeUnknownOption(PaymentStatus)(paymentStatusParam)
+        let paymentStatusOption: Option.Option<PaymentStatus> = Option.none()
+        if (urlParams.payment_status) {
+          const paymentDecode = Schema.decodeUnknownOption(PaymentStatus)(urlParams.payment_status)
           if (paymentDecode._tag === 'Some') {
             paymentStatusOption = Option.some(paymentDecode.value)
           } else {
             return yield* Effect.fail(
               new ValidationError({
-                message: `Invalid payment_status value: ${paymentStatusParam}`,
+                message: `Invalid payment_status value: ${urlParams.payment_status}`,
                 field: 'payment_status',
               })
             )
           }
         }
 
-        // Get orders with details
+        const orderNumberOption = urlParams.order_number
+          ? Option.some(urlParams.order_number)
+          : Option.none()
+
+        const startDateOption = urlParams.start_date
+          ? Option.some(new Date(urlParams.start_date))
+          : Option.none()
+
+        const endDateOption = urlParams.end_date
+          ? Option.some(new Date(urlParams.end_date))
+          : Option.none()
+
         const filters = OrderFilterOptions.make({
           customer_id: customerIdOption,
           status: statusOption,
           payment_status: paymentStatusOption,
-          start_date: Option.none(),
-          end_date: Option.none(),
+          order_number: orderNumberOption,
+          start_date: startDateOption,
+          end_date: endDateOption,
           limit: Option.none(),
           offset: Option.none(),
         })

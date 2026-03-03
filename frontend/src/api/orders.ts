@@ -26,11 +26,34 @@ export const orderKeys = {
 }
 
 /**
+ * Filter types
+ */
+
+export type OrderFilters = {
+  status?: OrderStatus
+  payment_status?: PaymentStatus
+  order_number?: string
+  start_date?: string
+  end_date?: string
+}
+
+/**
  * API Functions
  */
 
-export async function fetchOrders(): Promise<readonly OrderWithDetails[]> {
-  return api.get('/api/orders', Schema.Array(OrderWithDetails))
+export async function fetchOrders(
+  filters?: OrderFilters,
+): Promise<readonly OrderWithDetails[]> {
+  const params = new URLSearchParams()
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.payment_status)
+    params.set('payment_status', filters.payment_status)
+  if (filters?.order_number) params.set('order_number', filters.order_number)
+  if (filters?.start_date) params.set('start_date', filters.start_date)
+  if (filters?.end_date) params.set('end_date', filters.end_date)
+  const qs = params.toString()
+  const path = qs ? `/api/orders?${qs}` : '/api/orders'
+  return api.get(path, Schema.Array(OrderWithDetails))
 }
 
 export async function updateOrderStatusFn(
@@ -77,28 +100,13 @@ export async function createWalkInOrderFn(
  * TanStack Query Hooks
  */
 
-export type OrderFilters = {
-  status?: OrderStatus
-  payment_status?: PaymentStatus
-}
-
 /**
- * Fetch all orders with optional client-side filtering
+ * Fetch orders with server-side filtering
  */
 export function useOrders(filters?: OrderFilters) {
   return useQuery({
     queryKey: orderKeys.list(filters),
-    queryFn: fetchOrders,
-    select: (data) => {
-      let result = data
-      if (filters?.status)
-        result = result.filter((o) => o.status === filters.status)
-      if (filters?.payment_status)
-        result = result.filter(
-          (o) => o.payment_status === filters.payment_status,
-        )
-      return result
-    },
+    queryFn: () => fetchOrders(filters),
   })
 }
 
@@ -106,9 +114,13 @@ export function useOrders(filters?: OrderFilters) {
  * Fetch active orders (received or in_progress), auto-refreshing every 30s
  */
 export function useActiveOrders() {
-  return useQuery({
+  return useQuery<
+    readonly OrderWithDetails[],
+    Error,
+    readonly OrderWithDetails[]
+  >({
     queryKey: orderKeys.active(),
-    queryFn: fetchOrders,
+    queryFn: () => fetchOrders(),
     select: (data) =>
       data.filter((o) => o.status === 'received' || o.status === 'in_progress'),
     refetchInterval: 30_000,

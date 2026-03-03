@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { format } from 'date-fns'
+import type { DateRange } from 'react-day-picker'
 
 import type { OrderStatus, PaymentStatus } from '@laundry-app/shared'
 
@@ -29,6 +31,9 @@ export const Route = createFileRoute('/_dashboard/history')({
   validateSearch: (search: Record<string, unknown>) => ({
     status: (search.status as string) || undefined,
     payment_status: (search.payment_status as string) || undefined,
+    order_number: (search.order_number as string) || undefined,
+    start_date: (search.start_date as string) || undefined,
+    end_date: (search.end_date as string) || undefined,
   }),
   component: HistoryPage,
 })
@@ -40,8 +45,45 @@ interface ConfirmDialog {
 }
 
 function HistoryPage() {
-  const { status, payment_status } = Route.useSearch()
+  const { status, payment_status, order_number, start_date, end_date } =
+    Route.useSearch()
   const navigate = useNavigate()
+
+  // Local search input state with debounce
+  const [searchInput, setSearchInput] = useState(order_number ?? '')
+
+  // Sync searchInput when URL param changes externally (e.g. reset)
+  useEffect(() => {
+    setSearchInput(order_number ?? '')
+  }, [order_number])
+
+  // Debounce search input to URL param
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim() || undefined
+      if (trimmed !== order_number) {
+        navigate({
+          to: '/history',
+          search: (prev) => ({
+            status: prev.status,
+            payment_status: prev.payment_status,
+            order_number: trimmed,
+            start_date: prev.start_date,
+            end_date: prev.end_date,
+          }),
+        })
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchInput, order_number, navigate])
+
+  // Build date range from URL params
+  const dateRange: DateRange | undefined = start_date
+    ? {
+        from: new Date(start_date),
+        to: end_date ? new Date(end_date) : undefined,
+      }
+    : undefined
 
   const {
     data: orders,
@@ -52,6 +94,9 @@ function HistoryPage() {
   } = useOrders({
     status: status as OrderStatus | undefined,
     payment_status: payment_status as PaymentStatus | undefined,
+    order_number,
+    start_date,
+    end_date,
   })
 
   const updateOrderStatus = useUpdateOrderStatus()
@@ -77,6 +122,9 @@ function HistoryPage() {
       search: (prev) => ({
         status: value === 'all' ? undefined : value,
         payment_status: prev.payment_status,
+        order_number: prev.order_number,
+        start_date: prev.start_date,
+        end_date: prev.end_date,
       }),
     })
   }
@@ -87,14 +135,37 @@ function HistoryPage() {
       search: (prev) => ({
         status: prev.status,
         payment_status: value === 'all' ? undefined : value,
+        order_number: prev.order_number,
+        start_date: prev.start_date,
+        end_date: prev.end_date,
+      }),
+    })
+  }
+
+  function handleDateRangeChange(range: DateRange | undefined) {
+    navigate({
+      to: '/history',
+      search: (prev) => ({
+        status: prev.status,
+        payment_status: prev.payment_status,
+        order_number: prev.order_number,
+        start_date: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+        end_date: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
       }),
     })
   }
 
   function handleReset() {
+    setSearchInput('')
     navigate({
       to: '/history',
-      search: { status: undefined, payment_status: undefined },
+      search: {
+        status: undefined,
+        payment_status: undefined,
+        order_number: undefined,
+        start_date: undefined,
+        end_date: undefined,
+      },
     })
   }
 
@@ -105,8 +176,12 @@ function HistoryPage() {
       <OrderFilters
         status={status}
         paymentStatus={payment_status}
+        search={searchInput}
+        dateRange={dateRange}
         onStatusChange={handleStatusChange}
         onPaymentChange={handlePaymentChange}
+        onSearchChange={setSearchInput}
+        onDateRangeChange={handleDateRangeChange}
         onReset={handleReset}
       />
 

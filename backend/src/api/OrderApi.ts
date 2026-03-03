@@ -20,6 +20,15 @@ import { AuthMiddleware } from '@middleware/AuthMiddleware'
 
 const OrderIdParam = Schema.Struct({ id: Schema.String })
 
+const ListOrdersParams = Schema.Struct({
+  customer_id: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.String),
+  payment_status: Schema.optional(Schema.String),
+  order_number: Schema.optional(Schema.String),
+  start_date: Schema.optional(Schema.String),
+  end_date: Schema.optional(Schema.String),
+})
+
 export const OrderGroup = HttpApiGroup.make('Orders')
   .add(
     HttpApiEndpoint.post('createWalkIn', '/api/orders/walk-in')
@@ -38,6 +47,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
   )
   .add(
     HttpApiEndpoint.get('list', '/api/orders')
+      .setUrlParams(ListOrdersParams)
       .addSuccess(Schema.Array(OrderWithDetails))
       .addError(ValidationError)
   )
