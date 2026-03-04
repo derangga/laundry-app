@@ -15,6 +15,7 @@ import {
   EmptyOrderError,
   CustomerAlreadyExists,
   ValidationError,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from '@middleware/AuthMiddleware'
 
@@ -37,6 +38,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addError(CustomerAlreadyExists)
       .addError(EmptyOrderError)
       .addError(ValidationError)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.post('create', '/api/orders')
@@ -44,6 +46,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addSuccess(OrderResponse)
       .addError(ValidationError)
       .addError(EmptyOrderError)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.get('list', '/api/orders')
@@ -66,6 +69,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addError(OrderNotFound)
       .addError(InvalidOrderStatus)
       .addError(ValidationError)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.put('updatePayment', '/api/orders/:id/payment')
@@ -73,6 +77,6 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .setPayload(UpdatePaymentStatusInput)
       .addSuccess(OrderResponse)
       .addError(OrderNotFound)
-      .addError(ValidationError)
+      .addError(UnprocessibleEntity)
   )
   .middlewareEndpoints(AuthMiddleware)

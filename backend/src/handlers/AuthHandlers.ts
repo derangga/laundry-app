@@ -17,7 +17,7 @@ import {
   ValidationError,
   BootstrapNotAllowed,
   UserAlreadyExists,
-  InternalServerError,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { UserRepository } from 'src/repositories/UserRepository'
 import { CurrentUser } from '@domain/CurrentUser'
@@ -58,8 +58,8 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             InvalidCredentialsError: () =>
               new InvalidCredentials({ message: 'Invalid credentials' }),
             PasswordError: () => new InvalidCredentials({ message: 'Invalid credentials' }),
-            InvalidTokenError: (cause) => new InternalServerError({ message: cause.message }),
-            SqlError: () => new ValidationError({ message: 'Login failed' }),
+            InvalidTokenError: (cause) => new UnprocessibleEntity({ message: cause.message }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Login failed' }),
           })
         )
 
@@ -96,11 +96,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
         // Execute refresh use case and map errors
         const result = yield* refreshUseCase.execute({ refreshToken }).pipe(
           Effect.catchTags({
-            InvalidTokenError: () => new Unauthorized({ message: 'Invalid or expired token' }),
-            RefreshTokenNotFoundError: () => new Unauthorized({ message: 'Invalid refresh token' }),
+            InvalidTokenError: (cause) => new Unauthorized({ message: cause.message }),
+            RefreshTokenNotFoundError: (cause) => new Unauthorized({ message: cause.message }),
             UserNotFoundError: () => new Unauthorized({ message: 'Malform refresh token' }),
-            RefreshTokenNotCreated: (cause) => new InternalServerError({ message: cause.message }),
-            SqlError: () => new InternalServerError({ message: 'Failed retrieve data' }),
+            RefreshTokenNotCreated: (cause) => new UnprocessibleEntity({ message: cause.message }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed retrieve data' }),
           })
         )
 
@@ -140,7 +140,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
           .pipe(
             Effect.catchTags({
               UnauthorizedError: () => new Unauthorized({ message: 'Invalid refresh token' }),
-              SqlError: () => new InternalServerError({ message: 'Logout failed' }),
+              SqlError: () => new UnprocessibleEntity({ message: 'Logout failed' }),
             })
           )
 
@@ -172,7 +172,7 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
             UserAlreadyExistsError: (cause) =>
               new UserAlreadyExists({ message: 'User already exists', email: cause.email }),
             PasswordError: (cause) => new ValidationError({ message: cause.message }),
-            SqlError: () => new ValidationError({ message: 'Registration failed' }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Registration failed' }),
           })
         )
       })
@@ -193,19 +193,12 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
 
         // Execute bootstrap use case and map errors
         return yield* bootstrapUseCase.execute(payload).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'BootstrapNotAllowedError') {
-                return new BootstrapNotAllowed({
-                  message: (error as any).message || 'Bootstrap is not allowed',
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Bootstrap failed'
-            return new ValidationError({
-              message,
-            })
+          Effect.catchTags({
+            BootstrapNotAllowedError: (cause) =>
+              new BootstrapNotAllowed({ message: cause.message }),
+            PasswordError: () => new UnprocessibleEntity({ message: 'Failed to hash password' }),
+            UserAlreadyExistsError: (cause) => new UnprocessibleEntity({ message: cause.message }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Bootstrap failed' }),
           })
         )
       })

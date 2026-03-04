@@ -1,10 +1,15 @@
-import { HttpApiBuilder, HttpServerRequest } from '@effect/platform'
+import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { CustomerService } from 'src/usecase/customer/CustomerService'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerId, CustomerResponse } from '@domain/Customer'
-import { CustomerNotFound, CustomerAlreadyExists, ValidationError } from '@domain/http/HttpErrors'
+import {
+  CustomerNotFound,
+  CustomerAlreadyExists,
+  ValidationError,
+  UnprocessibleEntity,
+} from '@domain/http/HttpErrors'
 
 /**
  * Customer API Handlers
@@ -36,7 +41,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
                 phone: cause.phone,
               }),
             InvalidPhoneNumber: (cause) => new ValidationError({ message: cause.message }),
-            SqlError: () => new ValidationError({ message: 'Failed search customers' }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed search customers' }),
           })
         )
 
@@ -76,7 +81,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
                 field: 'phone',
                 details: { reason: cause.reason },
               }),
-            SqlError: () => new ValidationError({ message: 'Failed create customers' }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed create customers' }),
           })
         )
       })
@@ -88,33 +93,18 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
      * Returns: Customer
      * Errors: 404 (not found), 400 (validation)
      */
-    .handle('getById', () =>
+    .handle('getById', ({ path }) =>
       Effect.gen(function* () {
         const repo = yield* CustomerRepository
-        const request = yield* HttpServerRequest.HttpServerRequest
-
-        // Extract ID from path parameter
-        const url = new URL(request.url, 'http://localhost')
-        const pathParts = url.pathname.split('/').filter(Boolean)
-        const id = pathParts[pathParts.length - 1]
-
-        if (!id) {
-          return yield* Effect.fail(
-            new ValidationError({
-              message: 'Customer ID is required',
-              field: 'id',
-            })
-          )
-        }
 
         // Find customer, handle all errors by converting to CustomerNotFound or ValidationError
-        const customer = yield* repo.findById(CustomerId.make(id)).pipe(
+        const customer = yield* repo.findById(CustomerId.make(path.id)).pipe(
           Effect.andThen((customerOption) => {
             if (Option.isNone(customerOption)) {
               return Effect.fail(
                 new CustomerNotFound({
-                  message: `Customer not found with id: ${id}`,
-                  customerId: id,
+                  message: `Customer not found with id: ${path.id}`,
+                  customerId: path.id,
                 })
               )
             }
@@ -122,7 +112,7 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
           }),
           Effect.catchTags({
             CustomerNotFound: (cause) => new CustomerNotFound({ message: cause.message }),
-            SqlError: () => new ValidationError({ message: 'Failed to retrieve customer' }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed to retrieve customer' }),
           })
         )
 

@@ -1,7 +1,7 @@
 import { HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Schema } from 'effect'
 import { ReceiptResponse } from '@domain/Receipt'
-import { InternalServerError, OrderNotFound } from '@domain/http/HttpErrors'
+import { OrderNotFound, UnprocessibleEntity } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from '@middleware/AuthMiddleware'
 
 const OrderIdParam = Schema.Struct({ orderId: Schema.String })
@@ -12,6 +12,6 @@ export const ReceiptGroup = HttpApiGroup.make('Receipts')
       .setPath(OrderIdParam)
       .addSuccess(ReceiptResponse)
       .addError(OrderNotFound)
-      .addError(InternalServerError)
+      .addError(UnprocessibleEntity)
   )
   .middlewareEndpoints(AuthMiddleware)

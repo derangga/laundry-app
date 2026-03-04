@@ -8,8 +8,8 @@ import { UserId } from '@domain/User'
 import {
   UserNotFound,
   UserAlreadyExists,
-  ValidationError,
   RetrieveDataEror,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 
 export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers) =>
@@ -44,24 +44,12 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
         const updateUserUseCase = yield* UpdateUserUseCase
 
         return yield* updateUserUseCase.execute(UserId.make(path.id), payload).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'UserNotFoundError') {
-                return new UserNotFound({
-                  message: (error as any).message || `User not found with id: ${path.id}`,
-                  userId: path.id,
-                })
-              }
-              if (tag === 'UserAlreadyExistsError') {
-                return new UserAlreadyExists({
-                  message: (error as any).message || 'User already exists',
-                  email: (error as any).email || '',
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Failed to update user'
-            return new ValidationError({ message })
+          Effect.catchTags({
+            UserNotFoundError: () =>
+              new UserNotFound({ message: `User not found with id: ${path.id}` }),
+            UserAlreadyExistsError: (cause) =>
+              new UserAlreadyExists({ message: 'User already exists', email: cause.email }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed to update user' }),
           })
         )
       })
@@ -78,18 +66,10 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
         const deleteUserUseCase = yield* DeleteUserUseCase
 
         return yield* deleteUserUseCase.execute(UserId.make(path.id)).pipe(
-          Effect.mapError((error) => {
-            if (error && typeof error === 'object' && '_tag' in error) {
-              const tag = (error as any)._tag
-              if (tag === 'UserNotFoundError') {
-                return new UserNotFound({
-                  message: (error as any).message || `User not found with id: ${path.id}`,
-                  userId: path.id,
-                })
-              }
-            }
-            const message = error instanceof Error ? error.message : 'Failed to delete user'
-            return new ValidationError({ message })
+          Effect.catchTags({
+            UserNotFoundError: () =>
+              new UserNotFound({ message: `User not found with id: ${path.id}` }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed to delete user' }),
           })
         )
       })

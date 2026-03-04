@@ -5,6 +5,7 @@ import { PasswordService } from './PasswordService'
 import { BootstrapNotAllowedError, UserAlreadyExistsError } from '@domain/UserErrors'
 import { BootstrapInput } from '@domain/Auth'
 import { User, UserWithoutPassword } from '@domain/User'
+import { PasswordError } from '@domain/AuthError'
 
 export { BootstrapInput }
 type BootstrapResult = UserWithoutPassword
@@ -13,7 +14,7 @@ export const bootstrap = (
   input: BootstrapInput
 ): Effect.Effect<
   BootstrapResult,
-  BootstrapNotAllowedError | UserAlreadyExistsError | SqlError.SqlError | Error,
+  BootstrapNotAllowedError | UserAlreadyExistsError | SqlError.SqlError | PasswordError,
   UserRepository | PasswordService
 > =>
   Effect.gen(function* () {
@@ -45,7 +46,6 @@ export const bootstrap = (
       })
     )
 
-    console.log('result insert: ', user)
     // 5. Return user without password
     return UserWithoutPassword.make({
       id: user.id,

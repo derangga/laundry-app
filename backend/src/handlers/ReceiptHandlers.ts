@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
 import { OrderId } from '@domain/Order'
-import { InternalServerError, OrderNotFound } from '@domain/http/HttpErrors'
+import { OrderNotFound, UnprocessibleEntity } from '@domain/http/HttpErrors'
 
 export const ReceiptHandlersLive = HttpApiBuilder.group(AppApi, 'Receipts', (handlers) =>
   handlers.handle('getReceipt', ({ path }) =>
@@ -14,7 +14,7 @@ export const ReceiptHandlersLive = HttpApiBuilder.group(AppApi, 'Receipts', (han
         Effect.catchTags({
           OrderNotFound: () =>
             new OrderNotFound({ message: 'Failed to generate receipt because order not found' }),
-          SqlError: () => new InternalServerError({ message: 'Database operation failed' }),
+          SqlError: () => new UnprocessibleEntity({ message: 'Database operation failed' }),
         })
       )
 
