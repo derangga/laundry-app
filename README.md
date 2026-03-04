@@ -9,6 +9,8 @@ A modern web application for managing laundry business operations. Streamline cu
 - **Payment Processing** — Support for immediate payment or deferred payment when laundry is ready
 - **Analytics Dashboard** — Weekly revenue and order volume trends (admin-only)
 - **Receipt Generation** — Professional, printable receipts for every order
+- **Services Management** — Create and manage the service catalog with flexible pricing by weight (kg) or set
+- **User Management** — Admin can create, update, and deactivate staff accounts
 - **Role-Based Access** — Secure access control with Admin and Staff roles
 
 ## Tech Stack
@@ -21,6 +23,8 @@ A modern web application for managing laundry business operations. Streamline cu
 
 ### Frontend
 - **Framework**: [TanStack Start](https://tanstack.com/start) (React)
+- **Routing**: [TanStack React Router](https://tanstack.com/router)
+- **State Management**: [TanStack React Query](https://tanstack.com/query)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 
 ## Prerequisites
@@ -63,9 +67,7 @@ Wait for the container to be healthy (~10 seconds).
 5. **Run database migrations**
 
 ```bash
-for file in backend/migrations/00000[1-8]*_*.up.sql; do
-  docker exec -i laundry_postgres psql -U laundry_app_prod -d laundry_app_prod < "$file"
-done
+cd backend && bun run migrate:up
 ```
 
 6. **Create environment file**
@@ -148,9 +150,7 @@ docker-compose down -v
 docker-compose up -d postgres
 
 # Re-run migrations
-for file in backend/migrations/00000[1-8]*_*.up.sql; do
-  docker exec -i laundry_postgres psql -U laundry_app_prod -d laundry_app_prod < "$file"
-done
+cd backend && bun run migrate:up
 ```
 
 **Check PostgreSQL version:**
@@ -194,9 +194,12 @@ bun run lint
 | `JWT_ACCESS_EXPIRY` | `15m` | JWT access token expiry |
 | `JWT_REFRESH_EXPIRY` | `7d` | JWT refresh token expiry |
 | `PORT` | `3000` | Backend server port |
-| `HOST` | `0.0.0.0` | Backend server host |
+| `HOST` | `127.0.0.1` | Backend server host |
 | `NODE_ENV` | `development` | Environment mode |
 | `BCRYPT_ROUNDS` | `12` | Bcrypt hashing rounds |
+| `CORS_ORIGIN` | `http://localhost:3100` | Allowed CORS origin for frontend |
+| `LOG_LEVEL` | `info` | Log verbosity (debug, info, warn, error) |
+| `LOG_FORMAT` | `pretty` | Log format (json or pretty) |
 
 ## Development Commands
 
@@ -250,28 +253,33 @@ This endpoint is only available when `NODE_ENV` is not set to `production`.
 laundry-app/
 ├── backend/
 │   ├── src/
-│   │   ├── api/           # HttpApi route definitions
-│   │   ├── configs/       # Environment variable parsing
-│   │   ├── domain/        # Entities, DTOs, error types
-│   │   ├── handlers/      # Route handler implementations
-│   │   ├── http/          # HTTP server setup, router
-│   │   ├── middleware/    # Auth middleware
-│   │   ├── repositories/  # Database access
-│   │   ├── usecase/      # Business logic
-│   │   └── main.ts       # Entry point
-│   ├── migrations/       # Database migrations
+│   │   ├── api/            # HttpApi route definitions
+│   │   ├── configs/        # Environment variable parsing
+│   │   ├── domain/         # Entities, DTOs, error types
+│   │   ├── handlers/       # Route handler implementations
+│   │   ├── http/           # HTTP server setup, router
+│   │   ├── infrastructure/ # Infrastructure utilities
+│   │   ├── middleware/     # Auth middleware
+│   │   ├── repositories/   # Database access
+│   │   ├── server/         # Server configuration
+│   │   ├── usecase/        # Business logic
+│   │   └── main.ts         # Entry point
+│   ├── migrations/         # Database migrations
 │   └── package.json
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── api/           # API clients and data fetching
 │   │   ├── components/    # React components
-│   │   ├── data/         # Data fetching, API clients
-│   │   ├── lib/          # Utilities
-│   │   └── routes/       # TanStack Router file-based routes
+│   │   ├── domain/        # Frontend domain types
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── integrations/  # Third-party integrations
+│   │   ├── lib/           # Utilities
+│   │   └── routes/        # TanStack Router file-based routes
 │   └── package.json
 │
-├── docs/                 # Documentation
-├── package.json          # Root package.json
+├── docs/                  # Documentation
+├── package.json           # Root package.json
 └── README.md
 ```
 
