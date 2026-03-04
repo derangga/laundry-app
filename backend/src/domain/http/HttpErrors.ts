@@ -207,6 +207,11 @@ export class ServiceNotFound extends Schema.TaggedError<ServiceNotFound>()(
 // Order Errors (404, 422)
 // ============================================================================
 
+export class UnprocessibleEntity extends Schema.TaggedError<UnprocessibleEntity>()(
+  'UnprocessibleEntity',
+  { message: Schema.String }
+) {}
+
 export class OrderNotFound extends Schema.TaggedError<OrderNotFound>()(
   'OrderNotFound',
   {

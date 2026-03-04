@@ -7,7 +7,7 @@ export class TokenGenerator extends Effect.Service<TokenGenerator>()('TokenGener
     const generateToken = (length = 32): Effect.Effect<string, InvalidTokenError> =>
       Effect.try({
         try: () => randomBytes(length).toString('hex'),
-        catch: () => InvalidTokenError.malformed(),
+        catch: () => new InvalidTokenError({ message: 'Failed to provide token' }),
       })
 
     const hashToken = (token: string): Effect.Effect<string, never> =>

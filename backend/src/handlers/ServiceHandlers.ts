@@ -9,6 +9,7 @@ import {
   Forbidden,
   RetrieveDataEror,
   UpdateDataEror,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { CurrentUser } from '@domain/CurrentUser'
 
@@ -71,16 +72,10 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
         const serviceService = yield* LaundryServiceService
 
         const result = yield* serviceService.update(ServiceId.make(id), payload).pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'ServiceNotFound') {
-              return new ServiceNotFound({
-                message: `Service not found with id: ${id}`,
-                serviceId: id,
-              })
-            }
-            return new ValidationError({
-              message: error.message,
-            })
+          Effect.catchTags({
+            ServiceNotFound: () =>
+              new ServiceNotFound({ message: `Service not found with id: ${id}` }),
+            SqlError: (cause) => new UnprocessibleEntity({ message: cause.message }),
           })
         )
 

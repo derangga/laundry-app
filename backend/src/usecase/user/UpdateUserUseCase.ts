@@ -9,7 +9,7 @@ const updateUser = (
   input: UpdateUserInput
 ): Effect.Effect<
   UserWithoutPassword,
-  UserNotFoundError | UserAlreadyExistsError | SqlError.SqlError | Error,
+  UserNotFoundError | UserAlreadyExistsError | SqlError.SqlError,
   UserRepository
 > =>
   Effect.gen(function* () {

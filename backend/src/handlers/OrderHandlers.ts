@@ -21,6 +21,7 @@ import {
   EmptyOrderError,
   CustomerAlreadyExists,
   ValidationError,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 
 /**
@@ -86,7 +87,7 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
             ),
           SqlError: (error) =>
             Effect.fail(
-              new ValidationError({
+              new UnprocessibleEntity({
                 message: error.message || 'Failed to create walk-in order',
               })
             ),
@@ -124,7 +125,7 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
                   field: 'items',
                 }),
               SqlError: () =>
-                new ValidationError({
+                new UnprocessibleEntity({
                   message: 'Failed to create order',
                 }),
             })
@@ -322,7 +323,7 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
                 attemptedStatus: error.to,
               }),
             SqlError: () =>
-              new ValidationError({
+              new UnprocessibleEntity({
                 message: 'Failed to create order',
               }),
           })
@@ -371,16 +372,9 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
 
         // Update payment status
         yield* orderService.updatePaymentStatus(OrderId.make(id), payload.payment_status).pipe(
-          Effect.mapError((error) => {
-            if (error._tag === 'OrderNotFound') {
-              return new OrderNotFound({
-                message: `Order not found with id: ${id}`,
-                orderId: id,
-              })
-            }
-            return new ValidationError({
-              message: error.message || 'Failed to update payment status',
-            })
+          Effect.catchTags({
+            OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Failed to update payment status' }),
           })
         )
 

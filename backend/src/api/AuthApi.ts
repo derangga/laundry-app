@@ -15,7 +15,7 @@ import {
   ValidationError,
   BootstrapNotAllowed,
   UserAlreadyExists,
-  InternalServerError,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from 'src/middleware/AuthMiddleware'
 
@@ -26,21 +26,21 @@ export const AuthGroup = HttpApiGroup.make('Auth')
       .addSuccess(AuthResponse)
       .addError(InvalidCredentials)
       .addError(ValidationError)
-      .addError(InternalServerError)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.post('refresh', '/api/auth/refresh')
       .setPayload(RefreshTokenInput)
       .addSuccess(AuthResponse)
       .addError(Unauthorized)
-      .addError(InternalServerError)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.post('logout', '/api/auth/logout')
       .setPayload(LogoutInput)
       .addSuccess(LogoutResult)
       .addError(Unauthorized)
-      .addError(InternalServerError)
+      .addError(UnprocessibleEntity)
       .middleware(AuthMiddleware)
   )
   .add(
@@ -50,6 +50,7 @@ export const AuthGroup = HttpApiGroup.make('Auth')
       .addError(UserAlreadyExists)
       .addError(ValidationError)
       .addError(Unauthorized)
+      .addError(UnprocessibleEntity)
       .middleware(AuthMiddleware)
   )
   .add(
@@ -58,6 +59,7 @@ export const AuthGroup = HttpApiGroup.make('Auth')
       .addSuccess(UserWithoutPassword)
       .addError(ValidationError)
       .addError(BootstrapNotAllowed)
+      .addError(UnprocessibleEntity)
   )
   .add(
     HttpApiEndpoint.get('me', '/api/auth/me')

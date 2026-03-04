@@ -12,6 +12,7 @@ import {
   Forbidden,
   RetrieveDataEror,
   UpdateDataEror,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { AuthAdminMiddleware } from 'src/middleware/AuthMiddleware'
 
@@ -34,7 +35,7 @@ export const ServiceGroup = HttpApiGroup.make('Services')
       .setPayload(UpdateLaundryServiceInput)
       .addSuccess(LaundryServiceResponse)
       .addError(ServiceNotFound)
-      .addError(ValidationError)
+      .addError(UnprocessibleEntity)
       .addError(Forbidden)
   )
   .add(

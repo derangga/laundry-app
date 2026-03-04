@@ -4,10 +4,10 @@ import { UserWithoutPassword, UpdateUserInput } from '@domain/User'
 import {
   UserNotFound,
   UserAlreadyExists,
-  ValidationError,
   Unauthorized,
   Forbidden,
   RetrieveDataEror,
+  UnprocessibleEntity,
 } from '@domain/http/HttpErrors'
 import { AuthAdminMiddleware } from '@middleware/AuthMiddleware'
 
@@ -29,7 +29,7 @@ export const UserGroup = HttpApiGroup.make('Users')
       .addSuccess(UserWithoutPassword)
       .addError(UserNotFound)
       .addError(UserAlreadyExists)
-      .addError(ValidationError)
+      .addError(UnprocessibleEntity)
       .addError(Unauthorized)
       .addError(Forbidden)
       .middleware(AuthAdminMiddleware)
@@ -39,7 +39,7 @@ export const UserGroup = HttpApiGroup.make('Users')
       .setPath(UserIdParam)
       .addSuccess(UserWithoutPassword)
       .addError(UserNotFound)
-      .addError(ValidationError)
+      .addError(UnprocessibleEntity)
       .addError(Unauthorized)
       .addError(Forbidden)
       .middleware(AuthAdminMiddleware)
