@@ -81,35 +81,20 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       id: ServiceId,
       data: UpdateLaundryServiceInput
     ): Effect.Effect<Option.Option<LaundryService>, SqlError.SqlError> => {
-      const updates: string[] = []
-      const params: Array<string | number | boolean | ServiceId> = []
-      let paramIndex = 1
+      const entries = Object.entries(data).filter(
+        (entry): entry is [string, string | number | boolean] => entry[1] !== undefined
+      )
 
-      if (data.name !== undefined) {
-        updates.push(`name = $${paramIndex++}`)
-        params.push(data.name)
-      }
-      if (data.price !== undefined) {
-        updates.push(`price = $${paramIndex++}`)
-        params.push(data.price)
-      }
-      if (data.unit_type !== undefined) {
-        updates.push(`unit_type = $${paramIndex++}`)
-        params.push(data.unit_type)
-      }
-      if (data.is_active !== undefined) {
-        updates.push(`is_active = $${paramIndex++}`)
-        params.push(data.is_active)
-      }
-
-      if (updates.length === 0) {
+      if (entries.length === 0) {
         return repo.findById(id)
       }
 
-      updates.push(`updated_at = NOW()`)
-      params.push(id)
+      const setClauses = entries.map(([key], i) => `${key} = $${i + 1}`)
+      setClauses.push(`updated_at = NOW()`)
 
-      const query = `UPDATE services SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, price, unit_type, is_active, created_at, updated_at`
+      const params = [...entries.map(([, value]) => value), id]
+
+      const query = `UPDATE services SET ${setClauses.join(', ')} WHERE id = $${entries.length + 1} RETURNING id, name, price, unit_type, is_active, created_at, updated_at`
 
       return sql.unsafe(query, params).pipe(
         Effect.flatMap((rows) => {
