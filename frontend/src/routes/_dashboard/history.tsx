@@ -3,7 +3,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { format } from 'date-fns'
 import type { DateRange } from 'react-day-picker'
 
-import type { OrderStatus, PaymentStatus } from '@laundry-app/shared'
+import { OrderStatus, PaymentStatus } from '@laundry-app/shared'
+import { Schema } from 'effect'
 
 import {
   AlertDialog,
@@ -27,13 +28,19 @@ import {
 } from '@/api/orders'
 import { ORDER_STATUS_LABELS } from '@/lib/constants'
 
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
 export const Route = createFileRoute('/_dashboard/history')({
   validateSearch: (search: Record<string, unknown>) => ({
-    status: (search.status as string) || undefined,
-    payment_status: (search.payment_status as string) || undefined,
-    order_number: (search.order_number as string) || undefined,
-    start_date: (search.start_date as string) || undefined,
-    end_date: (search.end_date as string) || undefined,
+    status: Schema.is(OrderStatus)(search.status) ? search.status : undefined,
+    payment_status: Schema.is(PaymentStatus)(search.payment_status)
+      ? search.payment_status
+      : undefined,
+    order_number: asString(search.order_number),
+    start_date: asString(search.start_date),
+    end_date: asString(search.end_date),
   }),
   component: HistoryPage,
 })
@@ -92,8 +99,8 @@ function HistoryPage() {
     error,
     refetch,
   } = useOrders({
-    status: status as OrderStatus | undefined,
-    payment_status: payment_status as PaymentStatus | undefined,
+    status,
+    payment_status,
     order_number,
     start_date,
     end_date,
@@ -120,7 +127,7 @@ function HistoryPage() {
     navigate({
       to: '/history',
       search: (prev) => ({
-        status: value === 'all' ? undefined : value,
+        status: Schema.is(OrderStatus)(value) ? value : undefined,
         payment_status: prev.payment_status,
         order_number: prev.order_number,
         start_date: prev.start_date,
@@ -134,7 +141,7 @@ function HistoryPage() {
       to: '/history',
       search: (prev) => ({
         status: prev.status,
-        payment_status: value === 'all' ? undefined : value,
+        payment_status: Schema.is(PaymentStatus)(value) ? value : undefined,
         order_number: prev.order_number,
         start_date: prev.start_date,
         end_date: prev.end_date,

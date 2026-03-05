@@ -33,6 +33,7 @@
     "frontend": {
       "name": "@laundry-app/frontend",
       "dependencies": {
+        "@effect/platform": "^0.72.2",
         "@faker-js/faker": "^10.0.0",
         "@laundry-app/shared": "workspace:*",
         "@tailwindcss/vite": "^4.1.18",

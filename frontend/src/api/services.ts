@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Schema } from 'effect'
+import { Schema, Effect } from 'effect'
 import {
   LaundryServiceResponse,
   SuccessDeleteService,
@@ -29,26 +29,30 @@ export async function fetchServices(params?: {
   const url = params?.include_inactive
     ? '/api/services?include_inactive=true'
     : '/api/services'
-  return api.get(url, Schema.Array(LaundryServiceResponse))
+  return Effect.runPromise(api.get(url, Schema.Array(LaundryServiceResponse)))
 }
 
 export async function createServiceFn(
   input: CreateLaundryServiceInput,
 ): Promise<LaundryServiceResponse> {
-  return api.post('/api/services', input, LaundryServiceResponse)
+  return Effect.runPromise(
+    api.post('/api/services', input, LaundryServiceResponse),
+  )
 }
 
 export async function updateServiceFn(
   id: ServiceId,
   input: UpdateLaundryServiceInput,
 ): Promise<LaundryServiceResponse> {
-  return api.put(`/api/services/${id}`, input, LaundryServiceResponse)
+  return Effect.runPromise(
+    api.put(`/api/services/${id}`, input, LaundryServiceResponse),
+  )
 }
 
 export async function deleteServiceFn(
   id: ServiceId,
 ): Promise<SuccessDeleteService> {
-  return api.del(`/api/services/${id}`, SuccessDeleteService)
+  return Effect.runPromise(api.del(`/api/services/${id}`, SuccessDeleteService))
 }
 
 export function useServices(params?: { include_inactive?: boolean }) {
