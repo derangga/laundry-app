@@ -4,6 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { toast } from 'sonner'
 import type { LoginInput, CreateUserInput } from '@laundry-app/shared'
 import {
@@ -13,7 +14,7 @@ import {
   UserWithoutPassword,
 } from '@laundry-app/shared'
 
-import { api, ApiError } from '@/lib/api-client'
+import { api, HttpError } from '@/lib/api-client'
 import { userKeys } from '@/api/users'
 
 /**
@@ -29,25 +30,27 @@ export const authKeys = {
  */
 
 export async function loginFn(input: LoginInput): Promise<AuthResponse> {
-  return api.post('/api/auth/login', input, AuthResponse)
+  return Effect.runPromise(api.post('/api/auth/login', input, AuthResponse))
 }
 
 export async function refreshFn(): Promise<AuthResponse> {
-  return api.post('/api/auth/refresh', {}, AuthResponse)
+  return Effect.runPromise(api.post('/api/auth/refresh', {}, AuthResponse))
 }
 
 export async function logoutFn(): Promise<LogoutResult> {
-  return api.post('/api/auth/logout', {}, LogoutResult)
+  return Effect.runPromise(api.post('/api/auth/logout', {}, LogoutResult))
 }
 
 export async function getMeFn(): Promise<AuthenticatedUser> {
-  return api.get('/api/auth/me', AuthenticatedUser)
+  return Effect.runPromise(api.get('/api/auth/me', AuthenticatedUser))
 }
 
 export async function registerUserFn(
   input: CreateUserInput,
 ): Promise<UserWithoutPassword> {
-  return api.post('/api/auth/register', input, UserWithoutPassword)
+  return Effect.runPromise(
+    api.post('/api/auth/register', input, UserWithoutPassword),
+  )
 }
 
 /**
@@ -93,9 +96,8 @@ export function useLogin() {
       toast.success(`Welcome back, ${data.user.name}!`)
     },
     onError: (error) => {
-      // Check if error has status property (duck typing)
       const isAuthError =
-        error instanceof ApiError &&
+        error instanceof HttpError &&
         (error.status === 401 || error.status === 400)
 
       if (isAuthError) {
@@ -120,7 +122,7 @@ export function useRegisterUser() {
       toast.success(`${data.name} has been registered successfully.`)
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 409) {
+      if (error instanceof HttpError && error.status === 409) {
         toast.error('A user with this email already exists.')
       } else {
         toast.error('Failed to register user. Please try again.')

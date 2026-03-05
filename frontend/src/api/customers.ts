@@ -3,11 +3,12 @@
  */
 
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { Effect } from 'effect'
 import { toast } from 'sonner'
 import type { CreateCustomerInput } from '@laundry-app/shared'
 import { CustomerResponse } from '@laundry-app/shared'
 
-import { api, ApiError } from '@/lib/api-client'
+import { api, HttpError } from '@/lib/api-client'
 
 export const customerKeys = {
   all: ['customers'] as const,
@@ -17,23 +18,25 @@ export const customerKeys = {
 export async function searchCustomerByPhone(
   phone: string,
 ): Promise<CustomerResponse | null> {
-  try {
-    return await api.get(
-      `/api/customers/search?phone=${encodeURIComponent(phone)}`,
-      CustomerResponse,
-    )
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return null
-    }
-    throw error
-  }
+  return Effect.runPromise(
+    api
+      .get(
+        `/api/customers/search?phone=${encodeURIComponent(phone)}`,
+        CustomerResponse,
+      )
+      .pipe(
+        Effect.catchIf(
+          (e): e is HttpError => e._tag === 'HttpError' && e.status === 404,
+          () => Effect.succeed(null),
+        ),
+      ),
+  )
 }
 
 export async function createCustomerFn(
   input: CreateCustomerInput,
 ): Promise<CustomerResponse> {
-  return api.post('/api/customers', input, CustomerResponse)
+  return Effect.runPromise(api.post('/api/customers', input, CustomerResponse))
 }
 
 export function useSearchCustomer(phone: string) {

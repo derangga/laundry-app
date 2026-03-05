@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Schema } from 'effect'
+import { Schema, Effect } from 'effect'
 import { toast } from 'sonner'
 import type {
   OrderStatus,
@@ -53,21 +53,25 @@ export async function fetchOrders(
   if (filters?.end_date) params.set('end_date', filters.end_date)
   const qs = params.toString()
   const path = qs ? `/api/orders?${qs}` : '/api/orders'
-  return api.get(path, Schema.Array(OrderWithDetails))
+  return Effect.runPromise(api.get(path, Schema.Array(OrderWithDetails)))
 }
 
 export async function updateOrderStatusFn(
   id: string,
   input: UpdateOrderStatusInput,
 ): Promise<OrderResponse> {
-  return api.put(`/api/orders/${id}/status`, input, OrderResponse)
+  return Effect.runPromise(
+    api.put(`/api/orders/${id}/status`, input, OrderResponse),
+  )
 }
 
 export async function updatePaymentStatusFn(
   id: string,
   input: UpdatePaymentStatusInput,
 ): Promise<OrderResponse> {
-  return api.put(`/api/orders/${id}/payment`, input, OrderResponse)
+  return Effect.runPromise(
+    api.put(`/api/orders/${id}/payment`, input, OrderResponse),
+  )
 }
 
 export interface CreateOrderParams {
@@ -80,7 +84,7 @@ export interface CreateOrderParams {
 export async function createOrderFn(
   input: CreateOrderParams,
 ): Promise<OrderResponse> {
-  return api.post('/api/orders', input, OrderResponse)
+  return Effect.runPromise(api.post('/api/orders', input, OrderResponse))
 }
 
 export interface CreateWalkInOrderParams {
@@ -93,7 +97,9 @@ export interface CreateWalkInOrderParams {
 export async function createWalkInOrderFn(
   input: CreateWalkInOrderParams,
 ): Promise<OrderResponse> {
-  return api.post('/api/orders/walk-in', input, OrderResponse)
+  return Effect.runPromise(
+    api.post('/api/orders/walk-in', input, OrderResponse),
+  )
 }
 
 /**

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Effect } from 'effect'
 import {
   WeeklyAnalyticsResponse,
   DashboardStatsResponse,
@@ -23,11 +24,13 @@ export async function fetchWeeklyAnalytics(
   if (params?.payment_status) qs.set('payment_status', params.payment_status)
   if (params?.range) qs.set('range', params.range)
   const path = `/api/analytics/weekly${qs.toString() ? `?${qs}` : ''}`
-  return api.get(path, WeeklyAnalyticsResponse)
+  return Effect.runPromise(api.get(path, WeeklyAnalyticsResponse))
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStatsResponse> {
-  return api.get('/api/analytics/dashboard', DashboardStatsResponse)
+  return Effect.runPromise(
+    api.get('/api/analytics/dashboard', DashboardStatsResponse),
+  )
 }
 
 export function useWeeklyAnalytics(params?: WeeklyParams) {
