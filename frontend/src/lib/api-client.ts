@@ -3,8 +3,15 @@
  * Uses @effect/platform HttpClient for typed HTTP requests.
  */
 
-import type { Schema } from 'effect'
-import { Config, ConfigProvider, Effect, Layer } from 'effect'
+import {
+  Config,
+  ConfigProvider,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Schema,
+} from 'effect'
 import {
   HttpClient,
   HttpClientRequest,
@@ -41,18 +48,18 @@ const FetchLive = FetchHttpClient.layer.pipe(
   ),
 )
 
-function parseErrorBody(data: unknown): {
-  code: string | undefined
-  message: string | undefined
-} {
-  if (typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>
-    return {
-      code: typeof obj.code === 'string' ? obj.code : undefined,
-      message: typeof obj.message === 'string' ? obj.message : undefined,
-    }
-  }
-  return { code: undefined, message: undefined }
+const ErrorBodyStruct = Schema.Struct({
+  code: Schema.optional(Schema.String),
+  message: Schema.optional(Schema.String),
+})
+
+type ErrorBody = typeof ErrorBodyStruct.Type
+
+function parseErrorBody(data: unknown): ErrorBody {
+  return Option.getOrElse(
+    Schema.decodeUnknownOption(ErrorBodyStruct)(data),
+    () => ({}),
+  )
 }
 
 class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
@@ -84,7 +91,13 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
               message: 'Session expired. Please log in again.',
             })
           }
-        }),
+        }).pipe(
+          Effect.timeoutFail({
+            duration: Duration.seconds(10),
+            onTimeout: () =>
+              new NetworkError({ cause: 'Token refresh timed out' }),
+          }),
+        ),
       )
     }
 
