@@ -3,12 +3,13 @@
  * Uses @effect/platform HttpClient for typed HTTP requests.
  */
 
-import type { Schema, Scope } from 'effect'
-import { Effect, Layer, pipe } from 'effect'
+import type { Schema } from 'effect'
+import { Config, ConfigProvider, Effect, Layer } from 'effect'
 import {
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
+  HttpBody,
   FetchHttpClient,
 } from '@effect/platform'
 import {
@@ -27,7 +28,11 @@ export {
   type ApiClientError,
 }
 
-const API_BASE_URL = 'http://localhost:3000'
+const ApiBaseUrl = Config.string('VITE_API_BASE_URL')
+
+const EnvConfigProvider = Layer.setConfigProvider(
+  ConfigProvider.fromJson(import.meta.env as Record<string, string>),
+)
 
 // Configure FetchHttpClient with credentials: 'include' for cookie-based auth
 const FetchLive = FetchHttpClient.layer.pipe(
@@ -35,59 +40,6 @@ const FetchLive = FetchHttpClient.layer.pipe(
     Layer.succeed(FetchHttpClient.RequestInit, { credentials: 'include' }),
   ),
 )
-
-// Flag to prevent concurrent refresh attempts
-let isRefreshing = false
-
-/**
- * Refresh tokens using httpOnly cookie
- */
-function refreshTokens(): Effect.Effect<
-  void,
-  UnauthorizedError | NetworkError,
-  HttpClient.HttpClient | Scope.Scope
-> {
-  return Effect.gen(function* () {
-    if (isRefreshing) {
-      return yield* new UnauthorizedError({
-        message: 'Token refresh already in progress.',
-      })
-    }
-
-    isRefreshing = true
-    const client = yield* HttpClient.HttpClient
-    const response = yield* pipe(
-      HttpClientRequest.post(`${API_BASE_URL}/api/auth/refresh`),
-      HttpClientRequest.bodyJson({}),
-      Effect.flatMap((req) => client.execute(req)),
-      Effect.mapError((cause) => {
-        isRefreshing = false
-        return new NetworkError({ cause })
-      }),
-    )
-
-    isRefreshing = false
-
-    if (response.status !== 200) {
-      return yield* new UnauthorizedError({
-        message: 'Session expired. Please log in again.',
-      })
-    }
-  })
-}
-
-const makeRequest = (method: string, url: string) => {
-  switch (method) {
-    case 'POST':
-      return HttpClientRequest.post(url)
-    case 'PUT':
-      return HttpClientRequest.put(url)
-    case 'DELETE':
-      return HttpClientRequest.del(url)
-    default:
-      return HttpClientRequest.get(url)
-  }
-}
 
 function parseErrorBody(data: unknown): {
   code: string | undefined
@@ -103,75 +55,151 @@ function parseErrorBody(data: unknown): {
   return { code: undefined, message: undefined }
 }
 
-/**
- * Core API client function with automatic token refresh
- */
-function apiClient<T, TInput = T>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-  path: string,
-  schema?: Schema.Schema<T, TInput, never>,
-  body?: unknown,
-): Effect.Effect<T, ApiClientError> {
-  const program = Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
-    const url = `${API_BASE_URL}${path}`
+class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
+  effect: Effect.gen(function* () {
+    const baseUrl = yield* ApiBaseUrl
+    const httpClient = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.mapRequest(HttpClientRequest.prependUrl(baseUrl)),
+    )
+    const semaphore = yield* Effect.makeSemaphore(1)
 
-    const baseRequest = makeRequest(method, url)
+    /**
+     * Refresh tokens using httpOnly cookie
+     */
+    function refreshTokens(): Effect.Effect<
+      void,
+      UnauthorizedError | NetworkError
+    > {
+      return semaphore.withPermits(1)(
+        Effect.gen(function* () {
+          const response = yield* httpClient
+            .post('/api/auth/refresh', { body: HttpBody.unsafeJson({}) })
+            .pipe(
+              Effect.scoped,
+              Effect.mapError((cause) => new NetworkError({ cause })),
+            )
 
-    const execute = (req: HttpClientRequest.HttpClientRequest) =>
-      body !== undefined
-        ? pipe(
-            HttpClientRequest.bodyJson(body)(req),
-            Effect.flatMap((r) => client.execute(r)),
+          if (response.status !== 200) {
+            return yield* new UnauthorizedError({
+              message: 'Session expired. Please log in again.',
+            })
+          }
+        }),
+      )
+    }
+
+    /**
+     * Execute a request using the appropriate client method
+     */
+    function executeRequest(
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+      path: string,
+      body?: unknown,
+    ) {
+      const options =
+        body !== undefined ? { body: HttpBody.unsafeJson(body) } : {}
+      switch (method) {
+        case 'POST':
+          return httpClient.post(path, options)
+        case 'PUT':
+          return httpClient.put(path, options)
+        case 'DELETE':
+          return httpClient.del(path, options)
+        default:
+          return httpClient.get(path)
+      }
+    }
+
+    /**
+     * Core API client function with automatic token refresh
+     */
+    function request<T, TInput = T>(
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+      path: string,
+      schema?: Schema.Schema<T, TInput, never>,
+      body?: unknown,
+    ): Effect.Effect<T, ApiClientError> {
+      return Effect.scoped(
+        Effect.gen(function* () {
+          let response = yield* executeRequest(method, path, body).pipe(
+            Effect.mapError((cause) => new NetworkError({ cause })),
           )
-        : client.execute(req)
 
-    let response = yield* execute(baseRequest).pipe(
-      Effect.mapError((cause) => new NetworkError({ cause })),
-    )
+          // Handle 401 with automatic token refresh
+          if (response.status === 401) {
+            yield* refreshTokens()
 
-    // Handle 401 with automatic token refresh
-    if (response.status === 401 && !isRefreshing) {
-      yield* refreshTokens()
+            // Retry the original request
+            response = yield* executeRequest(method, path, body).pipe(
+              Effect.mapError((cause) => new NetworkError({ cause })),
+            )
+          }
 
-      // Retry the original request
-      response = yield* execute(baseRequest).pipe(
-        Effect.mapError((cause) => new NetworkError({ cause })),
+          // Handle non-OK responses
+          if (response.status < 200 || response.status >= 300) {
+            const errorBody = yield* response.json.pipe(
+              Effect.orElseSucceed(() => null),
+            )
+            const { code, message } = parseErrorBody(errorBody)
+
+            return yield* new HttpError({
+              status: response.status,
+              code: code ?? 'UNKNOWN_ERROR',
+              message:
+                message ?? `Request failed with status ${response.status}`,
+            })
+          }
+
+          // Schema validation (parses JSON + validates in one step)
+          if (schema) {
+            return yield* HttpClientResponse.schemaBodyJson(schema)(
+              response,
+            ).pipe(
+              Effect.mapError((cause) => new ValidationError({ path, cause })),
+            )
+          }
+
+          // No schema provided — fail with ValidationError instead of unsafe cast
+          return yield* new ValidationError({
+            path,
+            cause: 'No schema provided for response parsing',
+          })
+        }),
       )
     }
 
-    // Handle non-OK responses
-    if (response.status < 200 || response.status >= 300) {
-      const errorBody = yield* response.json.pipe(
-        Effect.orElseSucceed(() => null),
-      )
-      const { code, message } = parseErrorBody(errorBody)
+    return {
+      get: <T, TInput = T>(
+        path: string,
+        schema?: Schema.Schema<T, TInput, never>,
+      ): Effect.Effect<T, ApiClientError> => request('GET', path, schema),
 
-      return yield* new HttpError({
-        status: response.status,
-        code: code ?? 'UNKNOWN_ERROR',
-        message: message ?? `Request failed with status ${response.status}`,
-      })
+      post: <T, TInput = T>(
+        path: string,
+        data?: unknown,
+        schema?: Schema.Schema<T, TInput, never>,
+      ): Effect.Effect<T, ApiClientError> =>
+        request('POST', path, schema, data),
+
+      put: <T, TInput = T>(
+        path: string,
+        data?: unknown,
+        schema?: Schema.Schema<T, TInput, never>,
+      ): Effect.Effect<T, ApiClientError> => request('PUT', path, schema, data),
+
+      del: <T, TInput = T>(
+        path: string,
+        schema?: Schema.Schema<T, TInput, never>,
+      ): Effect.Effect<T, ApiClientError> => request('DELETE', path, schema),
     }
+  }),
+  dependencies: [FetchLive],
+}) {}
 
-    // Schema validation (parses JSON + validates in one step)
-    if (schema) {
-      return yield* HttpClientResponse.schemaBodyJson(schema)(response).pipe(
-        Effect.mapError((cause) => new ValidationError({ path, cause })),
-      )
-    }
-
-    // No schema — raw JSON (cast unavoidable: json returns unknown, caller expects T)
-    const data = yield* response.json.pipe(
-      Effect.mapError((cause) => new NetworkError({ cause })),
-    )
-
-    return data as T
-  })
-
-  // Provide FetchHttpClient layer internally — consumers get Effect<T, ApiClientError>
-  return program.pipe(Effect.scoped, Effect.provide(FetchLive))
-}
+const ApiClientLive = ApiClient.Default.pipe(
+  Layer.provide(EnvConfigProvider),
+  Layer.orDie,
+)
 
 /**
  * Convenience helpers for common HTTP methods.
@@ -182,25 +210,37 @@ export const api = {
     path: string,
     schema?: Schema.Schema<T, TInput, never>,
   ): Effect.Effect<T, ApiClientError> =>
-    apiClient<T, TInput>('GET', path, schema),
+    Effect.gen(function* () {
+      const client = yield* ApiClient
+      return yield* client.get(path, schema)
+    }).pipe(Effect.provide(ApiClientLive)),
 
   post: <T, TInput = T>(
     path: string,
     data?: unknown,
     schema?: Schema.Schema<T, TInput, never>,
   ): Effect.Effect<T, ApiClientError> =>
-    apiClient<T, TInput>('POST', path, schema, data),
+    Effect.gen(function* () {
+      const client = yield* ApiClient
+      return yield* client.post(path, data, schema)
+    }).pipe(Effect.provide(ApiClientLive)),
 
   put: <T, TInput = T>(
     path: string,
     data?: unknown,
     schema?: Schema.Schema<T, TInput, never>,
   ): Effect.Effect<T, ApiClientError> =>
-    apiClient<T, TInput>('PUT', path, schema, data),
+    Effect.gen(function* () {
+      const client = yield* ApiClient
+      return yield* client.put(path, data, schema)
+    }).pipe(Effect.provide(ApiClientLive)),
 
   del: <T, TInput = T>(
     path: string,
     schema?: Schema.Schema<T, TInput, never>,
   ): Effect.Effect<T, ApiClientError> =>
-    apiClient<T, TInput>('DELETE', path, schema),
+    Effect.gen(function* () {
+      const client = yield* ApiClient
+      return yield* client.del(path, schema)
+    }).pipe(Effect.provide(ApiClientLive)),
 }
