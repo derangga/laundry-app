@@ -80,31 +80,20 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
       id: CustomerId,
       data: UpdateCustomerInput
     ): Effect.Effect<Option.Option<typeof CustomerFromDb.Type>, SqlError.SqlError> => {
-      const updates: string[] = []
-      const params: Array<string | CustomerId | null> = []
-      let paramIndex = 1
+      const entries = Object.entries(data).filter(
+        (entry): entry is [string, string | null] => entry[1] !== undefined
+      )
 
-      if (data.name !== undefined) {
-        updates.push(`name = $${paramIndex++}`)
-        params.push(data.name)
-      }
-      if (data.phone !== undefined) {
-        updates.push(`phone = $${paramIndex++}`)
-        params.push(data.phone)
-      }
-      if (data.address !== undefined) {
-        updates.push(`address = $${paramIndex++}`)
-        params.push(data.address)
-      }
-
-      if (updates.length === 0) {
+      if (entries.length === 0) {
         return findById(id)
       }
 
-      updates.push(`updated_at = NOW()`)
-      params.push(id)
+      const setClauses = entries.map(([key], i) => `${key} = $${i + 1}`)
+      setClauses.push(`updated_at = NOW()`)
 
-      const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, phone, address, created_at, updated_at`
+      const params = [...entries.map(([, value]) => value), id]
+
+      const query = `UPDATE customers SET ${setClauses.join(', ')} WHERE id = $${entries.length + 1} RETURNING id, name, phone, address, created_at, updated_at`
 
       return sql.unsafe(query, params).pipe(
         Effect.map((rows) => rows[0]),

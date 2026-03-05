@@ -25,35 +25,20 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       id: UserId,
       data: UserUpdateData
     ): Effect.Effect<Option.Option<UserWithoutPassword>, SqlError.SqlError> => {
-      const updates: string[] = []
-      const params: Array<string | UserId> = []
-      let paramIndex = 1
+      const entries = Object.entries(data).filter(
+        (entry): entry is [string, string] => entry[1] !== undefined
+      )
 
-      if (data.email !== undefined) {
-        updates.push(`email = $${paramIndex++}`)
-        params.push(data.email)
-      }
-      if (data.password_hash !== undefined) {
-        updates.push(`password_hash = $${paramIndex++}`)
-        params.push(data.password_hash)
-      }
-      if (data.name !== undefined) {
-        updates.push(`name = $${paramIndex++}`)
-        params.push(data.name)
-      }
-      if (data.role !== undefined) {
-        updates.push(`role = $${paramIndex++}`)
-        params.push(data.role)
-      }
-
-      if (updates.length === 0) {
+      if (entries.length === 0) {
         return findByIdWithoutPassword(id)
       }
 
-      updates.push(`updated_at = NOW()`)
-      params.push(id)
+      const setClauses = entries.map(([key], i) => `${key} = $${i + 1}`)
+      setClauses.push(`updated_at = NOW()`)
 
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL RETURNING id, email, name, role, created_at, updated_at`
+      const params = [...entries.map(([, value]) => value), id]
+
+      const query = `UPDATE users SET ${setClauses.join(', ')} WHERE id = $${entries.length + 1} AND deleted_at IS NULL RETURNING id, email, name, role, created_at, updated_at`
 
       return sql.unsafe(query, params).pipe(
         Effect.flatMap((rows) =>

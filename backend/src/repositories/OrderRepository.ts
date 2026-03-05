@@ -11,6 +11,18 @@ import {
 } from '../domain/Order'
 import { CustomerId } from '../domain/Customer'
 
+// Helper to build dynamic WHERE clauses declaratively
+type FilterDef = readonly [option: Option.Option<string | number | Date>, clause: string]
+
+const buildWhereClause = (filters: FilterDef[]) => {
+  const active = filters.flatMap(([opt, clause]) =>
+    Option.isSome(opt) ? [{ clause, value: opt.value }] : []
+  )
+  const conditions = active.map(({ clause }, i) => `${clause} $${i + 1}`)
+  const params = active.map(({ value }) => value)
+  return { conditions, params, nextIndex: active.length + 1 }
+}
+
 // Helper to decode SQL results through the schema
 const decodeOrders = Schema.decodeUnknown(Schema.Array(Order))
 const decodeOrder = Schema.decodeUnknown(Order)
@@ -74,45 +86,14 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     const findWithFilters = (
       options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly Order[], SqlError.SqlError> => {
-      const conditions: string[] = []
-      const params: Array<string | number | Date> = []
-      let paramIndex = 1
-
-      const customerId = Option.getOrUndefined(options.customer_id)
-      if (customerId !== undefined) {
-        conditions.push(`customer_id = $${paramIndex++}`)
-        params.push(customerId)
-      }
-
-      const status = Option.getOrUndefined(options.status)
-      if (status !== undefined) {
-        conditions.push(`status = $${paramIndex++}`)
-        params.push(status)
-      }
-
-      const paymentStatus = Option.getOrUndefined(options.payment_status)
-      if (paymentStatus !== undefined) {
-        conditions.push(`payment_status = $${paramIndex++}`)
-        params.push(paymentStatus)
-      }
-
-      const orderNumber = Option.getOrUndefined(options.order_number)
-      if (orderNumber !== undefined) {
-        conditions.push(`order_number = $${paramIndex++}`)
-        params.push(orderNumber)
-      }
-
-      const startDate = Option.getOrUndefined(options.start_date)
-      if (startDate !== undefined) {
-        conditions.push(`created_at >= $${paramIndex++}`)
-        params.push(startDate)
-      }
-
-      const endDate = Option.getOrUndefined(options.end_date)
-      if (endDate !== undefined) {
-        conditions.push(`created_at <= $${paramIndex++}`)
-        params.push(endDate)
-      }
+      const { conditions, params, nextIndex } = buildWhereClause([
+        [options.customer_id, 'customer_id ='],
+        [options.status, 'status ='],
+        [options.payment_status, 'payment_status ='],
+        [options.order_number, 'order_number ='],
+        [options.start_date, 'created_at >='],
+        [options.end_date, 'created_at <='],
+      ])
 
       let query =
         'SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at FROM orders'
@@ -121,19 +102,22 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY created_at DESC'
 
+      let idx = nextIndex
+      const allParams = [...params]
+
       const limit = Option.getOrUndefined(options.limit)
       if (limit !== undefined) {
-        query += ` LIMIT $${paramIndex++}`
-        params.push(limit)
+        query += ` LIMIT $${idx++}`
+        allParams.push(limit)
       }
 
       const offset = Option.getOrUndefined(options.offset)
       if (offset !== undefined) {
-        query += ` OFFSET $${paramIndex++}`
-        params.push(offset)
+        query += ` OFFSET $${idx++}`
+        allParams.push(offset)
       }
 
-      return sql.unsafe(query, params).pipe(
+      return sql.unsafe(query, allParams).pipe(
         Effect.flatMap((rows) => decodeOrders(rows)),
         Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
       )
@@ -142,45 +126,14 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     const findWithDetails = (
       options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly OrderWithDetailsFromDb[], SqlError.SqlError> => {
-      const conditions: string[] = []
-      const params: Array<string | number | Date> = []
-      let paramIndex = 1
-
-      const customerId = Option.getOrUndefined(options.customer_id)
-      if (customerId !== undefined) {
-        conditions.push(`o.customer_id = $${paramIndex++}`)
-        params.push(customerId)
-      }
-
-      const status = Option.getOrUndefined(options.status)
-      if (status !== undefined) {
-        conditions.push(`o.status = $${paramIndex++}`)
-        params.push(status)
-      }
-
-      const paymentStatus = Option.getOrUndefined(options.payment_status)
-      if (paymentStatus !== undefined) {
-        conditions.push(`o.payment_status = $${paramIndex++}`)
-        params.push(paymentStatus)
-      }
-
-      const orderNumber = Option.getOrUndefined(options.order_number)
-      if (orderNumber !== undefined) {
-        conditions.push(`o.order_number = $${paramIndex++}`)
-        params.push(orderNumber)
-      }
-
-      const startDate = Option.getOrUndefined(options.start_date)
-      if (startDate !== undefined) {
-        conditions.push(`o.created_at >= $${paramIndex++}`)
-        params.push(startDate)
-      }
-
-      const endDate = Option.getOrUndefined(options.end_date)
-      if (endDate !== undefined) {
-        conditions.push(`o.created_at <= $${paramIndex++}`)
-        params.push(endDate)
-      }
+      const { conditions, params, nextIndex } = buildWhereClause([
+        [options.customer_id, 'o.customer_id ='],
+        [options.status, 'o.status ='],
+        [options.payment_status, 'o.payment_status ='],
+        [options.order_number, 'o.order_number ='],
+        [options.start_date, 'o.created_at >='],
+        [options.end_date, 'o.created_at <='],
+      ])
 
       let query = `
         SELECT
@@ -206,19 +159,22 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY o.created_at DESC'
 
+      let idx = nextIndex
+      const allParams = [...params]
+
       const limit = Option.getOrUndefined(options.limit)
       if (limit !== undefined) {
-        query += ` LIMIT $${paramIndex++}`
-        params.push(limit)
+        query += ` LIMIT $${idx++}`
+        allParams.push(limit)
       }
 
       const offset = Option.getOrUndefined(options.offset)
       if (offset !== undefined) {
-        query += ` OFFSET $${paramIndex++}`
-        params.push(offset)
+        query += ` OFFSET $${idx++}`
+        allParams.push(offset)
       }
 
-      return sql.unsafe(query, params).pipe(
+      return sql.unsafe(query, allParams).pipe(
         Effect.flatMap((rows) => decodeOrdersWithDetails(rows)),
         Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
       )
@@ -227,27 +183,11 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     const findSummaries = (
       options: OrderFilterOptions = defaultOrderFilterOptions
     ): Effect.Effect<readonly OrderSummaryFromDb[], SqlError.SqlError> => {
-      const conditions: string[] = []
-      const params: Array<string | Date> = []
-      let paramIndex = 1
-
-      const paymentStatus = Option.getOrUndefined(options.payment_status)
-      if (paymentStatus !== undefined) {
-        conditions.push(`payment_status = $${paramIndex++}`)
-        params.push(paymentStatus)
-      }
-
-      const startDate = Option.getOrUndefined(options.start_date)
-      if (startDate !== undefined) {
-        conditions.push(`created_at >= $${paramIndex++}`)
-        params.push(startDate)
-      }
-
-      const endDate = Option.getOrUndefined(options.end_date)
-      if (endDate !== undefined) {
-        conditions.push(`created_at <= $${paramIndex++}`)
-        params.push(endDate)
-      }
+      const { conditions, params } = buildWhereClause([
+        [options.payment_status, 'payment_status ='],
+        [options.start_date, 'created_at >='],
+        [options.end_date, 'created_at <='],
+      ])
 
       let query = 'SELECT id, order_number, total_price, payment_status, created_at FROM orders'
       if (conditions.length > 0) {
