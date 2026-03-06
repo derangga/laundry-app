@@ -8,7 +8,8 @@ import { toast } from 'sonner'
 import type { CreateCustomerInput } from '@laundry-app/shared'
 import { CustomerResponse } from '@laundry-app/shared'
 
-import { api, HttpError } from '@/lib/api-client'
+import type { HttpError } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
 
 export const customerKeys = {
   all: ['customers'] as const,

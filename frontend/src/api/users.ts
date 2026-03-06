@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Schema, Effect } from 'effect'
-import { UserWithoutPassword, UpdateUserInput } from '@laundry-app/shared'
+import type { UpdateUserInput } from '@laundry-app/shared'
+import { UserWithoutPassword } from '@laundry-app/shared'
 import { api, HttpError } from '@/lib/api-client'
 import { toast } from 'sonner'
 

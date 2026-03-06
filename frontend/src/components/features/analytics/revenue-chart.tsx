@@ -22,7 +22,7 @@ function formatWeekStart(value: string): string {
 }
 
 interface RevenueChartProps {
-  data: WeeklyDataPoint[]
+  data: readonly WeeklyDataPoint[]
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
@@ -33,7 +33,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart data={data}>
+          <BarChart data={[...data]}>
             <XAxis
               dataKey="week_start"
               tickFormatter={formatWeekStart}
