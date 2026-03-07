@@ -3,7 +3,7 @@ import { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
 import { UserWithoutPassword } from '@domain/User'
 
-const listUsers = (): Effect.Effect<UserWithoutPassword[], SqlError.SqlError, UserRepository> =>
+const listUsers = (): Effect.Effect<readonly UserWithoutPassword[], SqlError.SqlError, UserRepository> =>
   Effect.gen(function* () {
     const repo = yield* UserRepository
     return yield* repo.findAll()

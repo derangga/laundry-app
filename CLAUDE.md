@@ -49,7 +49,7 @@ Read these for detailed context:
 - `docs/PRD.md` — Product requirements, API specs, frontend routes
 - `docs/ADR_BACKEND.md` — Architecture decisions, database schema
 - `docs/CONTEXT.md` — Effect patterns, service composition, middleware, layer setup
-- `.claude/agents/effect-coder.md` — Effect TypeScript best practices
+- Use available **skills** for framework-specific patterns (Effect, TanStack Router, TanStack Query, shadcn/ui, Tailwind, etc.)
 
 ## Dev Commands (from repo root)
 

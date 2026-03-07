@@ -17,7 +17,6 @@ import {
   Order,
 } from '@domain/Order'
 import { CreateCustomerInput } from '@domain/Customer'
-import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 
@@ -51,7 +50,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
           data.items,
           (item) =>
             Effect.gen(function* () {
-              const serviceOption = yield* serviceRepo.findById(item.service_id as ServiceId)
+              const serviceOption = yield* serviceRepo.findById(item.service_id)
 
               if (Option.isNone(serviceOption)) {
                 return yield* Effect.fail(new ServiceNotFound({ serviceId: item.service_id }))
@@ -78,11 +77,11 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         const order = yield* orderRepo.insert(
           Order.insert.make({
             order_number: orderNumber,
-            customer_id: data.customer_id as CustomerId,
+            customer_id: data.customer_id,
             status: 'received',
-            payment_status: data.payment_status || 'unpaid',
+            payment_status: data.payment_status,
             total_price: totalPrice,
-            created_by: data.created_by as UserId,
+            created_by: data.created_by,
           })
         )
 
@@ -90,7 +89,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* orderItemRepo.insertMany(
           itemsWithPrices.map((item) => ({
             order_id: order.id,
-            service_id: item.serviceId as ServiceId,
+            service_id: item.serviceId,
             quantity: item.quantity,
             price_at_order: item.priceAtOrder,
             subtotal: item.subtotal,
@@ -152,15 +151,15 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         // Create the order using existing create method
         return yield* create(
           new CreateOrderInput({
-            customer_id: customer.id as CustomerId,
+            customer_id: customer.id,
             items: data.items,
-            created_by: createdBy as UserId,
+            created_by: createdBy,
             payment_status: data.payment_status,
           })
         )
       })
 
-    const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id))
+    const findByCustomerId = (id: CustomerId) => orderRepo.findByCustomerId(id)
 
     return {
       create,
