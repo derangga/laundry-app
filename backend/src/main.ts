@@ -6,6 +6,7 @@ import { HttpServerLive } from './http/HttpServer.js'
 import { createAppRouter } from './http/Router.js'
 import { ServerConfig } from './configs/env.js'
 import { AppLogger, makeLoggerLayer } from './http/Logger.js'
+import { makeTelemetryLayer } from '@laundry-app/observability'
 import { gracefulShutdown } from './http/GracefulShutdown.js'
 import { RequestLoggingMiddleware } from './middleware/RequestLoggingMiddleware.js'
 // import { SecurityHeadersMiddleware } from './middleware/SecurityHeadersMiddleware.js'
@@ -86,4 +87,4 @@ const program = Effect.gen(function* () {
 }).pipe(Effect.tapErrorCause((cause) => Effect.logError('Failed to start server', cause)))
 
 // Run with Bun runtime, applying logger configuration layer
-BunRuntime.runMain(program.pipe(Effect.provide(makeLoggerLayer)))
+BunRuntime.runMain(program.pipe(Effect.provide(makeLoggerLayer), Effect.provide(makeTelemetryLayer)))
