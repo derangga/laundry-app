@@ -21,7 +21,7 @@ function formatWeekStart(value: string): string {
 }
 
 interface OrderChartProps {
-  data: WeeklyDataPoint[]
+  data: readonly WeeklyDataPoint[]
 }
 
 export function OrderChart({ data }: OrderChartProps) {
@@ -32,7 +32,7 @@ export function OrderChart({ data }: OrderChartProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <LineChart data={data}>
+          <LineChart data={[...data]}>
             <XAxis
               dataKey="week_start"
               tickFormatter={formatWeekStart}

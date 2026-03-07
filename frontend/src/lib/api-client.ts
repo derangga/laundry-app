@@ -134,19 +134,18 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
     ): Effect.Effect<T, ApiClientError> {
       return Effect.scoped(
         Effect.gen(function* () {
-          let response = yield* executeRequest(method, path, body).pipe(
+          const response = yield* executeRequest(method, path, body).pipe(
             Effect.mapError((cause) => new NetworkError({ cause })),
+            Effect.filterOrFail(
+              (res) => res.status !== 401,
+              () => new UnauthorizedError({ message: 'Unauthorized' }),
+            ),
+            Effect.tapErrorTag('UnauthorizedError', () => refreshTokens()),
+            Effect.retry({
+              times: 1,
+              while: (e) => e._tag === 'UnauthorizedError',
+            }),
           )
-
-          // Handle 401 with automatic token refresh
-          if (response.status === 401) {
-            yield* refreshTokens()
-
-            // Retry the original request
-            response = yield* executeRequest(method, path, body).pipe(
-              Effect.mapError((cause) => new NetworkError({ cause })),
-            )
-          }
 
           // Handle non-OK responses
           if (response.status < 200 || response.status >= 300) {
