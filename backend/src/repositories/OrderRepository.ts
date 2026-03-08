@@ -198,22 +198,30 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     const updateStatus = (
       id: OrderId,
       status: OrderStatus
-    ): Effect.Effect<void, SqlError.SqlError> =>
+    ): Effect.Effect<OrderFromDb, SqlError.SqlError> =>
       sql`
         UPDATE orders
         SET status = ${status}, updated_at = NOW()
         WHERE id = ${id}
-      `.pipe(Effect.map(() => void 0))
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
+      )
 
     const updatePaymentStatus = (
       id: OrderId,
       paymentStatus: PaymentStatus
-    ): Effect.Effect<void, SqlError.SqlError> =>
+    ): Effect.Effect<OrderFromDb, SqlError.SqlError> =>
       sql`
         UPDATE orders
         SET payment_status = ${paymentStatus}, updated_at = NOW()
         WHERE id = ${id}
-      `.pipe(Effect.map(() => void 0))
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
+      )
 
     const updateTotalPrice = (
       id: OrderId,

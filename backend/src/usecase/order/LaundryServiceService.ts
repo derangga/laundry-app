@@ -34,8 +34,9 @@ export class LaundryServiceService extends Effect.Service<LaundryServiceService>
           // Check if service exists
           yield* findById(id)
 
-          // Update service
-          return yield* repo.update(id, data)
+          // Update service — existence already validated, so unwrap Option
+          const result = yield* repo.update(id, data)
+          return Option.getOrThrow(result)
         })
 
       const softDelete = (id: ServiceId) =>

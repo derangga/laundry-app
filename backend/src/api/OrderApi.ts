@@ -16,6 +16,7 @@ import {
   CustomerAlreadyExists,
   ValidationError,
   UnprocessibleEntity,
+  RetrieveDataEror,
 } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from '@middleware/AuthMiddleware'
 
@@ -53,6 +54,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .setUrlParams(ListOrdersParams)
       .addSuccess(Schema.Array(OrderWithDetails))
       .addError(ValidationError)
+      .addError(RetrieveDataEror)
   )
   .add(
     HttpApiEndpoint.get('getById', '/api/orders/:id')

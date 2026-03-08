@@ -118,7 +118,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* validateStatusTransition(order.status, newStatus)
 
         // Update status
-        yield* orderRepo.updateStatus(id, newStatus)
+        return yield* orderRepo.updateStatus(id, newStatus)
       })
 
     const updatePaymentStatus = (id: OrderId, paymentStatus: PaymentStatus) =>
@@ -127,7 +127,7 @@ export class OrderService extends Effect.Service<OrderService>()('OrderService',
         yield* findById(id)
 
         // Update payment status
-        yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
+        return yield* orderRepo.updatePaymentStatus(id, paymentStatus)
       })
 
     const createWalkIn = (data: CreateWalkInOrderInput, createdBy: UserId) =>
