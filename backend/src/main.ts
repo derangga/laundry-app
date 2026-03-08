@@ -87,4 +87,6 @@ const program = Effect.gen(function* () {
 }).pipe(Effect.tapErrorCause((cause) => Effect.logError('Failed to start server', cause)))
 
 // Run with Bun runtime, applying logger configuration layer
-BunRuntime.runMain(program.pipe(Effect.provide(makeLoggerLayer), Effect.provide(makeTelemetryLayer)))
+BunRuntime.runMain(
+  program.pipe(Effect.provide(makeLoggerLayer), Effect.provide(makeTelemetryLayer))
+)
