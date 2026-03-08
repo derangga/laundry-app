@@ -50,11 +50,17 @@ services:
       RATE_LIMIT_SKIP_ADMIN: 'true'
       MAX_BODY_SIZE: 4194304
       MAX_JSON_DEPTH: 10
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: laundry-app
+      OTEL_ENABLED: 'false'
     env_file:
       - ./backend/.env.production
+    labels:
+      logging: "true"
     networks:
       - backend
       - frontend
+      - observability
     # Security: Resource limits
     deploy:
       resources:
@@ -120,6 +126,9 @@ networks:
     internal: false
   # Frontend network (nginx <-> backend)
   frontend:
+    driver: bridge
+  # Observability network (backend <-> otel-collector, shared with observability stack)
+  observability:
     driver: bridge
 
 volumes:
