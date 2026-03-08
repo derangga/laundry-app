@@ -2,6 +2,7 @@ import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
 import {
   Order,
+  OrderFromDb,
   OrderId,
   OrderStatus,
   PaymentStatus,
@@ -24,8 +25,8 @@ const buildWhereClause = (filters: FilterDef[]) => {
 }
 
 // Helper to decode SQL results through the schema
-const decodeOrders = Schema.decodeUnknown(Schema.Array(Order))
-const decodeOrder = Schema.decodeUnknown(Order)
+const decodeOrders = Schema.decodeUnknown(Schema.Array(OrderFromDb))
+const decodeOrder = Schema.decodeUnknown(OrderFromDb)
 const decodeOrdersWithDetails = Schema.decodeUnknown(Schema.Array(OrderWithDetailsFromDb))
 const decodeOrderSummaries = Schema.decodeUnknown(Schema.Array(OrderSummaryFromDb))
 
@@ -55,37 +56,33 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
     // Custom methods with explicit columns
     const findByOrderNumber = (
       orderNumber: string
-    ): Effect.Effect<Option.Option<Order>, SqlError.SqlError> =>
+    ): Effect.Effect<Option.Option<OrderFromDb>, SqlError.SqlError> =>
       sql`
         SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
         FROM orders
         WHERE order_number = ${orderNumber}
       `.pipe(
-        Effect.flatMap((rows) => {
-          const first = rows[0]
-          return first !== undefined
-            ? decodeOrder(first).pipe(Effect.map(Option.some))
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) =>
+          row
+            ? decodeOrder(row).pipe(Effect.map(Option.some), Effect.orDie)
             : Effect.succeed(Option.none())
-        }),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+        )
       )
 
     const findByCustomerId = (
       customerId: CustomerId
-    ): Effect.Effect<readonly Order[], SqlError.SqlError> =>
+    ): Effect.Effect<readonly OrderFromDb[], SqlError.SqlError> =>
       sql`
         SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
         FROM orders
         WHERE customer_id = ${customerId}
         ORDER BY created_at DESC
-      `.pipe(
-        Effect.flatMap((rows) => decodeOrders(rows)),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-      )
+      `.pipe(Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie)))
 
     const findWithFilters = (
       options: OrderFilterOptions = defaultOrderFilterOptions
-    ): Effect.Effect<readonly Order[], SqlError.SqlError> => {
+    ): Effect.Effect<readonly OrderFromDb[], SqlError.SqlError> => {
       const { conditions, params, nextIndex } = buildWhereClause([
         [options.customer_id, 'customer_id ='],
         [options.status, 'status ='],
@@ -117,10 +114,9 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         allParams.push(offset)
       }
 
-      return sql.unsafe(query, allParams).pipe(
-        Effect.flatMap((rows) => decodeOrders(rows)),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-      )
+      return sql
+        .unsafe(query, allParams)
+        .pipe(Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie)))
     }
 
     const findWithDetails = (
@@ -174,10 +170,9 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         allParams.push(offset)
       }
 
-      return sql.unsafe(query, allParams).pipe(
-        Effect.flatMap((rows) => decodeOrdersWithDetails(rows)),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-      )
+      return sql
+        .unsafe(query, allParams)
+        .pipe(Effect.flatMap((rows) => decodeOrdersWithDetails(rows).pipe(Effect.orDie)))
     }
 
     const findSummaries = (
@@ -195,31 +190,38 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY created_at DESC'
 
-      return sql.unsafe(query, params).pipe(
-        Effect.flatMap((rows) => decodeOrderSummaries(rows)),
-        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-      )
+      return sql
+        .unsafe(query, params)
+        .pipe(Effect.flatMap((rows) => decodeOrderSummaries(rows).pipe(Effect.orDie)))
     }
 
     const updateStatus = (
       id: OrderId,
       status: OrderStatus
-    ): Effect.Effect<void, SqlError.SqlError> =>
+    ): Effect.Effect<OrderFromDb, SqlError.SqlError> =>
       sql`
         UPDATE orders
         SET status = ${status}, updated_at = NOW()
         WHERE id = ${id}
-      `.pipe(Effect.map(() => void 0))
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
+      )
 
     const updatePaymentStatus = (
       id: OrderId,
       paymentStatus: PaymentStatus
-    ): Effect.Effect<void, SqlError.SqlError> =>
+    ): Effect.Effect<OrderFromDb, SqlError.SqlError> =>
       sql`
         UPDATE orders
         SET payment_status = ${paymentStatus}, updated_at = NOW()
         WHERE id = ${id}
-      `.pipe(Effect.map(() => void 0))
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
+      )
 
     const updateTotalPrice = (
       id: OrderId,

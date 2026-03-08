@@ -9,54 +9,52 @@ import { PasswordError } from '@domain/AuthError'
 export { CreateUserInput }
 type RegisterResult = UserWithoutPassword
 
-export const register = (
-  input: CreateUserInput
-): Effect.Effect<
-  RegisterResult,
-  UserAlreadyExistsError | PasswordError | SqlError.SqlError,
-  UserRepository | PasswordService
-> =>
-  Effect.gen(function* () {
-    const userRepo = yield* UserRepository
-    const passwordService = yield* PasswordService
-
-    // Check if user already exists
-    const existingUser = yield* userRepo.findByEmail(input.email)
-    if (Option.isSome(existingUser)) {
-      return yield* Effect.fail(UserAlreadyExistsError.make(input.email))
-    }
-
-    // Hash password
-    const hashedPassword = yield* passwordService.hash(input.password)
-
-    // Insert user
-    const user = yield* userRepo.insert(
-      User.insert.make({
-        email: input.email,
-        password_hash: hashedPassword,
-        name: input.name,
-        role: input.role,
-      })
-    )
-
-    // Return user without password
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-    }
-  })
-
 export class RegisterUserUseCase extends Effect.Service<RegisterUserUseCase>()(
   'RegisterUserUseCase',
   {
     effect: Effect.gen(function* () {
-      return {
-        execute: register,
-      } as const
+      const userRepo = yield* UserRepository
+      const passwordService = yield* PasswordService
+
+      const execute = (
+        input: CreateUserInput
+      ): Effect.Effect<
+        RegisterResult,
+        UserAlreadyExistsError | PasswordError | SqlError.SqlError
+      > =>
+        Effect.gen(function* () {
+          // Check if user already exists
+          const existingUser = yield* userRepo.findByEmail(input.email)
+          if (Option.isSome(existingUser)) {
+            return yield* Effect.fail(UserAlreadyExistsError.make(input.email))
+          }
+
+          // Hash password
+          const hashedPassword = yield* passwordService.hash(input.password)
+
+          // Insert user
+          const user = yield* userRepo.insert(
+            User.insert.make({
+              email: input.email,
+              password_hash: hashedPassword,
+              name: input.name,
+              role: input.role,
+            })
+          )
+
+          // Return user without password
+          return UserWithoutPassword.make({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+          })
+        })
+
+      return { execute } as const
     }),
+    dependencies: [UserRepository.Default, PasswordService.Default],
   }
 ) {}

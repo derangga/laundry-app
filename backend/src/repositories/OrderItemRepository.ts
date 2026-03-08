@@ -38,10 +38,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           FROM order_items
           WHERE order_id = ${orderId}
           ORDER BY created_at ASC
-        `.pipe(
-          Effect.flatMap((rows) => decodeOrderItems(rows)),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-        )
+        `.pipe(Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie)))
 
       const findByOrderIdWithService = (
         orderId: OrderId
@@ -61,10 +58,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           JOIN services s ON oi.service_id = s.id
           WHERE oi.order_id = ${orderId}
           ORDER BY oi.created_at ASC
-        `.pipe(
-          Effect.flatMap((rows) => decodeOrderItemsWithService(rows)),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-        )
+        `.pipe(Effect.flatMap((rows) => decodeOrderItemsWithService(rows).pipe(Effect.orDie)))
 
       const insert = (data: OrderItemInsertData): Effect.Effect<OrderItem, SqlError.SqlError> =>
         sql`
@@ -72,13 +66,12 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           VALUES (${data.order_id}, ${data.service_id}, ${data.quantity}, ${data.price_at_order}, ${data.subtotal})
           RETURNING id, order_id, service_id, quantity, price_at_order, subtotal, created_at
         `.pipe(
-          Effect.flatMap((rows) => {
-            const first = rows[0]
-            return first !== undefined
-              ? decodeOrderItem(first)
-              : Effect.fail(new Error('Insert failed - no row returned'))
-          }),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+          Effect.map((rows) => rows[0]),
+          Effect.flatMap((row) =>
+            row
+              ? decodeOrderItem(row).pipe(Effect.orDie)
+              : Effect.die(new Error('INSERT order_items returned no rows'))
+          )
         )
 
       const insertMany = (
@@ -88,34 +81,30 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           return Effect.succeed([])
         }
 
-        // Build a multi-row INSERT statement
-        const values: string[] = []
-        const params: Array<string | number> = []
-        let paramIndex = 1
-
-        for (const item of items) {
-          values.push(
-            `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`
-          )
-          params.push(
-            item.order_id,
-            item.service_id,
-            item.quantity,
-            item.price_at_order,
-            item.subtotal
-          )
-        }
+        // Build a multi-row INSERT statement declaratively
+        const itemParams = items.flatMap((item) => [
+          item.order_id,
+          item.service_id,
+          item.quantity,
+          item.price_at_order,
+          item.subtotal,
+        ])
+        const placeholders = items
+          .map((_, i) => {
+            const base = i * 5 + 1
+            return `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`
+          })
+          .join(', ')
 
         const query = `
           INSERT INTO order_items (order_id, service_id, quantity, price_at_order, subtotal)
-          VALUES ${values.join(', ')}
+          VALUES ${placeholders}
           RETURNING id, order_id, service_id, quantity, price_at_order, subtotal, created_at
         `
 
-        return sql.unsafe(query, params).pipe(
-          Effect.flatMap((rows) => decodeOrderItems(rows)),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-        )
+        return sql
+          .unsafe(query, itemParams)
+          .pipe(Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie)))
       }
 
       const deleteByOrderId = (orderId: OrderId): Effect.Effect<void, SqlError.SqlError> =>

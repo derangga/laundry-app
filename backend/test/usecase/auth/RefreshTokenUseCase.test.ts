@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option, ConfigProvider } from 'effect'
-import { refreshTokens } from 'src/usecase/auth/RefreshTokenUseCase'
+import { RefreshTokenUseCase, refreshUseCaseImpl } from 'src/usecase/auth/RefreshTokenUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
@@ -86,6 +86,18 @@ describe('RefreshTokenUseCase', () => {
     insertedTokens = []
   })
 
+  const createUseCaseLayer = (storedToken: RefreshToken | null, tokenHash: string) =>
+    Layer.effect(RefreshTokenUseCase, Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))).pipe(
+      Layer.provide(
+        Layer.mergeAll(
+          MockUserRepo,
+          createMockRefreshTokenRepo(storedToken, tokenHash),
+          JwtServiceLive,
+          TokenGeneratorLive
+        ).pipe(Layer.provide(TestConfig))
+      )
+    )
+
   it('should refresh tokens successfully', async () => {
     const rawToken = 'raw-refresh-token'
 
@@ -101,20 +113,14 @@ describe('RefreshTokenUseCase', () => {
       token_hash: expectedHash,
     } as unknown as RefreshToken
 
-    const MockRefreshTokenRepo = createMockRefreshTokenRepo(storedToken, expectedHash)
-
-    const program = refreshTokens({
-      refreshToken: rawToken,
+    const program = Effect.gen(function* () {
+      const useCase = yield* RefreshTokenUseCase
+      return yield* useCase.execute({ refreshToken: rawToken })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromise(Effect.provide(program, layers))
+    const result = await Effect.runPromise(
+      Effect.provide(program, createUseCaseLayer(storedToken, expectedHash))
+    )
 
     expect(result.accessToken).toBeDefined()
     expect(result.refreshToken).toBeDefined()
@@ -126,20 +132,14 @@ describe('RefreshTokenUseCase', () => {
   })
 
   it('should fail with invalid refresh token', async () => {
-    const MockRefreshTokenRepo = createMockRefreshTokenRepo(null, '')
-
-    const program = refreshTokens({
-      refreshToken: 'invalid-token',
+    const program = Effect.gen(function* () {
+      const useCase = yield* RefreshTokenUseCase
+      return yield* useCase.execute({ refreshToken: 'invalid-token' })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromiseExit(Effect.provide(program, layers))
+    const result = await Effect.runPromiseExit(
+      Effect.provide(program, createUseCaseLayer(null, ''))
+    )
 
     expect(result._tag).toBe('Failure')
   })
@@ -160,20 +160,14 @@ describe('RefreshTokenUseCase', () => {
       token_hash: expectedHash,
     } as unknown as RefreshToken
 
-    const MockRefreshTokenRepo = createMockRefreshTokenRepo(storedToken, expectedHash)
-
-    const program = refreshTokens({
-      refreshToken: rawToken,
+    const program = Effect.gen(function* () {
+      const useCase = yield* RefreshTokenUseCase
+      return yield* useCase.execute({ refreshToken: rawToken })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromiseExit(Effect.provide(program, layers))
+    const result = await Effect.runPromiseExit(
+      Effect.provide(program, createUseCaseLayer(storedToken, expectedHash))
+    )
 
     expect(result._tag).toBe('Failure')
   })

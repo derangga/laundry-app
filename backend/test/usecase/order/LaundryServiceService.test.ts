@@ -107,7 +107,8 @@ describe('LaundryServiceService', () => {
           yield* findById(id)
 
           // Update service
-          yield* repo.update(id, data)
+          const result = yield* repo.update(id, data)
+          return Option.getOrThrow(result)
         }),
       softDelete: (id: ServiceId) =>
         Effect.gen(function* () {

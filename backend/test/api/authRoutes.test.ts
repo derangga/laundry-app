@@ -5,15 +5,37 @@ import { createTestUsers, TestConfig } from './fixtures'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordServiceLive } from 'src/usecase/auth/PasswordService'
-import { JwtServiceLive } from 'src/usecase/auth/JwtService'
+import { JwtServiceLive, JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
 import { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
 import { User, UserId } from '@domain/User'
-import { login } from 'src/usecase/auth/LoginUseCase'
-import { refreshTokens as refreshTokensUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
-import { logout } from 'src/usecase/auth/LogoutUseCase'
-import { JwtService } from 'src/usecase/auth/JwtService'
+import { LoginUseCase, loginUseCaseImpl } from 'src/usecase/auth/LoginUseCase'
+import { RefreshTokenUseCase, refreshUseCaseImpl } from 'src/usecase/auth/RefreshTokenUseCase'
+import { LogoutUseCase, logoutUseCaseImpl } from 'src/usecase/auth/LogoutUseCase'
+import { LoginInput } from 'src/usecase/auth/LoginUseCase'
+import { RefreshTokenInput } from 'src/usecase/auth/RefreshTokenUseCase'
+import { LogoutInput } from '@domain/Auth'
 import { CurrentUser } from '@domain/CurrentUser'
+import { JwtPayload } from '@domain/Auth'
+
+// Helper functions that call through the service interface
+const login = (input: LoginInput) =>
+  Effect.gen(function* () {
+    const useCase = yield* LoginUseCase
+    return yield* useCase.execute(input)
+  })
+
+const refreshTokensUseCase = (input: RefreshTokenInput) =>
+  Effect.gen(function* () {
+    const useCase = yield* RefreshTokenUseCase
+    return yield* useCase.execute(input)
+  })
+
+const logout = (input: LogoutInput) =>
+  Effect.gen(function* () {
+    const useCase = yield* LogoutUseCase
+    return yield* useCase.execute(input)
+  })
 
 const createMockUserRepo = (users: User[]) =>
   Layer.succeed(UserRepository, {
@@ -64,14 +86,21 @@ const createMockRefreshTokenRepo = (tokens: RefreshToken[]) => {
   return Layer.succeed(RefreshTokenRepository, mockRepo as unknown as RefreshTokenRepository)
 }
 
-const createTestLayer = (users: User[], storedRefreshTokens: RefreshToken[]) =>
-  Layer.mergeAll(
+const createTestLayer = (users: User[], storedRefreshTokens: RefreshToken[]) => {
+  const baseRepos = Layer.mergeAll(
     createMockUserRepo(users),
     createMockRefreshTokenRepo(storedRefreshTokens),
     PasswordServiceLive,
     JwtServiceLive,
     TokenGeneratorLive
   ).pipe(Layer.provide(TestConfig))
+
+  return Layer.mergeAll(
+    Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))),
+    Layer.effect(RefreshTokenUseCase, Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))),
+    Layer.effect(LogoutUseCase, Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl)))
+  ).pipe(Layer.provideMerge(baseRepos))
+}
 
 const provideCurrentUser = (user: User) =>
   Layer.succeed(CurrentUser, {
@@ -284,7 +313,7 @@ describe('POST /api/auth/logout', () => {
 
   it('should logout successfully', async () => {
     const baseLayer = createTestLayer([testUsers.admin.user, testUsers.staff.user], refreshTokens)
-    const fullLayer = Layer.mergeAll(baseLayer, provideCurrentUser(testUsers.admin.user))
+    const fullLayer = Layer.provideMerge(baseLayer, provideCurrentUser(testUsers.admin.user))
 
     const program = Effect.gen(function* () {
       const loginResult = yield* login({
@@ -305,7 +334,7 @@ describe('POST /api/auth/logout', () => {
 
   it('should logout all sessions', async () => {
     const baseLayer = createTestLayer([testUsers.admin.user, testUsers.staff.user], refreshTokens)
-    const fullLayer = Layer.mergeAll(baseLayer, provideCurrentUser(testUsers.admin.user))
+    const fullLayer = Layer.provideMerge(baseLayer, provideCurrentUser(testUsers.admin.user))
 
     const program = Effect.gen(function* () {
       const loginResult = yield* login({
@@ -328,7 +357,7 @@ describe('POST /api/auth/logout', () => {
 
   it('should succeed without refresh token', async () => {
     const baseLayer = createTestLayer([testUsers.admin.user, testUsers.staff.user], refreshTokens)
-    const fullLayer = Layer.mergeAll(baseLayer, provideCurrentUser(testUsers.admin.user))
+    const fullLayer = Layer.provideMerge(baseLayer, provideCurrentUser(testUsers.admin.user))
 
     const result = await Effect.runPromise(Effect.provide(logout({}), fullLayer))
     expect(result.success).toBe(true)
@@ -353,7 +382,7 @@ describe('Integration Flows', () => {
 
   it('should complete full authentication flow', async () => {
     const baseLayer = createTestLayer([testUsers.admin.user, testUsers.staff.user], refreshTokens)
-    const fullLayer = Layer.mergeAll(baseLayer, provideCurrentUser(testUsers.admin.user))
+    const fullLayer = Layer.provideMerge(baseLayer, provideCurrentUser(testUsers.admin.user))
 
     const program = Effect.gen(function* () {
       const loginResult = yield* login({
@@ -425,9 +454,9 @@ describe('Cookie Security', () => {
 
     const { payload } = await Effect.runPromise(Effect.provide(program, testLayer))
 
-    expect(payload.sub).toBeDefined()
-    expect(payload.email).toBeDefined()
-    expect(payload.role).toBeDefined()
+    expect((payload as JwtPayload).sub).toBeDefined()
+    expect((payload as JwtPayload).email).toBeDefined()
+    expect((payload as JwtPayload).role).toBeDefined()
   })
 })
 
@@ -435,7 +464,7 @@ describe('GET /api/auth/me - Get Current User', () => {
   it('should return current user with valid token', async () => {
     const testUsers = await createTestUsers()
     const testLayer = createTestLayer([testUsers.admin.user], [])
-    const fullLayer = Layer.mergeAll(
+    const fullLayer = Layer.provideMerge(
       testLayer,
       Layer.succeed(CurrentUser, {
         id: testUsers.admin.user.id,
@@ -472,7 +501,7 @@ describe('GET /api/auth/me - Get Current User', () => {
   it('should fail when user not found in database', async () => {
     const testUsers = await createTestUsers()
     const emptyLayer = createTestLayer([], []) // No users in repository
-    const fullLayer = Layer.mergeAll(
+    const fullLayer = Layer.provideMerge(
       emptyLayer,
       Layer.succeed(CurrentUser, {
         id: testUsers.admin.user.id,

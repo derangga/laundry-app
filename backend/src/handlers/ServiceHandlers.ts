@@ -1,5 +1,5 @@
 import { HttpApiBuilder } from '@effect/platform'
-import { Effect, Option } from 'effect'
+import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
 import { ServiceId, SuccessDeleteService } from '@domain/LaundryService'
@@ -23,9 +23,9 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
             ? serviceService.findAll()
             : serviceService.findActive()
         return yield* findFn.pipe(
-          Effect.mapError(
-            () => new RetrieveDataEror({ message: 'failed get active laundry service' })
-          )
+          Effect.catchTags({
+            SqlError: () => new RetrieveDataEror({ message: 'failed get active laundry service' }),
+          })
         )
       })
     )
@@ -45,10 +45,8 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
 
         const serviceService = yield* LaundryServiceService
         return yield* serviceService.create(payload).pipe(
-          Effect.mapError((error) => {
-            return new ValidationError({
-              message: error.message,
-            })
+          Effect.catchTags({
+            SqlError: (error) => new ValidationError({ message: error.message }),
           })
         )
       })
@@ -71,24 +69,13 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
 
         const serviceService = yield* LaundryServiceService
 
-        const result = yield* serviceService.update(ServiceId.make(id), payload).pipe(
+        return yield* serviceService.update(ServiceId.make(id), payload).pipe(
           Effect.catchTags({
             ServiceNotFound: () =>
               new ServiceNotFound({ message: `Service not found with id: ${id}` }),
             SqlError: (cause) => new UnprocessibleEntity({ message: cause.message }),
           })
         )
-
-        if (Option.isNone(result)) {
-          return yield* Effect.fail(
-            new ServiceNotFound({
-              message: `Service not found with id: ${id}`,
-              serviceId: id,
-            })
-          )
-        }
-
-        return result.value
       })
     )
 
@@ -109,10 +96,11 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
 
         const serviceService = yield* LaundryServiceService
         return yield* serviceService.softDelete(ServiceId.make(id)).pipe(
-          Effect.flatMap(() =>
-            Effect.succeed(SuccessDeleteService.make({ message: 'Success delete services' }))
-          ),
-          Effect.mapError(() => new UpdateDataEror({ message: 'Failed remove services' }))
+          Effect.map(() => SuccessDeleteService.make({ message: 'Success delete services' })),
+          Effect.catchTags({
+            ServiceNotFound: () => new UpdateDataEror({ message: 'Failed remove services' }),
+            SqlError: () => new UpdateDataEror({ message: 'Failed remove services' }),
+          })
         )
       })
     )

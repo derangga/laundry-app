@@ -44,6 +44,20 @@ export class OrderItem extends Model.Class<OrderItem>('OrderItem')({
   created_at: Model.DateTimeInsertFromDate,
 }) {}
 
+// DB-specific decode schema for SELECT rows — uses DateTimeUtcFromDate instead of insert/update schemas
+export const OrderFromDb = Schema.Struct({
+  id: OrderId,
+  order_number: Schema.String,
+  customer_id: CustomerId,
+  status: OrderStatus,
+  payment_status: PaymentStatus,
+  total_price: DecimalNumber,
+  created_by: UserId,
+  created_at: Schema.DateTimeUtcFromDate,
+  updated_at: Schema.DateTimeUtcFromDate,
+})
+export type OrderFromDb = typeof OrderFromDb.Type
+
 export class OrderWithDetailsFromDb extends Schema.Class<OrderWithDetailsFromDb>(
   'OrderWithDetailsFromDb'
 )({

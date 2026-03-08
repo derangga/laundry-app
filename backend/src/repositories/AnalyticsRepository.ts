@@ -15,41 +15,40 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
         startDate: Date,
         endDate: Date,
         paymentStatus: Option.Option<PaymentStatus>
-      ): Effect.Effect<readonly WeeklyRow[], SqlError.SqlError> => {
-        // Payment filter handled at app level — if Option.none(), no WHERE clause for payment_status
-        if (Option.isSome(paymentStatus)) {
-          return sql`
-            SELECT
-              DATE_TRUNC('week', created_at)::date AS week_start,
-              COALESCE(SUM(total_price), 0) AS total_revenue,
-              COUNT(*) AS order_count
-            FROM orders
-            WHERE created_at >= ${startDate}
-              AND created_at < ${endDate}
-              AND payment_status = ${paymentStatus.value}
-            GROUP BY DATE_TRUNC('week', created_at)
-            ORDER BY week_start ASC
-          `.pipe(
-            Effect.flatMap((rows) => decodeWeeklyRows(rows)),
-            Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-          )
-        }
-
-        return sql`
-          SELECT
-            DATE_TRUNC('week', created_at)::date AS week_start,
-            COALESCE(SUM(total_price), 0) AS total_revenue,
-            COUNT(*) AS order_count
-          FROM orders
-          WHERE created_at >= ${startDate}
-            AND created_at < ${endDate}
-          GROUP BY DATE_TRUNC('week', created_at)
-          ORDER BY week_start ASC
-        `.pipe(
-          Effect.flatMap((rows) => decodeWeeklyRows(rows)),
-          Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
-        )
-      }
+      ): Effect.Effect<readonly WeeklyRow[], SqlError.SqlError> =>
+        Option.match(paymentStatus, {
+          onNone: () =>
+            sql`
+              SELECT
+                DATE_TRUNC('week', created_at)::date AS week_start,
+                COALESCE(SUM(total_price), 0) AS total_revenue,
+                COUNT(*) AS order_count
+              FROM orders
+              WHERE created_at >= ${startDate}
+                AND created_at < ${endDate}
+              GROUP BY DATE_TRUNC('week', created_at)
+              ORDER BY week_start ASC
+            `.pipe(
+              Effect.flatMap((rows) => decodeWeeklyRows(rows)),
+              Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+            ),
+          onSome: (status) =>
+            sql`
+              SELECT
+                DATE_TRUNC('week', created_at)::date AS week_start,
+                COALESCE(SUM(total_price), 0) AS total_revenue,
+                COUNT(*) AS order_count
+              FROM orders
+              WHERE created_at >= ${startDate}
+                AND created_at < ${endDate}
+                AND payment_status = ${status}
+              GROUP BY DATE_TRUNC('week', created_at)
+              ORDER BY week_start ASC
+            `.pipe(
+              Effect.flatMap((rows) => decodeWeeklyRows(rows)),
+              Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+            ),
+        })
 
       const getTodaysOrderCount = (): Effect.Effect<number, SqlError.SqlError> =>
         sql<{ count: string }>`

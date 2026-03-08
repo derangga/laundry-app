@@ -54,7 +54,7 @@ export class JwtService extends Effect.Service<JwtService>()('JwtService', {
           new InvalidTokenError({ message: `Failed to sign access token: ${error}` }),
       })
 
-    const signRefreshToken = (userId: UserId): Effect.Effect<string, Error> =>
+    const signRefreshToken = (userId: UserId): Effect.Effect<string, InvalidTokenError> =>
       Effect.tryPromise({
         try: async () => {
           const jwt = await new jose.SignJWT({})
@@ -88,7 +88,7 @@ export class JwtService extends Effect.Service<JwtService>()('JwtService', {
           }
           return InvalidTokenError.malformed()
         },
-      }).pipe(Effect.catchAll((error) => Effect.fail(error as InvalidTokenError)))
+      })
 
     const verifyRefreshToken = (token: string): Effect.Effect<{ sub: UserId }, InvalidTokenError> =>
       Effect.tryPromise({
@@ -107,7 +107,7 @@ export class JwtService extends Effect.Service<JwtService>()('JwtService', {
           }
           return InvalidTokenError.malformed()
         },
-      }).pipe(Effect.catchAll((error) => Effect.fail(error as InvalidTokenError)))
+      })
 
     const getRefreshExpiryDate = (): Date => {
       const now = new Date()

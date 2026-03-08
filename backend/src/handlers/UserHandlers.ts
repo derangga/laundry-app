@@ -24,9 +24,8 @@ export const UserHandlersLive = HttpApiBuilder.group(AppApi, 'Users', (handlers)
       Effect.gen(function* () {
         const listUsersUseCase = yield* ListUsersUseCase
         return yield* listUsersUseCase.execute().pipe(
-          Effect.mapError((cause) => {
-            console.log(cause)
-            return new RetrieveDataEror({ message: cause.message })
+          Effect.catchTags({
+            SqlError: (cause) => new RetrieveDataEror({ message: cause.message }),
           })
         )
       })
