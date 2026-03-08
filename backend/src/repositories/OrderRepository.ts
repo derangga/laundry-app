@@ -78,9 +78,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         FROM orders
         WHERE customer_id = ${customerId}
         ORDER BY created_at DESC
-      `.pipe(
-        Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie))
-      )
+      `.pipe(Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie)))
 
     const findWithFilters = (
       options: OrderFilterOptions = defaultOrderFilterOptions
@@ -116,9 +114,9 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         allParams.push(offset)
       }
 
-      return sql.unsafe(query, allParams).pipe(
-        Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie))
-      )
+      return sql
+        .unsafe(query, allParams)
+        .pipe(Effect.flatMap((rows) => decodeOrders(rows).pipe(Effect.orDie)))
     }
 
     const findWithDetails = (
@@ -172,9 +170,9 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         allParams.push(offset)
       }
 
-      return sql.unsafe(query, allParams).pipe(
-        Effect.flatMap((rows) => decodeOrdersWithDetails(rows).pipe(Effect.orDie))
-      )
+      return sql
+        .unsafe(query, allParams)
+        .pipe(Effect.flatMap((rows) => decodeOrdersWithDetails(rows).pipe(Effect.orDie)))
     }
 
     const findSummaries = (
@@ -192,9 +190,9 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       }
       query += ' ORDER BY created_at DESC'
 
-      return sql.unsafe(query, params).pipe(
-        Effect.flatMap((rows) => decodeOrderSummaries(rows).pipe(Effect.orDie))
-      )
+      return sql
+        .unsafe(query, params)
+        .pipe(Effect.flatMap((rows) => decodeOrderSummaries(rows).pipe(Effect.orDie)))
     }
 
     const updateStatus = (

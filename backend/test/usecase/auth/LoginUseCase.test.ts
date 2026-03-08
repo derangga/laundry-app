@@ -68,7 +68,7 @@ describe('LoginUseCase', () => {
   } as unknown as RefreshTokenRepository)
 
   const createUseCaseLayer = (user: User | null) =>
-    Layer.effect(LoginUseCase, loginUseCaseImpl).pipe(
+    Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))).pipe(
       Layer.provide(
         Layer.mergeAll(
           createMockUserRepo(user),

@@ -38,9 +38,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           FROM order_items
           WHERE order_id = ${orderId}
           ORDER BY created_at ASC
-        `.pipe(
-          Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie))
-        )
+        `.pipe(Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie)))
 
       const findByOrderIdWithService = (
         orderId: OrderId
@@ -60,9 +58,7 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           JOIN services s ON oi.service_id = s.id
           WHERE oi.order_id = ${orderId}
           ORDER BY oi.created_at ASC
-        `.pipe(
-          Effect.flatMap((rows) => decodeOrderItemsWithService(rows).pipe(Effect.orDie))
-        )
+        `.pipe(Effect.flatMap((rows) => decodeOrderItemsWithService(rows).pipe(Effect.orDie)))
 
       const insert = (data: OrderItemInsertData): Effect.Effect<OrderItem, SqlError.SqlError> =>
         sql`
@@ -106,9 +102,9 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
           RETURNING id, order_id, service_id, quantity, price_at_order, subtotal, created_at
         `
 
-        return sql.unsafe(query, itemParams).pipe(
-          Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie))
-        )
+        return sql
+          .unsafe(query, itemParams)
+          .pipe(Effect.flatMap((rows) => decodeOrderItems(rows).pipe(Effect.orDie)))
       }
 
       const deleteByOrderId = (orderId: OrderId): Effect.Effect<void, SqlError.SqlError> =>

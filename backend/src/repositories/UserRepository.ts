@@ -56,7 +56,9 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       )
     }
 
-    const findByEmail = (email: string): Effect.Effect<Option.Option<UserFromDb>, SqlError.SqlError> =>
+    const findByEmail = (
+      email: string
+    ): Effect.Effect<Option.Option<UserFromDb>, SqlError.SqlError> =>
       sql`
         SELECT id, email, password_hash, name, role, created_at, updated_at, deleted_at
         FROM users
@@ -119,9 +121,7 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         FROM users
         WHERE deleted_at IS NULL
         ORDER BY created_at DESC
-      `.pipe(
-        Effect.flatMap((rows) => decodeUsersWithoutPassword(rows).pipe(Effect.orDie))
-      )
+      `.pipe(Effect.flatMap((rows) => decodeUsersWithoutPassword(rows).pipe(Effect.orDie)))
 
     const softDelete = (
       id: UserId

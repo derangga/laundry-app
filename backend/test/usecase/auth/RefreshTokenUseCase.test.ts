@@ -87,7 +87,7 @@ describe('RefreshTokenUseCase', () => {
   })
 
   const createUseCaseLayer = (storedToken: RefreshToken | null, tokenHash: string) =>
-    Layer.effect(RefreshTokenUseCase, refreshUseCaseImpl).pipe(
+    Layer.effect(RefreshTokenUseCase, Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))).pipe(
       Layer.provide(
         Layer.mergeAll(
           MockUserRepo,

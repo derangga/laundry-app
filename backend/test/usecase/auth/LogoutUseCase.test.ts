@@ -43,7 +43,7 @@ describe('LogoutUseCase', () => {
     } as unknown as RefreshTokenRepository)
 
   const createUseCaseLayer = () =>
-    Layer.effect(LogoutUseCase, logoutUseCaseImpl).pipe(
+    Layer.effect(LogoutUseCase, Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl))).pipe(
       Layer.provide(Layer.merge(createMockRefreshTokenRepo(), TokenGeneratorLive))
     )
 
