@@ -92,6 +92,7 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+      - frontend
     ports:
       - "80:80"
       - "443:443"
@@ -114,6 +115,33 @@ services:
       - /var/cache/nginx
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Frontend Application (SSR)
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: laundry_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      VITE_API_BASE_URL: https://localhost
+    ports:
+      - "3200:3100"
+    networks:
+      - frontend
+    # Security: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/"]
       interval: 30s
       timeout: 3s
       retries: 3
