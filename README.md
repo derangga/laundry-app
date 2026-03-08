@@ -56,7 +56,18 @@ mkdir -p secrets
 echo "postgres_dev_password" > secrets/db_password.txt
 ```
 
-4. **Start PostgreSQL**
+4. **Generate SSL certificates**
+
+Create self-signed certificates for local HTTPS:
+
+```bash
+mkdir -p ssl
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ssl/key.pem -out ssl/cert.pem \
+  -subj "/C=US/ST=State/L=City/O=Development"
+```
+
+5. **Start PostgreSQL**
 
 ```bash
 docker-compose up -d postgres
@@ -64,13 +75,13 @@ docker-compose up -d postgres
 
 Wait for the container to be healthy (~10 seconds).
 
-5. **Run database migrations**
+6. **Run database migrations**
 
 ```bash
 cd backend && bun run migrate:up
 ```
 
-6. **Create environment file**
+7. **Create environment file**
 
 Create `backend/.env`:
 
@@ -92,9 +103,10 @@ PORT=3000
 HOST=127.0.0.1
 NODE_ENV=development
 BCRYPT_ROUNDS=12
+CORS_ORIGIN=http://localhost:3100
 ```
 
-7. **Start development servers**
+8. **Start development servers**
 
 ```bash
 bun run dev

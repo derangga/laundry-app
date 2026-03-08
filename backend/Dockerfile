@@ -17,6 +17,7 @@ COPY bun.lock package.json ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/observability/package.json ./packages/observability/
 
 # Install dependencies at root level (workspace-aware)
 RUN bun install --frozen-lockfile
@@ -26,13 +27,14 @@ COPY backend/ ./backend/
 
 # Copy shared package source code (required for build-time imports)
 COPY packages/shared/ ./packages/shared/
+COPY packages/observability/ ./packages/observability/
 
 # Build application
 WORKDIR /app/backend
 RUN bun run build
 
 # Production stage
-FROM oven/bun:1-slim
+FROM oven/bun:1
 
 # Create non-root user and group
 RUN groupadd --system --gid 1001 laundry && \
