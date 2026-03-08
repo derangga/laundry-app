@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option, ConfigProvider } from 'effect'
-import { login } from 'src/usecase/auth/LoginUseCase'
+import { LoginUseCase, loginUseCaseImpl } from 'src/usecase/auth/LoginUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
@@ -67,6 +67,19 @@ describe('LoginUseCase', () => {
     deleteExpired: () => Effect.succeed(0),
   } as unknown as RefreshTokenRepository)
 
+  const createUseCaseLayer = (user: User | null) =>
+    Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))).pipe(
+      Layer.provide(
+        Layer.mergeAll(
+          createMockUserRepo(user),
+          MockRefreshTokenRepo,
+          PasswordServiceLive,
+          JwtServiceLive,
+          TokenGeneratorLive
+        ).pipe(Layer.provide(TestConfig))
+      )
+    )
+
   beforeEach(async () => {
     // Hash the password before tests
     const hashEffect = Effect.gen(function* () {
@@ -80,22 +93,16 @@ describe('LoginUseCase', () => {
 
   it('should login successfully with valid credentials', async () => {
     const testUser = createTestUser(hashedPassword)
-    const MockUserRepo = createMockUserRepo(testUser)
 
-    const program = login({
-      email: 'test@example.com',
-      password: validPassword,
+    const program = Effect.gen(function* () {
+      const useCase = yield* LoginUseCase
+      return yield* useCase.execute({
+        email: 'test@example.com',
+        password: validPassword,
+      })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      PasswordServiceLive,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromise(Effect.provide(program, layers))
+    const result = await Effect.runPromise(Effect.provide(program, createUseCaseLayer(testUser)))
 
     expect(result.accessToken).toBeDefined()
     expect(result.refreshToken).toBeDefined()
@@ -105,44 +112,33 @@ describe('LoginUseCase', () => {
   })
 
   it('should fail with invalid email', async () => {
-    const MockUserRepo = createMockUserRepo(null)
-
-    const program = login({
-      email: 'nonexistent@example.com',
-      password: validPassword,
+    const program = Effect.gen(function* () {
+      const useCase = yield* LoginUseCase
+      return yield* useCase.execute({
+        email: 'nonexistent@example.com',
+        password: validPassword,
+      })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      PasswordServiceLive,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromiseExit(Effect.provide(program, layers))
+    const result = await Effect.runPromiseExit(Effect.provide(program, createUseCaseLayer(null)))
 
     expect(result._tag).toBe('Failure')
   })
 
   it('should fail with invalid password', async () => {
     const testUser = createTestUser(hashedPassword)
-    const MockUserRepo = createMockUserRepo(testUser)
 
-    const program = login({
-      email: 'test@example.com',
-      password: 'wrong-password',
+    const program = Effect.gen(function* () {
+      const useCase = yield* LoginUseCase
+      return yield* useCase.execute({
+        email: 'test@example.com',
+        password: 'wrong-password',
+      })
     })
 
-    const layers = Layer.mergeAll(
-      MockUserRepo,
-      MockRefreshTokenRepo,
-      PasswordServiceLive,
-      JwtServiceLive,
-      TokenGeneratorLive
-    ).pipe(Layer.provide(TestConfig))
-
-    const result = await Effect.runPromiseExit(Effect.provide(program, layers))
+    const result = await Effect.runPromiseExit(
+      Effect.provide(program, createUseCaseLayer(testUser))
+    )
 
     expect(result._tag).toBe('Failure')
   })

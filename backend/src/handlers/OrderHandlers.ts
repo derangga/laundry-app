@@ -22,6 +22,7 @@ import {
   CustomerAlreadyExists,
   ValidationError,
   UnprocessibleEntity,
+  RetrieveDataEror,
 } from '@domain/http/HttpErrors'
 
 /**
@@ -64,33 +65,25 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
       }).pipe(
         Effect.catchTags({
           CustomerAlreadyExists: (error) =>
-            Effect.fail(
-              new CustomerAlreadyExists({
-                message: `Customer already exists with phone: ${error.phone}. Use POST /api/orders instead.`,
-                phone: error.phone,
-              })
-            ),
-          EmptyOrderError: (error) => Effect.fail(new EmptyOrderError({ message: error.message })),
+            new CustomerAlreadyExists({
+              message: `Customer already exists with phone: ${error.phone}. Use POST /api/orders instead.`,
+              phone: error.phone,
+            }),
+          EmptyOrderError: (error) => new EmptyOrderError({ message: error.message }),
           ServiceNotFound: (error) =>
-            Effect.fail(
-              new ValidationError({
-                message: `Service not found: ${error.serviceId}`,
-                field: 'items',
-              })
-            ),
+            new ValidationError({
+              message: `Service not found: ${error.serviceId}`,
+              field: 'items',
+            }),
           InvalidPhoneNumber: (error) =>
-            Effect.fail(
-              new ValidationError({
-                message: error.message,
-                field: 'customer_phone',
-              })
-            ),
+            new ValidationError({
+              message: error.message,
+              field: 'customer_phone',
+            }),
           SqlError: (error) =>
-            Effect.fail(
-              new UnprocessibleEntity({
-                message: error.message || 'Failed to create walk-in order',
-              })
-            ),
+            new UnprocessibleEntity({
+              message: error.message || 'Failed to create walk-in order',
+            }),
         })
       )
     )
@@ -156,52 +149,40 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
       Effect.gen(function* () {
         const orderRepo = yield* OrderRepository
 
+        // Decode an optional url param through a schema, failing with ValidationError if invalid
+        const decodeOptionalParam = <A>(
+          value: string | undefined,
+          schema: Schema.Schema<A>,
+          field: string
+        ): Effect.Effect<Option.Option<A>, ValidationError> =>
+          Effect.if(value === undefined, {
+            onTrue: () => Effect.succeed(Option.none()),
+            onFalse: () =>
+              Schema.decodeUnknown(schema)(value).pipe(
+                Effect.map(Option.some),
+                Effect.mapError(
+                  () => new ValidationError({ message: `Invalid ${field} value: ${value}`, field })
+                )
+              ),
+          })
+
         // Build filter options from validated urlParams
-        const customerIdOption = urlParams.customer_id
-          ? Option.some(CustomerId.make(urlParams.customer_id))
-          : Option.none()
-
-        let statusOption: Option.Option<OrderStatus> = Option.none()
-        if (urlParams.status) {
-          const statusDecode = Schema.decodeUnknownOption(OrderStatus)(urlParams.status)
-          if (statusDecode._tag === 'Some') {
-            statusOption = Option.some(statusDecode.value)
-          } else {
-            return yield* Effect.fail(
-              new ValidationError({
-                message: `Invalid status value: ${urlParams.status}`,
-                field: 'status',
-              })
-            )
-          }
-        }
-
-        let paymentStatusOption: Option.Option<PaymentStatus> = Option.none()
-        if (urlParams.payment_status) {
-          const paymentDecode = Schema.decodeUnknownOption(PaymentStatus)(urlParams.payment_status)
-          if (paymentDecode._tag === 'Some') {
-            paymentStatusOption = Option.some(paymentDecode.value)
-          } else {
-            return yield* Effect.fail(
-              new ValidationError({
-                message: `Invalid payment_status value: ${urlParams.payment_status}`,
-                field: 'payment_status',
-              })
-            )
-          }
-        }
-
-        const orderNumberOption = urlParams.order_number
-          ? Option.some(urlParams.order_number)
-          : Option.none()
-
-        const startDateOption = urlParams.start_date
-          ? Option.some(new Date(urlParams.start_date))
-          : Option.none()
-
-        const endDateOption = urlParams.end_date
-          ? Option.some(new Date(urlParams.end_date))
-          : Option.none()
+        const customerIdOption = Option.fromNullable(urlParams.customer_id).pipe(
+          Option.map(CustomerId.make)
+        )
+        const statusOption = yield* decodeOptionalParam(urlParams.status, OrderStatus, 'status')
+        const paymentStatusOption = yield* decodeOptionalParam(
+          urlParams.payment_status,
+          PaymentStatus,
+          'payment_status'
+        )
+        const orderNumberOption = Option.fromNullable(urlParams.order_number)
+        const startDateOption = Option.fromNullable(urlParams.start_date).pipe(
+          Option.map((d) => new Date(d))
+        )
+        const endDateOption = Option.fromNullable(urlParams.end_date).pipe(
+          Option.map((d) => new Date(d))
+        )
 
         const filters = OrderFilterOptions.make({
           customer_id: customerIdOption,
@@ -215,10 +196,11 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
         })
 
         const orders = yield* orderRepo.findWithDetails(filters).pipe(
-          Effect.mapError((error) => {
-            return new ValidationError({
-              message: `Failed to retrieve orders: ${error.message}`,
-            })
+          Effect.catchTags({
+            SqlError: (error) =>
+              new RetrieveDataEror({
+                message: `Failed to retrieve orders: ${error.message}`,
+              }),
           })
         )
 
@@ -239,15 +221,6 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
 
         const id = path.id
 
-        if (!id) {
-          return yield* Effect.fail(
-            new ValidationError({
-              message: 'Order ID is required',
-              field: 'id',
-            })
-          )
-        }
-
         // Find order
         const orderOption = yield* orderRepo.findById(OrderId.make(id))
 
@@ -264,10 +237,11 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
 
         // Find order items
         const items = yield* orderItemRepo.findByOrderId(order.id).pipe(
-          Effect.mapError((error) => {
-            return new ValidationError({
-              message: `Failed to retrieve order items: ${error.message}`,
-            })
+          Effect.catchTags({
+            SqlError: (error) =>
+              new ValidationError({
+                message: `Failed to retrieve order items: ${error.message}`,
+              }),
           })
         )
 
@@ -305,11 +279,10 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
     .handle('updateStatus', ({ path, payload }) =>
       Effect.gen(function* () {
         const orderService = yield* OrderService
-        const orderRepo = yield* OrderRepository
         const id = path.id
 
-        // Update status
-        yield* orderService.updateStatus(OrderId.make(id), payload.status).pipe(
+        // Update status and get updated order
+        const order = yield* orderService.updateStatus(OrderId.make(id), payload.status).pipe(
           Effect.catchTags({
             OrderNotFound: () =>
               new OrderNotFound({
@@ -324,24 +297,10 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
               }),
             SqlError: () =>
               new UnprocessibleEntity({
-                message: 'Failed to create order',
+                message: 'Failed to update order status',
               }),
           })
         )
-
-        // Fetch updated order
-        const updatedOrderOption = yield* orderRepo.findById(OrderId.make(id))
-
-        if (Option.isNone(updatedOrderOption)) {
-          return yield* Effect.fail(
-            new OrderNotFound({
-              message: `Order not found with id: ${id}`,
-              orderId: id,
-            })
-          )
-        }
-
-        const order = updatedOrderOption.value
 
         return OrderResponse.make({
           id: order.id,
@@ -367,30 +326,18 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
     .handle('updatePayment', ({ path, payload }) =>
       Effect.gen(function* () {
         const orderService = yield* OrderService
-        const orderRepo = yield* OrderRepository
         const id = path.id
 
-        // Update payment status
-        yield* orderService.updatePaymentStatus(OrderId.make(id), payload.payment_status).pipe(
-          Effect.catchTags({
-            OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),
-            SqlError: () => new UnprocessibleEntity({ message: 'Failed to update payment status' }),
-          })
-        )
-
-        // Fetch updated order
-        const updatedOrderOption = yield* orderRepo.findById(OrderId.make(id))
-
-        if (Option.isNone(updatedOrderOption)) {
-          return yield* Effect.fail(
-            new OrderNotFound({
-              message: `Order not found with id: ${id}`,
-              orderId: id,
+        // Update payment status and get updated order
+        const order = yield* orderService
+          .updatePaymentStatus(OrderId.make(id), payload.payment_status)
+          .pipe(
+            Effect.catchTags({
+              OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),
+              SqlError: () =>
+                new UnprocessibleEntity({ message: 'Failed to update payment status' }),
             })
           )
-        }
-
-        const order = updatedOrderOption.value
 
         return OrderResponse.make({
           id: order.id,

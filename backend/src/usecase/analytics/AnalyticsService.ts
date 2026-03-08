@@ -64,7 +64,7 @@ export class AnalyticsService extends Effect.Service<AnalyticsService>()('Analyt
       Effect.gen(function* () {
         // Translate 'all' → Option.none(), 'paid'/'unpaid' → Option.some(value)
         const paymentStatusOption: Option.Option<PaymentStatus> =
-          paymentFilter === 'all' ? Option.none() : Option.some(paymentFilter as PaymentStatus)
+          paymentFilter === 'all' ? Option.none() : Option.some(paymentFilter)
 
         const rows = yield* analyticsRepo.getWeeklyAggregation(
           startDate,

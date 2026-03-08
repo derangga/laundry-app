@@ -15,87 +15,92 @@ import { RefreshTokenInput, AuthResponse, JwtPayload, AuthenticatedUser } from '
 export { RefreshTokenInput }
 export type RefreshTokenResult = AuthResponse
 
-export const refreshTokens = (
-  input: RefreshTokenInput
-): Effect.Effect<
-  RefreshTokenResult,
-  | InvalidTokenError
-  | RefreshTokenNotFoundError
-  | RefreshTokenNotCreated
-  | UserNotFoundError
-  | SqlError.SqlError,
-  UserRepository | RefreshTokenRepository | JwtService | TokenGenerator
-> =>
-  Effect.gen(function* () {
-    const userRepo = yield* UserRepository
-    const refreshTokenRepo = yield* RefreshTokenRepository
-    const jwtService = yield* JwtService
-    const tokenGenerator = yield* TokenGenerator
+export const refreshUseCaseImpl = Effect.gen(function* () {
+  const userRepo = yield* UserRepository
+  const refreshTokenRepo = yield* RefreshTokenRepository
+  const jwtService = yield* JwtService
+  const tokenGenerator = yield* TokenGenerator
 
-    // Validate refresh token is present
-    if (!input.refreshToken) {
-      return yield* Effect.fail(InvalidTokenError.invalid())
-    }
+  const execute = (
+    input: RefreshTokenInput
+  ): Effect.Effect<
+    RefreshTokenResult,
+    | InvalidTokenError
+    | RefreshTokenNotFoundError
+    | RefreshTokenNotCreated
+    | UserNotFoundError
+    | SqlError.SqlError
+  > =>
+    Effect.gen(function* () {
+      // Validate refresh token is present
+      if (!input.refreshToken) {
+        return yield* Effect.fail(InvalidTokenError.invalid())
+      }
 
-    // Hash the incoming refresh token
-    const hashedToken = yield* tokenGenerator.hash(input.refreshToken)
+      // Hash the incoming refresh token
+      const hashedToken = yield* tokenGenerator.hash(input.refreshToken)
 
-    // Find the stored refresh token
-    const storedTokenOption = yield* refreshTokenRepo.findByTokenHash(hashedToken)
-    if (Option.isNone(storedTokenOption)) {
-      return yield* Effect.fail(RefreshTokenNotFoundError.make())
-    }
-    const storedToken = storedTokenOption.value
+      // Find the stored refresh token
+      const storedTokenOption = yield* refreshTokenRepo.findByTokenHash(hashedToken)
+      if (Option.isNone(storedTokenOption)) {
+        return yield* Effect.fail(RefreshTokenNotFoundError.make())
+      }
+      const storedToken = storedTokenOption.value
 
-    // Revoke the old refresh token (token rotation)
-    yield* refreshTokenRepo.revoke(storedToken.id)
+      // Revoke the old refresh token (token rotation)
+      yield* refreshTokenRepo.revoke(storedToken.id)
 
-    // Find the user
-    const userOption = yield* userRepo.findById(storedToken.user_id)
-    if (Option.isNone(userOption)) {
-      return yield* Effect.fail(UserNotFoundError.byId(storedToken.user_id))
-    }
-    const user = userOption.value
+      // Find the user
+      const userOption = yield* userRepo.findById(storedToken.user_id)
+      if (Option.isNone(userOption)) {
+        return yield* Effect.fail(UserNotFoundError.byId(storedToken.user_id))
+      }
+      const user = userOption.value
 
-    // Generate new access token
-    const jwtPayload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    }
-    const accessToken = yield* jwtService.signAccessToken(jwtPayload)
-
-    // Generate new refresh token
-    const { rawToken: newRawToken, hashedToken: newHashedToken } =
-      yield* tokenGenerator.generateAndHash()
-    const expiresAt = jwtService.getRefreshExpiryDate()
-
-    // Store new refresh token
-    yield* refreshTokenRepo.insert({
-      user_id: user.id,
-      token_hash: newHashedToken,
-      expires_at: expiresAt,
-    })
-
-    return AuthResponse.make({
-      accessToken,
-      refreshToken: newRawToken,
-      user: AuthenticatedUser.make({
-        id: user.id,
+      // Generate new access token
+      const jwtPayload: JwtPayload = {
+        sub: user.id,
         email: user.email,
-        name: user.name,
         role: user.role,
-      }),
+      }
+      const accessToken = yield* jwtService.signAccessToken(jwtPayload)
+
+      // Generate new refresh token
+      const { rawToken: newRawToken, hashedToken: newHashedToken } =
+        yield* tokenGenerator.generateAndHash()
+      const expiresAt = jwtService.getRefreshExpiryDate()
+
+      // Store new refresh token
+      yield* refreshTokenRepo.insert({
+        user_id: user.id,
+        token_hash: newHashedToken,
+        expires_at: expiresAt,
+      })
+
+      return AuthResponse.make({
+        accessToken,
+        refreshToken: newRawToken,
+        user: AuthenticatedUser.make({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        }),
+      })
     })
-  })
+
+  return { execute } as const
+})
 
 export class RefreshTokenUseCase extends Effect.Service<RefreshTokenUseCase>()(
   'RefreshTokenUseCase',
   {
-    effect: Effect.gen(function* () {
-      return {
-        execute: refreshTokens,
-      } as const
-    }),
+    effect: refreshUseCaseImpl,
+    dependencies: [
+      UserRepository.Default,
+      RefreshTokenRepository.Default,
+      JwtService.Default,
+      TokenGenerator.Default,
+    ],
   }
 ) {}

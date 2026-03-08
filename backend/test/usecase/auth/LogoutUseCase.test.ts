@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { logout, logoutAll } from 'src/usecase/auth/LogoutUseCase'
+import { LogoutUseCase, logoutUseCaseImpl } from 'src/usecase/auth/LogoutUseCase'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
 import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
@@ -42,21 +42,28 @@ describe('LogoutUseCase', () => {
       deleteExpired: () => Effect.succeed(0),
     } as unknown as RefreshTokenRepository)
 
+  const createUseCaseLayer = () =>
+    Layer.effect(LogoutUseCase, Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl))).pipe(
+      Layer.provide(Layer.merge(createMockRefreshTokenRepo(), TokenGeneratorLive))
+    )
+
   beforeEach(() => {
     revokedTokenHashes = []
     revokedUserIds = []
   })
 
-  describe('logout', () => {
+  describe('execute', () => {
     it('should logout with specific refresh token', async () => {
-      const MockRefreshTokenRepo = createMockRefreshTokenRepo()
-      const program = logout({
-        refreshToken: 'test-refresh-token',
+      const program = Effect.gen(function* () {
+        const useCase = yield* LogoutUseCase
+        return yield* useCase.execute({ refreshToken: 'test-refresh-token' })
       })
 
-      const layers = Layer.merge(MockRefreshTokenRepo, TokenGeneratorLive)
       const result = await Effect.runPromise(
-        Effect.provide(Effect.provide(program, layers), CurrentUser.layer(testUser))
+        Effect.provide(
+          Effect.provide(program, createUseCaseLayer()),
+          CurrentUser.layer(testUser)
+        )
       )
 
       expect(result.success).toBe(true)
@@ -65,14 +72,16 @@ describe('LogoutUseCase', () => {
     })
 
     it('should logout from all sessions when logoutAll is true', async () => {
-      const MockRefreshTokenRepo = createMockRefreshTokenRepo()
-      const program = logout({
-        logoutAll: true,
+      const program = Effect.gen(function* () {
+        const useCase = yield* LogoutUseCase
+        return yield* useCase.execute({ logoutAll: true })
       })
 
-      const layers = Layer.merge(MockRefreshTokenRepo, TokenGeneratorLive)
       const result = await Effect.runPromise(
-        Effect.provide(Effect.provide(program, layers), CurrentUser.layer(testUser))
+        Effect.provide(
+          Effect.provide(program, createUseCaseLayer()),
+          CurrentUser.layer(testUser)
+        )
       )
 
       expect(result.success).toBe(true)
@@ -81,12 +90,16 @@ describe('LogoutUseCase', () => {
     })
 
     it('should handle logout without refresh token', async () => {
-      const MockRefreshTokenRepo = createMockRefreshTokenRepo()
-      const program = logout({})
+      const program = Effect.gen(function* () {
+        const useCase = yield* LogoutUseCase
+        return yield* useCase.execute({})
+      })
 
-      const layers = Layer.merge(MockRefreshTokenRepo, TokenGeneratorLive)
       const result = await Effect.runPromise(
-        Effect.provide(Effect.provide(program, layers), CurrentUser.layer(testUser))
+        Effect.provide(
+          Effect.provide(program, createUseCaseLayer()),
+          CurrentUser.layer(testUser)
+        )
       )
 
       expect(result.success).toBe(true)
@@ -94,14 +107,13 @@ describe('LogoutUseCase', () => {
     })
 
     it('should fail when user is not authenticated', async () => {
-      const MockRefreshTokenRepo = createMockRefreshTokenRepo()
-      const program = logout({
-        refreshToken: 'test-refresh-token',
+      const program = Effect.gen(function* () {
+        const useCase = yield* LogoutUseCase
+        return yield* useCase.execute({ refreshToken: 'test-refresh-token' })
       })
 
-      const layers = Layer.merge(MockRefreshTokenRepo, TokenGeneratorLive)
       // Cast to handle missing CurrentUser context for testing
-      const programWithLayers = Effect.provide(program, layers) as Effect.Effect<
+      const programWithLayers = Effect.provide(program, createUseCaseLayer()) as Effect.Effect<
         unknown,
         unknown,
         never
@@ -110,18 +122,24 @@ describe('LogoutUseCase', () => {
 
       expect(result._tag).toBe('Failure')
     })
-  })
 
-  describe('logoutAll', () => {
-    it('should revoke all tokens for a user', async () => {
-      const MockRefreshTokenRepo = createMockRefreshTokenRepo()
-      const userId = 'user-123' as UserId
-      const program = logoutAll(userId)
+    it('should revoke all tokens when logoutAll via revokeAllForUser', async () => {
+      const userId = testUser.id
 
-      const result = await Effect.runPromise(Effect.provide(program, MockRefreshTokenRepo))
+      const program = Effect.gen(function* () {
+        const useCase = yield* LogoutUseCase
+        return yield* useCase.execute({ logoutAll: true })
+      })
+
+      const result = await Effect.runPromise(
+        Effect.provide(
+          Effect.provide(program, createUseCaseLayer()),
+          CurrentUser.layer(testUser)
+        )
+      )
 
       expect(result.success).toBe(true)
-      expect(result.message).toContain('terminated')
+      expect(result.message).toContain('sessions')
       expect(revokedUserIds).toContain(userId)
     })
   })

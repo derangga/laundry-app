@@ -448,16 +448,19 @@ describe('OrderRepository', () => {
 
   describe('updateStatus', () => {
     it('should update order status', async () => {
-      const mockSqlLayer = createMockSqlClient<never>({ rows: [] })
+      const updatedOrder = createMockOrder({ status: 'in_progress' as OrderStatus })
+      const mockSqlLayer = createMockSqlClient<Order>({ rows: [updatedOrder] })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
         return yield* repo.updateStatus('order-123' as OrderId, 'in_progress' as OrderStatus)
       })
 
-      await Effect.runPromise(
+      const result = await Effect.runPromise(
         program.pipe(Effect.provide(OrderRepository.Default), Effect.provide(mockSqlLayer))
       )
+
+      expect(result.status).toBe('in_progress')
     })
 
     it('should handle SQL errors', async () => {
@@ -482,16 +485,19 @@ describe('OrderRepository', () => {
 
   describe('updatePaymentStatus', () => {
     it('should update payment status', async () => {
-      const mockSqlLayer = createMockSqlClient<never>({ rows: [] })
+      const updatedOrder = createMockOrder({ payment_status: 'paid' as PaymentStatus })
+      const mockSqlLayer = createMockSqlClient<Order>({ rows: [updatedOrder] })
 
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
         return yield* repo.updatePaymentStatus('order-123' as OrderId, 'paid' as PaymentStatus)
       })
 
-      await Effect.runPromise(
+      const result = await Effect.runPromise(
         program.pipe(Effect.provide(OrderRepository.Default), Effect.provide(mockSqlLayer))
       )
+
+      expect(result.payment_status).toBe('paid')
     })
 
     it('should handle SQL errors', async () => {

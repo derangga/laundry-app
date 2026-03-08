@@ -104,10 +104,16 @@ describe('OrderService', () => {
             })
           )
       ),
-      updateStatus: vi.fn((_id: OrderId, _status: OrderStatus) => Effect.succeed(void 0)),
-      updatePaymentStatus: vi.fn((_id: OrderId, _paymentStatus: PaymentStatus) =>
-        Effect.succeed(void 0)
-      ),
+      updateStatus: vi.fn((id: OrderId, status: OrderStatus) => {
+        const order = orders.find((o) => o.id === id)
+        return Effect.succeed(order ? { ...order, status, updated_at: new Date() } : order)
+      }),
+      updatePaymentStatus: vi.fn((id: OrderId, paymentStatus: PaymentStatus) => {
+        const order = orders.find((o) => o.id === id)
+        return Effect.succeed(
+          order ? { ...order, payment_status: paymentStatus, updated_at: new Date() } : order
+        )
+      }),
       findByOrderNumber: vi.fn((_orderNumber: string) => Effect.succeed(Option.none())),
       findWithFilters: vi.fn(() => Effect.succeed(orders)),
       findWithDetails: vi.fn((_id: OrderId) => Effect.succeed(Option.none())),
@@ -263,7 +269,7 @@ describe('OrderService', () => {
           yield* validateStatusTransition(order.status, newStatus)
 
           // Update status
-          yield* orderRepo.updateStatus(id, newStatus)
+          return yield* orderRepo.updateStatus(id, newStatus)
         }),
 
       updatePaymentStatus: (id: OrderId, paymentStatus: PaymentStatus) =>
@@ -272,7 +278,7 @@ describe('OrderService', () => {
           yield* findById(id)
 
           // Update payment status
-          yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
+          return yield* orderRepo.updatePaymentStatus(id, paymentStatus)
         }),
 
       findByCustomerId: (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id)),
