@@ -1,6 +1,16 @@
 import { HttpMiddleware, HttpServerRequest } from '@effect/platform'
-import { Effect } from 'effect'
+import { Effect, Metric, MetricBoundaries } from 'effect'
 import { AppLogger } from 'src/http/Logger'
+
+const HttpRequestDuration = Metric.histogram(
+  'http_server_request_duration_seconds',
+  MetricBoundaries.fromIterable([0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10])
+)
+
+const normalizeRoute = (url: string): string =>
+  url
+    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
+    .replace(/\/\d+/g, '/:id')
 
 export const RequestLoggingMiddleware = HttpMiddleware.make((app) =>
   Effect.gen(function* () {
@@ -23,6 +33,18 @@ export const RequestLoggingMiddleware = HttpMiddleware.make((app) =>
     })
 
     const response = yield* app
+
+    const durationSeconds = (Date.now() - startTime) / 1000
+    const normalizedRoute = normalizeRoute(request.url)
+
+    yield* Metric.update(
+      HttpRequestDuration.pipe(
+        Metric.tagged('http_route', normalizedRoute),
+        Metric.tagged('http_method', request.method),
+        Metric.tagged('http_status_code', String(response.status))
+      ),
+      durationSeconds
+    )
 
     yield* logger.info('Request completed', {
       correlationId,

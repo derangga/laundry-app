@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import {
   Customer,
   CustomerId,
@@ -106,18 +107,20 @@ export class CustomerRepository extends Effect.Service<CustomerRepository>()('Cu
     }
 
     return {
-      // Base CRUD from makeRepository
-      insert: repo.insert,
-      delete: repo.delete,
-
-      // Custom methods using raw SQL (Model.makeRepository has issues)
-      findById,
-
-      // Custom query methods
-      update,
-      findByPhone,
-      searchByName,
-      findSummaries,
+      insert: (...args: Parameters<typeof repo.insert>) =>
+        withSpanCount('CustomerRepository.insert', repo.insert(...args)),
+      delete: (...args: Parameters<typeof repo.delete>) =>
+        withSpanCount('CustomerRepository.delete', repo.delete(...args)),
+      findById: (...args: Parameters<typeof findById>) =>
+        withSpanCount('CustomerRepository.findById', findById(...args)),
+      update: (...args: Parameters<typeof update>) =>
+        withSpanCount('CustomerRepository.update', update(...args)),
+      findByPhone: (...args: Parameters<typeof findByPhone>) =>
+        withSpanCount('CustomerRepository.findByPhone', findByPhone(...args)),
+      searchByName: (...args: Parameters<typeof searchByName>) =>
+        withSpanCount('CustomerRepository.searchByName', searchByName(...args)),
+      findSummaries: (...args: Parameters<typeof findSummaries>) =>
+        withSpanCount('CustomerRepository.findSummaries', findSummaries(...args)),
     } as const
   }),
 }) {}

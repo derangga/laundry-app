@@ -1,5 +1,6 @@
 import { Effect, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import { OrderItem, OrderItemWithServiceFromDb, OrderId } from '../domain/Order'
 import { ServiceId } from '../domain/LaundryService'
 
@@ -111,15 +112,21 @@ export class OrderItemRepository extends Effect.Service<OrderItemRepository>()(
         sql`DELETE FROM order_items WHERE order_id = ${orderId}`.pipe(Effect.map(() => void 0))
 
       return {
-        // Base CRUD from makeRepository
-        findById: repo.findById,
-
-        // Custom methods
-        insert,
-        findByOrderId,
-        findByOrderIdWithService,
-        insertMany,
-        deleteByOrderId,
+        findById: (...args: Parameters<typeof repo.findById>) =>
+          withSpanCount('OrderItemRepository.findById', repo.findById(...args)),
+        insert: (...args: Parameters<typeof insert>) =>
+          withSpanCount('OrderItemRepository.insert', insert(...args)),
+        findByOrderId: (...args: Parameters<typeof findByOrderId>) =>
+          withSpanCount('OrderItemRepository.findByOrderId', findByOrderId(...args)),
+        findByOrderIdWithService: (...args: Parameters<typeof findByOrderIdWithService>) =>
+          withSpanCount(
+            'OrderItemRepository.findByOrderIdWithService',
+            findByOrderIdWithService(...args)
+          ),
+        insertMany: (...args: Parameters<typeof insertMany>) =>
+          withSpanCount('OrderItemRepository.insertMany', insertMany(...args)),
+        deleteByOrderId: (...args: Parameters<typeof deleteByOrderId>) =>
+          withSpanCount('OrderItemRepository.deleteByOrderId', deleteByOrderId(...args)),
       } as const
     }),
   }

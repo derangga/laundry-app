@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import {
   LaundryService,
   ServiceId,
@@ -115,16 +116,20 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       `.pipe(Effect.map(() => void 0))
 
     return {
-      // Base CRUD from makeRepository
-      findById: repo.findById,
-
-      // Custom methods
-      insert,
-      update,
-      findActive,
-      findAll,
-      findActiveServiceInfo,
-      softDelete,
+      findById: (...args: Parameters<typeof repo.findById>) =>
+        withSpanCount('ServiceRepository.findById', repo.findById(...args)),
+      insert: (...args: Parameters<typeof insert>) =>
+        withSpanCount('ServiceRepository.insert', insert(...args)),
+      update: (...args: Parameters<typeof update>) =>
+        withSpanCount('ServiceRepository.update', update(...args)),
+      findActive: (...args: Parameters<typeof findActive>) =>
+        withSpanCount('ServiceRepository.findActive', findActive(...args)),
+      findAll: (...args: Parameters<typeof findAll>) =>
+        withSpanCount('ServiceRepository.findAll', findAll(...args)),
+      findActiveServiceInfo: (...args: Parameters<typeof findActiveServiceInfo>) =>
+        withSpanCount('ServiceRepository.findActiveServiceInfo', findActiveServiceInfo(...args)),
+      softDelete: (...args: Parameters<typeof softDelete>) =>
+        withSpanCount('ServiceRepository.softDelete', softDelete(...args)),
     } as const
   }),
 }) {}

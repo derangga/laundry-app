@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import { PaymentStatus } from '../domain/Order'
 import { WeeklyRow } from '@domain/Analytics'
 
@@ -79,11 +80,22 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
         `.pipe(Effect.map((rows) => parseInt(rows[0]?.count ?? '0', 10)))
 
       return {
-        getWeeklyAggregation,
-        getTodaysOrderCount,
-        getPendingPaymentCount,
-        getWeeklyRevenue,
-        getTotalCustomerCount,
+        getWeeklyAggregation: (...args: Parameters<typeof getWeeklyAggregation>) =>
+          withSpanCount('AnalyticsRepository.getWeeklyAggregation', getWeeklyAggregation(...args)),
+        getTodaysOrderCount: (...args: Parameters<typeof getTodaysOrderCount>) =>
+          withSpanCount('AnalyticsRepository.getTodaysOrderCount', getTodaysOrderCount(...args)),
+        getPendingPaymentCount: (...args: Parameters<typeof getPendingPaymentCount>) =>
+          withSpanCount(
+            'AnalyticsRepository.getPendingPaymentCount',
+            getPendingPaymentCount(...args)
+          ),
+        getWeeklyRevenue: (...args: Parameters<typeof getWeeklyRevenue>) =>
+          withSpanCount('AnalyticsRepository.getWeeklyRevenue', getWeeklyRevenue(...args)),
+        getTotalCustomerCount: (...args: Parameters<typeof getTotalCustomerCount>) =>
+          withSpanCount(
+            'AnalyticsRepository.getTotalCustomerCount',
+            getTotalCustomerCount(...args)
+          ),
       } as const
     }),
   }

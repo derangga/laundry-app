@@ -31,7 +31,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheusremotewrite, debug]
 
   telemetry:
     logs:

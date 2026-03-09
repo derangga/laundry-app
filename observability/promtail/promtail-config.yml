@@ -34,6 +34,3 @@ scrape_configs:
       # Set level as a stream label (low cardinality)
       - labels:
           level:
-      # Ensure output is the full log line
-      - output:
-          source: message

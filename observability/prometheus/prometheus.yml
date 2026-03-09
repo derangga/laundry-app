@@ -2,6 +2,12 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Allow out-of-order samples from OTLP remote write
+# (OTLP cumulative metrics may arrive with slightly out-of-order timestamps)
+storage:
+  tsdb:
+    out_of_order_time_window: 30m
+
 scrape_configs:
   # Prometheus self-monitoring
   - job_name: 'prometheus'
