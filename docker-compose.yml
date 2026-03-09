@@ -128,7 +128,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3100
-      VITE_API_BASE_URL: ""
       API_INTERNAL_URL: http://backend:3000
     ports:
       - "3200:3100"

@@ -95,7 +95,24 @@ BCRYPT_ROUNDS=12
 CORS_ORIGIN=http://localhost:3100
 ```
 
-7. **Start development servers**
+7. **Create frontend environment file**
+
+Create `frontend/.env`:
+
+```env
+# API URL for server-side (SSR) requests
+API_INTERNAL_URL=http://localhost:3000
+```
+
+> **How API routing works in dev:**
+> - **Browser (client-side)** requests use relative URLs (`/api/...`). The Vite dev server proxies these to the backend via the `server.proxy` setting in `frontend/vite.config.ts`.
+> - **Server-side (SSR)** requests use `API_INTERNAL_URL` directly, since relative URLs can't be resolved without a host.
+>
+> If you run the backend on a different port (e.g. `4000`), update **both**:
+> 1. `API_INTERNAL_URL` in `frontend/.env` → `http://localhost:4000`
+> 2. `server.proxy['/api'].target` in `frontend/vite.config.ts` → `http://localhost:4000`
+
+8. **Start development servers**
 
 ```bash
 bun run dev
@@ -103,8 +120,8 @@ bun run dev
 
 The application will be available at:
 - **Frontend**: http://localhost:3100
-- **Backend API**: http://127.0.0.1:3000
-- **API Health**: http://127.0.0.1:3000/health
+- **Backend API**: http://localhost:3000
+- **API Health**: http://localhost:3000/health
 
 ## Development Workflow
 
@@ -188,7 +205,7 @@ bun run lint
 | `DATABASE_NAME` | Database name | `laundry_app_prod` |
 | `JWT_SECRET` | Secret key for JWT signing | *required* |
 
-### Optional
+### Optional (Backend)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -201,6 +218,16 @@ bun run lint
 | `CORS_ORIGIN` | `http://localhost:3100` | Allowed CORS origin for frontend |
 | `LOG_LEVEL` | `info` | Log verbosity (debug, info, warn, error) |
 | `LOG_FORMAT` | `pretty` | Log format (json or pretty) |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_INTERNAL_URL` | `""` (empty) | Backend URL for server-side (SSR) requests. Set to `http://localhost:3000` in local dev. |
+
+Client-side (browser) API requests don't need a base URL — they use relative paths (`/api/...`) which are routed by:
+- **Local dev**: Vite dev server proxy (`server.proxy` in `frontend/vite.config.ts`)
+- **Production (Docker)**: nginx reverse proxy
 
 ## Development Commands
 

@@ -1,21 +1,14 @@
 import { FetchHttpClient } from '@effect/platform'
 import { Config, ConfigProvider, Layer } from 'effect'
 
-// Private — raw env var reads
-const _apiInternalUrl = Config.string('API_INTERNAL_URL').pipe(
-  Config.withDefault(''),
-)
-const _viteApiBaseUrl = Config.string('VITE_API_BASE_URL').pipe(
+// Server-side (SSR) base URL for API requests.
+// In local dev: http://localhost:3000. In Docker: http://backend:3000.
+// Browser requests use relative URLs (proxied by Vite dev server or nginx).
+export const ApiBaseUrl = Config.string('API_INTERNAL_URL').pipe(
   Config.withDefault(''),
 )
 
-// Public — single config, auto-resolves server vs client
-export const ApiBaseUrl = Config.map(
-  Config.all([_apiInternalUrl, _viteApiBaseUrl]),
-  ([internal, client]) => (internal !== '' ? internal : client),
-)
-
-// Merge import.meta.env (VITE_* build-time vars) with process.env (runtime vars like API_INTERNAL_URL)
+// Merge process.env (runtime/SSR vars) with import.meta.env (Vite build-time vars)
 const envVars: Record<string, string> = {
   ...(typeof process !== 'undefined'
     ? (process.env as Record<string, string>)
