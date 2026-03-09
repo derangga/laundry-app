@@ -1,106 +1,146 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { getCookie } from '@tanstack/react-start/server'
 import { redirect } from '@tanstack/react-router'
-import { Effect, Option } from 'effect'
+import { Effect, Layer, Option, pipe } from 'effect'
 import {
-  AccessTokenInvalidError,
+  HttpClient,
+  HttpClientRequest,
+  HttpBody,
+  Headers,
+} from '@effect/platform'
+import {
   NetworkError,
   RefreshTokenFailedError,
 } from '@/domain/auth-error'
-import { ApiBaseUrl, ConfigLive } from './config'
+import { ApiBaseUrl, ConfigLive, FetchLive } from './config'
 
-const getBaseUrl = Effect.gen(function* () {
-  return yield* ApiBaseUrl
-}).pipe(Effect.provide(ConfigLive), Effect.orDie)
+type AuthResult =
+  | { readonly action: 'next' }
+  | { readonly action: 'redirect'; readonly to: string }
+  | { readonly action: 'next-with-cookie'; readonly cookie: string }
 
-function validateAccessToken(
-  baseUrl: string,
-  cookieHeader: string,
-): Effect.Effect<boolean, never> {
-  return Effect.gen(function* () {
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch(`${baseUrl}/api/auth/me`, {
-          method: 'GET',
-          headers: { Cookie: cookieHeader },
+class AuthClient extends Effect.Service<AuthClient>()('AuthClient', {
+  effect: Effect.gen(function* () {
+    const baseUrl = yield* ApiBaseUrl
+    const baseClient = yield* HttpClient.HttpClient
+
+    const client = baseClient.pipe(
+      HttpClient.mapRequest(HttpClientRequest.prependUrl(baseUrl)),
+    )
+
+    const withCookie = (cookieHeader: string) =>
+      client.pipe(
+        HttpClient.mapRequest(
+          HttpClientRequest.setHeader('Cookie', cookieHeader),
+        ),
+      )
+
+    const validateAccessToken = (
+      httpClient: HttpClient.HttpClient,
+    ): Effect.Effect<boolean> =>
+      Effect.scoped(
+        httpClient.get('/api/auth/me').pipe(
+          Effect.map((response) => response.status === 200),
+          Effect.catchAll(() => Effect.succeed(false)),
+        ),
+      )
+
+    const refreshToken = (
+      httpClient: HttpClient.HttpClient,
+    ): Effect.Effect<
+      string | null,
+      NetworkError | RefreshTokenFailedError
+    > =>
+      Effect.scoped(
+        Effect.gen(function* () {
+          const response = yield* httpClient
+            .post('/api/auth/refresh', { body: HttpBody.unsafeJson({}) })
+            .pipe(Effect.mapError((cause) => new NetworkError({ cause })))
+
+          if (response.status !== 200) {
+            return yield* new RefreshTokenFailedError({
+              status: response.status,
+            })
+          }
+
+          const setCookieHeader = pipe(
+            Headers.get(response.headers, 'set-cookie'),
+            Option.getOrNull,
+          )
+
+          if (!setCookieHeader) {
+            return yield* new RefreshTokenFailedError({ status: 0 })
+          }
+
+          return setCookieHeader
         }),
-      catch: (cause) => new NetworkError({ cause }),
-    })
+      )
 
-    if (!response.ok) {
-      yield* new AccessTokenInvalidError({ status: response.status })
-    }
+    const check = (
+      accessToken: string | undefined,
+      cookieHeader: string,
+      pathname: string,
+    ): Effect.Effect<AuthResult> =>
+      Effect.gen(function* () {
+        const httpClient = withCookie(cookieHeader)
 
-    return true
-  }).pipe(Effect.catchAll(() => Effect.succeed(false)))
-}
+        if (pathname === '/login') {
+          if (accessToken) {
+            const isValid = yield* validateAccessToken(httpClient)
+            if (isValid) return { action: 'redirect' as const, to: '/' }
+          }
+          return { action: 'next' as const }
+        }
 
-function processRefreshToken(
-  baseUrl: string,
-  cookieHeader: string,
-): Effect.Effect<Response, NetworkError | RefreshTokenFailedError> {
-  return Effect.gen(function* () {
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch(`${baseUrl}/api/auth/refresh`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie: cookieHeader,
-          },
-          body: JSON.stringify({}),
-        }),
-      catch: (cause) => new NetworkError({ cause }),
-    })
+        if (accessToken) {
+          const isValid = yield* validateAccessToken(httpClient)
+          if (isValid) return { action: 'next' as const }
+        }
 
-    if (!response.ok) {
-      yield* new RefreshTokenFailedError({ status: response.status })
-    }
+        const refreshResult = yield* Effect.option(
+          refreshToken(httpClient),
+        )
 
-    return response
-  })
-}
+        if (Option.isSome(refreshResult) && refreshResult.value) {
+          return {
+            action: 'next-with-cookie' as const,
+            cookie: refreshResult.value,
+          }
+        }
+
+        return { action: 'redirect' as const, to: '/login' }
+      })
+
+    return { check } as const
+  }),
+  dependencies: [
+    Layer.mergeAll(ConfigLive, FetchLive),
+  ],
+}) {}
 
 export const authMiddleware = createMiddleware().server(
   async ({ request, next }) => {
-    const baseUrl = await Effect.runPromise(getBaseUrl)
     const accessToken = getCookie('accessToken')
     const cookieHeader = request.headers.get('cookie') ?? ''
     const url = new URL(request.url)
 
-    if (url.pathname === '/login') {
-      if (accessToken) {
-        const isValid = await Effect.runPromise(
-          validateAccessToken(baseUrl, cookieHeader),
-        )
-        if (isValid) throw redirect({ to: '/' })
-      }
-      return next()
-    }
-
-    if (accessToken) {
-      const isValid = await Effect.runPromise(
-        validateAccessToken(baseUrl, cookieHeader),
-      )
-      if (isValid) {
-        return next()
-      }
-    }
-
-    const refreshResult = await Effect.runPromise(
-      Effect.option(processRefreshToken(baseUrl, cookieHeader)),
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const authClient = yield* AuthClient
+        return yield* authClient.check(accessToken, cookieHeader, url.pathname)
+      }).pipe(Effect.provide(AuthClient.Default)),
     )
 
-    if (Option.isSome(refreshResult)) {
-      const result = await next()
-      refreshResult.value.headers.forEach((value, key) => {
-        if (key.toLowerCase() === 'set-cookie') {
-          result.response.headers.append('set-cookie', value)
-        }
-      })
-      return result
+    switch (result.action) {
+      case 'redirect':
+        throw redirect({ to: result.to })
+      case 'next-with-cookie': {
+        const response = await next()
+        response.response.headers.append('set-cookie', result.cookie)
+        return response
+      }
+      case 'next':
+        return next()
     }
-
-    throw redirect({ to: '/login' })
   },
 )
