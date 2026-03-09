@@ -7,8 +7,8 @@
     "dev": "bun --watch src/main.ts",
     "build": "bun build src/main.ts --outdir dist --target bun",
     "start": "bun dist/main.js",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "bun --bun x vitest",
+    "test:run": "bun --bun x vitest run",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
@@ -23,7 +23,6 @@
     "@effect/platform-bun": "^0.53.1",
     "@effect/sql": "^0.24.3",
     "@effect/sql-pg": "^0.24.4",
-
     "effect": "^3.19.16",
     "jose": "^5.10.0"
   },
