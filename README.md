@@ -92,6 +92,7 @@ PORT=3000
 HOST=127.0.0.1
 NODE_ENV=development
 BCRYPT_ROUNDS=12
+CORS_ORIGIN=http://localhost:3100
 ```
 
 7. **Start development servers**

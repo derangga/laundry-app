@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import {
   Order,
   OrderFromDb,
@@ -234,19 +235,26 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       `.pipe(Effect.map(() => void 0))
 
     return {
-      // Base CRUD from makeRepository
-      findById: repo.findById,
-      insert: repo.insert,
-
-      // Custom methods
-      findByOrderNumber,
-      findByCustomerId,
-      findWithFilters,
-      findWithDetails,
-      findSummaries,
-      updateStatus,
-      updatePaymentStatus,
-      updateTotalPrice,
+      findById: (...args: Parameters<typeof repo.findById>) =>
+        withSpanCount('OrderRepository.findById', repo.findById(...args)),
+      insert: (...args: Parameters<typeof repo.insert>) =>
+        withSpanCount('OrderRepository.insert', repo.insert(...args)),
+      findByOrderNumber: (...args: Parameters<typeof findByOrderNumber>) =>
+        withSpanCount('OrderRepository.findByOrderNumber', findByOrderNumber(...args)),
+      findByCustomerId: (...args: Parameters<typeof findByCustomerId>) =>
+        withSpanCount('OrderRepository.findByCustomerId', findByCustomerId(...args)),
+      findWithFilters: (...args: Parameters<typeof findWithFilters>) =>
+        withSpanCount('OrderRepository.findWithFilters', findWithFilters(...args)),
+      findWithDetails: (...args: Parameters<typeof findWithDetails>) =>
+        withSpanCount('OrderRepository.findWithDetails', findWithDetails(...args)),
+      findSummaries: (...args: Parameters<typeof findSummaries>) =>
+        withSpanCount('OrderRepository.findSummaries', findSummaries(...args)),
+      updateStatus: (...args: Parameters<typeof updateStatus>) =>
+        withSpanCount('OrderRepository.updateStatus', updateStatus(...args)),
+      updatePaymentStatus: (...args: Parameters<typeof updatePaymentStatus>) =>
+        withSpanCount('OrderRepository.updatePaymentStatus', updatePaymentStatus(...args)),
+      updateTotalPrice: (...args: Parameters<typeof updateTotalPrice>) =>
+        withSpanCount('OrderRepository.updateTotalPrice', updateTotalPrice(...args)),
     } as const
   }),
 }) {}

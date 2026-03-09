@@ -3,21 +3,12 @@
  * Uses @effect/platform HttpClient for typed HTTP requests.
  */
 
-import {
-  Config,
-  ConfigProvider,
-  Duration,
-  Effect,
-  Layer,
-  Option,
-  Schema,
-} from 'effect'
+import { Duration, Effect, Layer, Option, Schema } from 'effect'
 import {
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
   HttpBody,
-  FetchHttpClient,
 } from '@effect/platform'
 import {
   NetworkError,
@@ -26,6 +17,7 @@ import {
   UnauthorizedError,
 } from '@/domain/api-error'
 import type { ApiClientError } from '@/domain/api-error'
+import { ApiBaseUrl, EnvConfigProvider, FetchLive } from './config'
 
 export {
   NetworkError,
@@ -34,19 +26,6 @@ export {
   UnauthorizedError,
   type ApiClientError,
 }
-
-const ApiBaseUrl = Config.string('VITE_API_BASE_URL')
-
-const EnvConfigProvider = Layer.setConfigProvider(
-  ConfigProvider.fromJson(import.meta.env as Record<string, string>),
-)
-
-// Configure FetchHttpClient with credentials: 'include' for cookie-based auth
-const FetchLive = FetchHttpClient.layer.pipe(
-  Layer.provide(
-    Layer.succeed(FetchHttpClient.RequestInit, { credentials: 'include' }),
-  ),
-)
 
 const ErrorBodyStruct = Schema.Struct({
   code: Schema.optional(Schema.String),
@@ -74,23 +53,26 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
      * Refresh tokens using httpOnly cookie
      */
     function refreshTokens(): Effect.Effect<
-      void,
+      boolean,
       UnauthorizedError | NetworkError
     > {
       return semaphore.withPermits(1)(
         Effect.gen(function* () {
-          const response = yield* httpClient
+          return yield* httpClient
             .post('/api/auth/refresh', { body: HttpBody.unsafeJson({}) })
             .pipe(
               Effect.scoped,
               Effect.mapError((cause) => new NetworkError({ cause })),
+              Effect.flatMap((response) =>
+                Effect.if(response.status !== 200, {
+                  onTrue: () =>
+                    new UnauthorizedError({
+                      message: 'Session expired. Please log in again.',
+                    }),
+                  onFalse: () => Effect.succeed(true),
+                }),
+              ),
             )
-
-          if (response.status !== 200) {
-            return yield* new UnauthorizedError({
-              message: 'Session expired. Please log in again.',
-            })
-          }
         }).pipe(
           Effect.timeoutFail({
             duration: Duration.seconds(10),

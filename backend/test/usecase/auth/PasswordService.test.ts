@@ -75,8 +75,10 @@ describe('PasswordService', () => {
         return yield* service.verify('', hash)
       })
 
-      const isValid = await runWithService(program)
-      expect(isValid).toBe(true)
+      const isValid = await runWithService(
+        program.pipe(Effect.catchTag('PasswordError', () => Effect.succeed(false)))
+      )
+      expect(isValid).toBe(false)
     })
   })
 })

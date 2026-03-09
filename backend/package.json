@@ -17,12 +17,13 @@
   },
   "dependencies": {
     "@laundry-app/shared": "workspace:*",
+    "@laundry-app/observability": "workspace:*",
     "@effect/experimental": "^0.58.0",
     "@effect/platform": "^0.72.2",
     "@effect/platform-bun": "^0.53.1",
     "@effect/sql": "^0.24.3",
     "@effect/sql-pg": "^0.24.4",
-    "@node-rs/bcrypt": "^1.10.7",
+
     "effect": "^3.19.16",
     "jose": "^5.10.0"
   },

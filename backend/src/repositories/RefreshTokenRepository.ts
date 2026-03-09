@@ -1,5 +1,6 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import { RefreshToken, RefreshTokenId } from '../domain/RefreshToken'
 import { UserId } from '../domain/User'
 import { RefreshTokenNotCreated } from '@domain/UserErrors'
@@ -81,16 +82,20 @@ export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepositor
         `.pipe(Effect.map((result) => result.length))
 
       return {
-        // Base CRUD from makeRepository
-        findById: repo.findById,
-
-        // Custom methods
-        insert,
-        findByTokenHash,
-        revoke,
-        revokeByTokenHash,
-        revokeAllForUser,
-        deleteExpired,
+        findById: (...args: Parameters<typeof repo.findById>) =>
+          withSpanCount('RefreshTokenRepository.findById', repo.findById(...args)),
+        insert: (...args: Parameters<typeof insert>) =>
+          withSpanCount('RefreshTokenRepository.insert', insert(...args)),
+        findByTokenHash: (...args: Parameters<typeof findByTokenHash>) =>
+          withSpanCount('RefreshTokenRepository.findByTokenHash', findByTokenHash(...args)),
+        revoke: (...args: Parameters<typeof revoke>) =>
+          withSpanCount('RefreshTokenRepository.revoke', revoke(...args)),
+        revokeByTokenHash: (...args: Parameters<typeof revokeByTokenHash>) =>
+          withSpanCount('RefreshTokenRepository.revokeByTokenHash', revokeByTokenHash(...args)),
+        revokeAllForUser: (...args: Parameters<typeof revokeAllForUser>) =>
+          withSpanCount('RefreshTokenRepository.revokeAllForUser', revokeAllForUser(...args)),
+        deleteExpired: (...args: Parameters<typeof deleteExpired>) =>
+          withSpanCount('RefreshTokenRepository.deleteExpired', deleteExpired(...args)),
       } as const
     }),
   }

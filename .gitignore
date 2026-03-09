@@ -36,3 +36,6 @@ coverage/
 tmp/
 temp/
 secrets/
+
+# SSL certificates (generated locally)
+ssl/

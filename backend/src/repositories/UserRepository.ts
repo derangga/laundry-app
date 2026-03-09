@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
+import { withSpanCount } from '@laundry-app/observability'
 import {
   User,
   UserId,
@@ -141,19 +142,26 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
       )
 
     return {
-      // Base CRUD from makeRepository
-      findById: repo.findById,
-      insert: repo.insert,
-      delete: repo.delete,
-
-      // Custom domain-specific methods
-      update,
-      findByEmail,
-      findByIdWithoutPassword,
-      findBasicInfo,
-      hasAnyUsers,
-      findAll,
-      softDelete,
+      findById: (...args: Parameters<typeof repo.findById>) =>
+        withSpanCount('UserRepository.findById', repo.findById(...args)),
+      insert: (...args: Parameters<typeof repo.insert>) =>
+        withSpanCount('UserRepository.insert', repo.insert(...args)),
+      delete: (...args: Parameters<typeof repo.delete>) =>
+        withSpanCount('UserRepository.delete', repo.delete(...args)),
+      update: (...args: Parameters<typeof update>) =>
+        withSpanCount('UserRepository.update', update(...args)),
+      findByEmail: (...args: Parameters<typeof findByEmail>) =>
+        withSpanCount('UserRepository.findByEmail', findByEmail(...args)),
+      findByIdWithoutPassword: (...args: Parameters<typeof findByIdWithoutPassword>) =>
+        withSpanCount('UserRepository.findByIdWithoutPassword', findByIdWithoutPassword(...args)),
+      findBasicInfo: (...args: Parameters<typeof findBasicInfo>) =>
+        withSpanCount('UserRepository.findBasicInfo', findBasicInfo(...args)),
+      hasAnyUsers: (...args: Parameters<typeof hasAnyUsers>) =>
+        withSpanCount('UserRepository.hasAnyUsers', hasAnyUsers(...args)),
+      findAll: (...args: Parameters<typeof findAll>) =>
+        withSpanCount('UserRepository.findAll', findAll(...args)),
+      softDelete: (...args: Parameters<typeof softDelete>) =>
+        withSpanCount('UserRepository.softDelete', softDelete(...args)),
     } as const
   }),
 }) {}
