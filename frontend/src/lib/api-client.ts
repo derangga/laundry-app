@@ -3,15 +3,7 @@
  * Uses @effect/platform HttpClient for typed HTTP requests.
  */
 
-import {
-  Config,
-  ConfigProvider,
-  Duration,
-  Effect,
-  Layer,
-  Option,
-  Schema,
-} from 'effect'
+import { Duration, Effect, Layer, Option, Schema } from 'effect'
 import {
   HttpClient,
   HttpClientRequest,
@@ -26,6 +18,7 @@ import {
   UnauthorizedError,
 } from '@/domain/api-error'
 import type { ApiClientError } from '@/domain/api-error'
+import { ApiBaseUrl, EnvConfigProvider } from './config'
 
 export {
   NetworkError,
@@ -34,12 +27,6 @@ export {
   UnauthorizedError,
   type ApiClientError,
 }
-
-const ApiBaseUrl = Config.string('VITE_API_BASE_URL')
-
-const EnvConfigProvider = Layer.setConfigProvider(
-  ConfigProvider.fromJson(import.meta.env as Record<string, string>),
-)
 
 // Configure FetchHttpClient with credentials: 'include' for cookie-based auth
 const FetchLive = FetchHttpClient.layer.pipe(

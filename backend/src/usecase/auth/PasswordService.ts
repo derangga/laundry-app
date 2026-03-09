@@ -1,5 +1,4 @@
 import { Effect } from 'effect'
-import bcrypt from 'bcryptjs'
 import { BcryptConfig } from '../../configs/env'
 import { PasswordError } from '@domain/AuthError'
 
@@ -9,7 +8,7 @@ export class PasswordService extends Effect.Service<PasswordService>()('Password
 
     const hashPassword = (password: string): Effect.Effect<string, PasswordError> =>
       Effect.tryPromise({
-        try: () => bcrypt.hash(password, config.saltRounds),
+        try: () => Bun.password.hash(password, { algorithm: 'bcrypt', cost: config.saltRounds }),
         catch: (error) => new PasswordError({ message: `Failed to hash password: ${error}` }),
       })
 
@@ -18,7 +17,7 @@ export class PasswordService extends Effect.Service<PasswordService>()('Password
       hashedPassword: string
     ): Effect.Effect<boolean, PasswordError> =>
       Effect.tryPromise({
-        try: () => bcrypt.compare(password, hashedPassword),
+        try: () => Bun.password.verify(password, hashedPassword),
         catch: (error) => new PasswordError({ message: `Failed to verify password: ${error}` }),
       })
 

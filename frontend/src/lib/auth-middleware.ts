@@ -7,17 +7,20 @@ import {
   NetworkError,
   RefreshTokenFailedError,
 } from '@/domain/auth-error'
+import { ApiBaseUrl, ConfigLive } from './config'
 
-const API_BASE_URL =
-  process.env.TANSTACK_API_BASE_URL || 'http://localhost:3000'
+const getBaseUrl = Effect.gen(function* () {
+  return yield* ApiBaseUrl
+}).pipe(Effect.provide(ConfigLive), Effect.orDie)
 
 function validateAccessToken(
+  baseUrl: string,
   cookieHeader: string,
 ): Effect.Effect<boolean, never> {
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${API_BASE_URL}/api/auth/me`, {
+        fetch(`${baseUrl}/api/auth/me`, {
           method: 'GET',
           headers: { Cookie: cookieHeader },
         }),
@@ -33,12 +36,13 @@ function validateAccessToken(
 }
 
 function processRefreshToken(
+  baseUrl: string,
   cookieHeader: string,
 ): Effect.Effect<Response, NetworkError | RefreshTokenFailedError> {
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        fetch(`${baseUrl}/api/auth/refresh`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -59,6 +63,7 @@ function processRefreshToken(
 
 export const authMiddleware = createMiddleware().server(
   async ({ request, next }) => {
+    const baseUrl = await Effect.runPromise(getBaseUrl)
     const accessToken = getCookie('accessToken')
     const cookieHeader = request.headers.get('cookie') ?? ''
     const url = new URL(request.url)
@@ -66,7 +71,7 @@ export const authMiddleware = createMiddleware().server(
     if (url.pathname === '/login') {
       if (accessToken) {
         const isValid = await Effect.runPromise(
-          validateAccessToken(cookieHeader),
+          validateAccessToken(baseUrl, cookieHeader),
         )
         if (isValid) throw redirect({ to: '/' })
       }
@@ -74,14 +79,16 @@ export const authMiddleware = createMiddleware().server(
     }
 
     if (accessToken) {
-      const isValid = await Effect.runPromise(validateAccessToken(cookieHeader))
+      const isValid = await Effect.runPromise(
+        validateAccessToken(baseUrl, cookieHeader),
+      )
       if (isValid) {
         return next()
       }
     }
 
     const refreshResult = await Effect.runPromise(
-      Effect.option(processRefreshToken(cookieHeader)),
+      Effect.option(processRefreshToken(baseUrl, cookieHeader)),
     )
 
     if (Option.isSome(refreshResult)) {
