@@ -1,4 +1,9 @@
 # Production Dockerfile for frontend SSR
+#
+# IMPORTANT: Build the frontend on the host before building this image:
+#   cd frontend && VITE_API_BASE_URL= bun run build
+# Docker's memory limit (~2GB) is insufficient for Vite builds.
+# The host-built dist/ is copied in below and also bind-mounted into nginx.
 FROM oven/bun:1
 
 WORKDIR /app
@@ -15,7 +20,7 @@ COPY backend/package.json ./backend/
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy workspace source code
+# Copy workspace source code (includes pre-built dist/)
 COPY packages/shared/ ./packages/shared/
 COPY packages/observability/ ./packages/observability/
 COPY backend/ ./backend/
@@ -24,7 +29,7 @@ COPY frontend/ ./frontend/
 # Set environment
 ENV NODE_ENV=production
 ENV PORT=3100
-ENV VITE_API_BASE_URL=https://localhost
+ENV VITE_API_BASE_URL=
 
 WORKDIR /app/frontend
 

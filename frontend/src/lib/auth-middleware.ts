@@ -8,10 +8,7 @@ import {
   HttpBody,
   Headers,
 } from '@effect/platform'
-import {
-  NetworkError,
-  RefreshTokenFailedError,
-} from '@/domain/auth-error'
+import { NetworkError, RefreshTokenFailedError } from '@/domain/auth-error'
 import { ApiBaseUrl, ConfigLive, FetchLive } from './config'
 
 type AuthResult =
@@ -47,10 +44,7 @@ class AuthClient extends Effect.Service<AuthClient>()('AuthClient', {
 
     const refreshToken = (
       httpClient: HttpClient.HttpClient,
-    ): Effect.Effect<
-      string | null,
-      NetworkError | RefreshTokenFailedError
-    > =>
+    ): Effect.Effect<string | null, NetworkError | RefreshTokenFailedError> =>
       Effect.scoped(
         Effect.gen(function* () {
           const response = yield* httpClient
@@ -97,9 +91,7 @@ class AuthClient extends Effect.Service<AuthClient>()('AuthClient', {
           if (isValid) return { action: 'next' as const }
         }
 
-        const refreshResult = yield* Effect.option(
-          refreshToken(httpClient),
-        )
+        const refreshResult = yield* Effect.option(refreshToken(httpClient))
 
         if (Option.isSome(refreshResult) && refreshResult.value) {
           return {
@@ -113,9 +105,7 @@ class AuthClient extends Effect.Service<AuthClient>()('AuthClient', {
 
     return { check } as const
   }),
-  dependencies: [
-    Layer.mergeAll(ConfigLive, FetchLive),
-  ],
+  dependencies: [Layer.mergeAll(ConfigLive, FetchLive)],
 }) {}
 
 export const authMiddleware = createMiddleware().server(
