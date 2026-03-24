@@ -39,3 +39,8 @@ secrets/
 
 # SSL certificates (generated locally)
 ssl/
+
+# Nix
+.nix-postgres/
+
+.mcp.json

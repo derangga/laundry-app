@@ -30,64 +30,57 @@ A modern web application for managing laundry business operations. Streamline cu
 ## Prerequisites
 
 - **[Bun](https://bun.sh/)** — JavaScript runtime and package manager
-- **[Docker](https://www.docker.com/)** & **Docker Compose** — For running PostgreSQL in a container
+- **PostgreSQL** — via one of the following:
+  - **[Docker](https://www.docker.com/)** & **Docker Compose** — run PostgreSQL in a container
+  - **[Nix](https://nixos.org/)** — fully managed dev environment with PostgreSQL included
 
 ## Quick Start
 
-1. **Clone the repository**
+### 1. Clone and install
 
 ```bash
 git clone <repository-url>
 cd laundry-app
-```
-
-2. **Install dependencies**
-
-```bash
 bun install
 ```
 
-3. **Set up database password**
+### 2. Start PostgreSQL
 
-Create the secrets directory and password file:
+Choose **one** of the following options:
 
-```bash
-mkdir -p secrets
-echo "postgres_dev_password" > secrets/db_password.txt
-```
-
-4. **Start PostgreSQL**
+#### Option A: Docker
 
 ```bash
-docker-compose up -d postgres
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-Wait for the container to be healthy (~10 seconds).
+Wait for the container to be healthy (~5 seconds).
 
-5. **Run database migrations**
+#### Option B: Nix
 
 ```bash
-cd backend && bun run migrate:up
+nix develop
 ```
 
-6. **Create environment file**
+This drops you into a dev shell with Bun, Node.js, and PostgreSQL. On first run it initializes a local data directory (`.nix-postgres/`) and starts PostgreSQL automatically. The database `laundry_app_dev` is created for you.
 
-Create `backend/.env`:
+> Skip to step 4 if using Nix — database env vars are already exported by the shell hook.
+
+### 3. Create environment files
+
+**`backend/.env`**:
 
 ```env
-# Database Configuration (matches Docker setup)
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_USER=laundry_app_prod
+DATABASE_USER=laundry_app_dev
 DATABASE_PASSWORD=postgres_dev_password
-DATABASE_NAME=laundry_app_prod
+DATABASE_NAME=laundry_app_dev
 
-# JWT Configuration (use a strong secret in production)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
-# Optional Configuration
 PORT=3000
 HOST=127.0.0.1
 NODE_ENV=development
@@ -95,12 +88,9 @@ BCRYPT_ROUNDS=12
 CORS_ORIGIN=http://localhost:3100
 ```
 
-7. **Create frontend environment file**
-
-Create `frontend/.env`:
+**`frontend/.env`**:
 
 ```env
-# API URL for server-side (SSR) requests
 API_INTERNAL_URL=http://localhost:3000
 ```
 
@@ -112,7 +102,13 @@ API_INTERNAL_URL=http://localhost:3000
 > 1. `API_INTERNAL_URL` in `frontend/.env` → `http://localhost:4000`
 > 2. `server.proxy['/api'].target` in `frontend/vite.config.ts` → `http://localhost:4000`
 
-8. **Start development servers**
+### 4. Run database migrations
+
+```bash
+cd backend && bun run migrate:up
+```
+
+### 5. Start development servers
 
 ```bash
 bun run dev
@@ -127,54 +123,70 @@ The application will be available at:
 
 ### Starting the Application
 
-```bash
-# Start PostgreSQL (if not already running)
-docker-compose up -d postgres
+**With Docker:**
 
-# Start backend and frontend dev servers
+```bash
+docker compose -f docker-compose.dev.yml up -d
+bun run dev
+```
+
+**With Nix:**
+
+```bash
+nix develop
 bun run dev
 ```
 
 ### Stopping the Application
 
 ```bash
-# Stop dev servers (Ctrl+C in the terminal where bun run dev is running)
+# Stop dev servers: Ctrl+C in the terminal running bun run dev
 
-# Stop PostgreSQL
-docker-compose down
+# Stop PostgreSQL (Docker)
+docker compose -f docker-compose.dev.yml down
+
+# Stop PostgreSQL (Nix)
+pg_ctl stop -D $PGDATA
 ```
 
 ### Database Management
 
+#### Docker
+
 **View database logs:**
 
 ```bash
-docker logs -f laundry_postgres
+docker logs -f laundry_dev_postgres
 ```
 
 **Connect to PostgreSQL shell:**
 
 ```bash
-docker exec -it laundry_postgres psql -U laundry_app_prod -d laundry_app_prod
+docker exec -it laundry_dev_postgres psql -U laundry_app_dev -d laundry_app_dev
 ```
 
 **Reset database** (WARNING: destroys all data):
 
 ```bash
-# Stop and remove everything
-docker-compose down -v
-
-# Restart PostgreSQL
-docker-compose up -d postgres
-
-# Re-run migrations
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up -d
 cd backend && bun run migrate:up
 ```
 
-**Check PostgreSQL version:**
+#### Nix
+
+**Connect to PostgreSQL shell:**
 
 ```bash
-docker exec laundry_postgres psql -U laundry_app_prod -d laundry_app_prod -c "SELECT version();"
+psql -h $PGHOST -p $PGPORT -d laundry_app_dev
+```
+
+**Reset database** (WARNING: destroys all data):
+
+```bash
+dropdb -h $PGHOST -p $PGPORT laundry_app_dev
+createdb -h $PGHOST -p $PGPORT laundry_app_dev
+cd backend && bun run migrate:up
 ```
 
 ### Running Tests
