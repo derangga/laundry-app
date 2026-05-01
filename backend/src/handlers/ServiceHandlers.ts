@@ -1,7 +1,11 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
-import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
+import { FindActiveServicesUseCase } from 'src/usecase/order/FindActiveServicesUseCase'
+import { FindAllServicesUseCase } from 'src/usecase/order/FindAllServicesUseCase'
+import { CreateServiceUseCase } from 'src/usecase/order/CreateServiceUseCase'
+import { UpdateServiceUseCase } from 'src/usecase/order/UpdateServiceUseCase'
+import { SoftDeleteServiceUseCase } from 'src/usecase/order/SoftDeleteServiceUseCase'
 import { ServiceId, SuccessDeleteService } from '@domain/LaundryService'
 import {
   ServiceNotFound,
@@ -17,11 +21,10 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
   handlers
     .handle('list', ({ urlParams }) =>
       Effect.gen(function* () {
-        const serviceService = yield* LaundryServiceService
+        const findActive = yield* FindActiveServicesUseCase
+        const findAll = yield* FindAllServicesUseCase
         const findFn =
-          urlParams.include_inactive === 'true'
-            ? serviceService.findAll()
-            : serviceService.findActive()
+          urlParams.include_inactive === 'true' ? findAll.execute() : findActive.execute()
         return yield* findFn.pipe(
           Effect.catchTags({
             SqlError: () => new RetrieveDataEror({ message: 'failed get active laundry service' }),
@@ -43,8 +46,8 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
           )
         }
 
-        const serviceService = yield* LaundryServiceService
-        return yield* serviceService.create(payload).pipe(
+        const createService = yield* CreateServiceUseCase
+        return yield* createService.execute(payload).pipe(
           Effect.catchTags({
             SqlError: (error) => new ValidationError({ message: error.message }),
           })
@@ -67,9 +70,9 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
 
         const id = path.id
 
-        const serviceService = yield* LaundryServiceService
+        const updateService = yield* UpdateServiceUseCase
 
-        return yield* serviceService.update(ServiceId.make(id), payload).pipe(
+        return yield* updateService.execute(ServiceId.make(id), payload).pipe(
           Effect.catchTags({
             ServiceNotFound: () =>
               new ServiceNotFound({ message: `Service not found with id: ${id}` }),
@@ -94,8 +97,8 @@ export const ServiceHandlersLive = HttpApiBuilder.group(AppApi, 'Services', (han
 
         const id = path.id
 
-        const serviceService = yield* LaundryServiceService
-        return yield* serviceService.softDelete(ServiceId.make(id)).pipe(
+        const softDeleteService = yield* SoftDeleteServiceUseCase
+        return yield* softDeleteService.execute(ServiceId.make(id)).pipe(
           Effect.map(() => SuccessDeleteService.make({ message: 'Success delete services' })),
           Effect.catchTags({
             ServiceNotFound: () => new UpdateDataEror({ message: 'Failed remove services' }),

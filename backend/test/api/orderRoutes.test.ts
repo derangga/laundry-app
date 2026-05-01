@@ -1,6 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { OrderService } from 'src/usecase/order/OrderService'
+import {
+  CreateOrderUseCase,
+  createOrderUseCaseImpl,
+} from 'src/usecase/order/CreateOrderUseCase'
+import {
+  FindOrderByIdUseCase,
+  findOrderByIdUseCaseImpl,
+} from 'src/usecase/order/FindOrderByIdUseCase'
+import {
+  UpdateOrderStatusUseCase,
+  updateOrderStatusUseCaseImpl,
+} from 'src/usecase/order/UpdateOrderStatusUseCase'
+import {
+  UpdatePaymentStatusUseCase,
+  updatePaymentStatusUseCaseImpl,
+} from 'src/usecase/order/UpdatePaymentStatusUseCase'
+import {
+  FindOrdersByCustomerIdUseCase,
+  findOrdersByCustomerIdUseCaseImpl,
+} from 'src/usecase/order/FindOrdersByCustomerIdUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
@@ -21,12 +40,6 @@ import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 import { CurrentUser } from '@domain/CurrentUser'
 import * as OrderNumberGenerator from '@domain/OrderNumberGenerator'
-import { validateStatusTransition } from '@domain/OrderStatusValidator'
-import {
-  OrderNotFound as OrderNotFoundError,
-  EmptyOrderError as EmptyOrderDomainError,
-} from '@domain/OrderErrors'
-import { ServiceNotFound } from '@domain/ServiceErrors'
 
 // ============================================================================
 // Test Data Factories
@@ -235,123 +248,52 @@ const createMockServiceRepo = (services: LaundryService[]): ServiceRepository =>
 }
 
 // ============================================================================
-// OrderService Builder (Manual Construction with Mocks)
+// Order UseCases Layer (real impl, backed by mocked repositories)
 // ============================================================================
 
-const buildOrderService = (
-  orderRepo: OrderRepository,
-  orderItemRepo: OrderItemRepository,
-  serviceRepo: ServiceRepository
-): OrderService => {
-  const calculateTotal = (items: Array<{ quantity: number; priceAtOrder: number }>): number => {
-    return items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)
-  }
-
-  const findById = (id: OrderId) =>
-    Effect.gen(function* () {
-      const orderOption = yield* orderRepo.findById(id)
-
-      if (Option.isNone(orderOption)) {
-        return yield* Effect.fail(new OrderNotFoundError({ orderId: id }))
-      }
-
-      return orderOption.value
-    })
-
+// Shim that exposes the legacy OrderService method shape backed by the
+// individual usecases — keeps test bodies minimal during the refactor.
+const OrderServiceShim = Effect.gen(function* () {
+  const createOrder = yield* CreateOrderUseCase
+  const findOrder = yield* FindOrderByIdUseCase
+  const updateOrderStatus = yield* UpdateOrderStatusUseCase
+  const updatePaymentStatus = yield* UpdatePaymentStatusUseCase
+  const findOrdersByCustomer = yield* FindOrdersByCustomerIdUseCase
   return {
-    create: (data: CreateOrderInput) =>
-      Effect.gen(function* () {
-        // Validate: must have at least one item
-        if (data.items.length === 0) {
-          return yield* Effect.fail(
-            new EmptyOrderDomainError({
-              message: 'Order must contain at least one item',
-            })
-          )
-        }
+    create: (data: CreateOrderInput) => createOrder.execute(data),
+    findById: (id: OrderId) => findOrder.execute(id),
+    updateStatus: (id: OrderId, status: OrderStatus) =>
+      updateOrderStatus.execute(id, status),
+    updatePaymentStatus: (id: OrderId, status: PaymentStatus) =>
+      updatePaymentStatus.execute(id, status),
+    findByCustomerId: (id: CustomerId) => findOrdersByCustomer.execute(id),
+  }
+})
 
-        // Generate order number
-        const orderNumber = yield* OrderNumberGenerator.generateOrderNumber()
+const FindOrderByIdLayer = Layer.effect(
+  FindOrderByIdUseCase,
+  Effect.map(findOrderByIdUseCaseImpl, (i) => new FindOrderByIdUseCase(i))
+)
 
-        // Fetch service prices and prepare order items
-        const itemsWithPrices = yield* Effect.forEach(
-          data.items,
-          (item) =>
-            Effect.gen(function* () {
-              const serviceOption = yield* serviceRepo.findById(item.service_id as ServiceId)
-
-              if (Option.isNone(serviceOption)) {
-                return yield* Effect.fail(new ServiceNotFound({ serviceId: item.service_id }))
-              }
-
-              const service = serviceOption.value
-              const priceAtOrder = service.price
-              const subtotal = item.quantity * priceAtOrder
-
-              return {
-                serviceId: item.service_id,
-                quantity: item.quantity,
-                priceAtOrder,
-                subtotal,
-              }
-            }),
-          { concurrency: 'unbounded' }
-        )
-
-        // Calculate total
-        const totalPrice = calculateTotal(itemsWithPrices)
-
-        // Create order
-        const order = yield* orderRepo.insert(
-          Order.insert.make({
-            order_number: orderNumber,
-            customer_id: CustomerId.make(data.customer_id),
-            status: 'received',
-            payment_status: data.payment_status || 'unpaid',
-            total_price: totalPrice,
-            created_by: UserId.make(data.created_by),
-          })
-        )
-
-        // Create order items
-        yield* orderItemRepo.insertMany(
-          itemsWithPrices.map((item) => ({
-            order_id: order.id,
-            service_id: item.serviceId as ServiceId,
-            quantity: item.quantity,
-            price_at_order: item.priceAtOrder,
-            subtotal: item.subtotal,
-          }))
-        )
-
-        return order
-      }),
-
-    findById,
-
-    updateStatus: (id: OrderId, newStatus: OrderStatus) =>
-      Effect.gen(function* () {
-        const order = yield* findById(id)
-
-        // Validate status transition
-        yield* validateStatusTransition(order.status, newStatus)
-
-        // Update status
-        yield* orderRepo.updateStatus(id, newStatus)
-      }),
-
-    updatePaymentStatus: (id: OrderId, paymentStatus: PaymentStatus) =>
-      Effect.gen(function* () {
-        // Check if order exists
-        yield* findById(id)
-
-        // Update payment status
-        yield* orderRepo.updatePaymentStatus(id as OrderId, paymentStatus)
-      }),
-
-    findByCustomerId: (id: CustomerId) => orderRepo.findByCustomerId(CustomerId.make(id)),
-  } as OrderService
-}
+const OrderUseCasesLayer = Layer.mergeAll(
+  FindOrderByIdLayer,
+  Layer.effect(
+    CreateOrderUseCase,
+    Effect.map(createOrderUseCaseImpl, (i) => new CreateOrderUseCase(i))
+  ),
+  Layer.effect(
+    UpdateOrderStatusUseCase,
+    Effect.map(updateOrderStatusUseCaseImpl, (i) => new UpdateOrderStatusUseCase(i))
+  ).pipe(Layer.provide(FindOrderByIdLayer)),
+  Layer.effect(
+    UpdatePaymentStatusUseCase,
+    Effect.map(updatePaymentStatusUseCaseImpl, (i) => new UpdatePaymentStatusUseCase(i))
+  ).pipe(Layer.provide(FindOrderByIdLayer)),
+  Layer.effect(
+    FindOrdersByCustomerIdUseCase,
+    Effect.map(findOrdersByCustomerIdUseCaseImpl, (i) => new FindOrdersByCustomerIdUseCase(i))
+  )
+)
 
 // ============================================================================
 // Test Helpers
@@ -373,14 +315,14 @@ const createTestLayer = (
   const mockOrderRepo = createMockOrderRepo(orders, ordersWithDetails)
   const mockOrderItemRepo = createMockOrderItemRepo(orderItems)
   const mockServiceRepo = createMockServiceRepo(services)
-  const orderService = buildOrderService(mockOrderRepo, mockOrderItemRepo, mockServiceRepo)
 
-  return Layer.mergeAll(
+  const ReposLayer = Layer.mergeAll(
     Layer.succeed(OrderRepository, mockOrderRepo),
     Layer.succeed(OrderItemRepository, mockOrderItemRepo),
-    Layer.succeed(ServiceRepository, mockServiceRepo),
-    Layer.succeed(OrderService, orderService)
+    Layer.succeed(ServiceRepository, mockServiceRepo)
   )
+
+  return Layer.mergeAll(ReposLayer, OrderUseCasesLayer.pipe(Layer.provide(ReposLayer)))
 }
 
 // ============================================================================
@@ -415,7 +357,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -441,7 +383,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -464,7 +406,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -487,7 +429,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -510,7 +452,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -534,7 +476,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -554,7 +496,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -581,7 +523,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -603,7 +545,7 @@ describe('POST /api/orders', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.create(
           CreateOrderInput.make({
             customer_id: CustomerId.make('customer-1'),
@@ -989,7 +931,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updateStatus(OrderId.make('order-1'), 'in_progress')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1005,7 +947,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updateStatus(OrderId.make('order-2'), 'ready')
         const updated = yield* orderService.findById(OrderId.make('order-2'))
         return updated
@@ -1021,7 +963,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updateStatus(OrderId.make('order-3'), 'delivered')
         const updated = yield* orderService.findById(OrderId.make('order-3'))
         return updated
@@ -1039,7 +981,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.updateStatus(OrderId.make('non-existent-order'), 'in_progress')
       })
 
@@ -1053,7 +995,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.updateStatus(OrderId.make('order-4'), 'in_progress')
       })
 
@@ -1069,7 +1011,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updateStatus(OrderId.make('order-1'), 'in_progress')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1085,7 +1027,7 @@ describe('PUT /api/orders/:id/status', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updateStatus(OrderId.make('order-1'), 'in_progress')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1122,7 +1064,7 @@ describe('PUT /api/orders/:id/payment', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updatePaymentStatus(OrderId.make('order-1'), 'paid')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1138,7 +1080,7 @@ describe('PUT /api/orders/:id/payment', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updatePaymentStatus(OrderId.make('order-2'), 'unpaid')
         const updated = yield* orderService.findById(OrderId.make('order-2'))
         return updated
@@ -1156,7 +1098,7 @@ describe('PUT /api/orders/:id/payment', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         return yield* orderService.updatePaymentStatus(OrderId.make('non-existent-order'), 'paid')
       })
 
@@ -1172,7 +1114,7 @@ describe('PUT /api/orders/:id/payment', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updatePaymentStatus(OrderId.make('order-1'), 'paid')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1188,7 +1130,7 @@ describe('PUT /api/orders/:id/payment', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         yield* orderService.updatePaymentStatus(OrderId.make('order-1'), 'paid')
         const updated = yield* orderService.findById(OrderId.make('order-1'))
         return updated
@@ -1228,7 +1170,7 @@ describe('Integration Flow Tests', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
         const orderItemRepo = yield* OrderItemRepository
 
         // Create order
@@ -1273,7 +1215,7 @@ describe('Integration Flow Tests', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
 
         const created = yield* orderService.create(
           CreateOrderInput.make({
@@ -1311,7 +1253,7 @@ describe('Integration Flow Tests', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
 
         return yield* orderService.create(
           CreateOrderInput.make({
@@ -1335,7 +1277,7 @@ describe('Integration Flow Tests', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
 
         return yield* orderService.create(
           CreateOrderInput.make({
@@ -1360,7 +1302,7 @@ describe('Integration Flow Tests', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const orderService = yield* OrderServiceShim
 
         const order1 = yield* orderService.create(
           CreateOrderInput.make({
