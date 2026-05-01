@@ -93,13 +93,11 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
           return yield* Effect.fail(new Unauthorized({ message: 'No refresh token provided' }))
         }
 
-        // Execute refresh use case and map errors
         const result = yield* refreshUseCase.execute({ refreshToken }).pipe(
           Effect.catchTags({
             InvalidTokenError: (cause) => new Unauthorized({ message: cause.message }),
             RefreshTokenNotFoundError: (cause) => new Unauthorized({ message: cause.message }),
             UserNotFoundError: () => new Unauthorized({ message: 'Malform refresh token' }),
-            RefreshTokenNotCreated: (cause) => new UnprocessibleEntity({ message: cause.message }),
             SqlError: () => new UnprocessibleEntity({ message: 'Failed retrieve data' }),
           })
         )
