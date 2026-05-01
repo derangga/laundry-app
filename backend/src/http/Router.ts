@@ -27,8 +27,18 @@ import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
 import { AppLogger } from 'src/http/Logger'
-import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
-import { OrderService } from 'src/usecase/order/OrderService'
+import { FindActiveServicesUseCase } from 'src/usecase/order/FindActiveServicesUseCase'
+import { FindAllServicesUseCase } from 'src/usecase/order/FindAllServicesUseCase'
+import { FindServiceByIdUseCase } from 'src/usecase/order/FindServiceByIdUseCase'
+import { CreateServiceUseCase } from 'src/usecase/order/CreateServiceUseCase'
+import { UpdateServiceUseCase } from 'src/usecase/order/UpdateServiceUseCase'
+import { SoftDeleteServiceUseCase } from 'src/usecase/order/SoftDeleteServiceUseCase'
+import { CreateOrderUseCase } from 'src/usecase/order/CreateOrderUseCase'
+import { CreateWalkInOrderUseCase } from 'src/usecase/order/CreateWalkInOrderUseCase'
+import { FindOrderByIdUseCase } from 'src/usecase/order/FindOrderByIdUseCase'
+import { UpdateOrderStatusUseCase } from 'src/usecase/order/UpdateOrderStatusUseCase'
+import { UpdatePaymentStatusUseCase } from 'src/usecase/order/UpdatePaymentStatusUseCase'
+import { FindOrdersByCustomerIdUseCase } from 'src/usecase/order/FindOrdersByCustomerIdUseCase'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
 import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
 import { ListUsersUseCase } from 'src/usecase/user/ListUsersUseCase'
@@ -54,9 +64,19 @@ const UseCasesLive = Layer.mergeAll(
   LogoutUseCase.Default,
   RegisterUserUseCase.Default,
   BootstrapUseCase.Default,
-  OrderService.Default,
   CustomerService.Default,
-  LaundryServiceService.Default,
+  FindActiveServicesUseCase.Default,
+  FindAllServicesUseCase.Default,
+  FindServiceByIdUseCase.Default,
+  CreateServiceUseCase.Default,
+  UpdateServiceUseCase.Default,
+  SoftDeleteServiceUseCase.Default,
+  CreateOrderUseCase.Default,
+  CreateWalkInOrderUseCase.Default,
+  FindOrderByIdUseCase.Default,
+  UpdateOrderStatusUseCase.Default,
+  UpdatePaymentStatusUseCase.Default,
+  FindOrdersByCustomerIdUseCase.Default,
   ReceiptService.Default,
   AnalyticsService.Default,
   ListUsersUseCase.Default,

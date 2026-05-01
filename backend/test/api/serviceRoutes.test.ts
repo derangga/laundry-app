@@ -1,9 +1,36 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { LaundryServiceService } from 'src/usecase/order/LaundryServiceService'
+import {
+  FindActiveServicesUseCase,
+  findActiveServicesUseCaseImpl,
+} from 'src/usecase/order/FindActiveServicesUseCase'
+import {
+  FindAllServicesUseCase,
+  findAllServicesUseCaseImpl,
+} from 'src/usecase/order/FindAllServicesUseCase'
+import {
+  FindServiceByIdUseCase,
+  findServiceByIdUseCaseImpl,
+} from 'src/usecase/order/FindServiceByIdUseCase'
+import {
+  CreateServiceUseCase,
+  createServiceUseCaseImpl,
+} from 'src/usecase/order/CreateServiceUseCase'
+import {
+  UpdateServiceUseCase,
+  updateServiceUseCaseImpl,
+} from 'src/usecase/order/UpdateServiceUseCase'
+import {
+  SoftDeleteServiceUseCase,
+  softDeleteServiceUseCaseImpl,
+} from 'src/usecase/order/SoftDeleteServiceUseCase'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import { LaundryService, ServiceId, CreateLaundryServiceInput, UpdateLaundryServiceInput } from '@domain/LaundryService'
-import { ServiceNotFound } from '@domain/ServiceErrors'
+import {
+  LaundryService,
+  ServiceId,
+  CreateLaundryServiceInput,
+  UpdateLaundryServiceInput,
+} from '@domain/LaundryService'
 import { CurrentUser } from '@domain/CurrentUser'
 import { UserId } from '@domain/User'
 
@@ -58,69 +85,38 @@ const createMockServiceRepo = (services: LaundryService[]) => {
   return Layer.succeed(ServiceRepository, repo)
 }
 
-const createMockServiceService = (services: LaundryService[]) => {
-  const mockService = {
-    findActive: () =>
-      Effect.gen(function* () {
-        return services.filter((s) => s.is_active)
-      }),
-    findById: (id: ServiceId) =>
-      Effect.gen(function* () {
-        const service = services.find((s) => s.id === id)
-        if (!service) {
-          return yield* Effect.fail(new ServiceNotFound({ serviceId: id }))
-        }
-        return service
-      }),
-    create: (data: CreateLaundryServiceInput) =>
-      Effect.gen(function* () {
-        const newService: LaundryService = {
-          id: `service-${Date.now()}-${Math.random().toString(36).slice(2)}` as ServiceId,
-          name: data.name,
-          price: data.price,
-          unit_type: data.unit_type,
-          is_active: true,
-          created_at: new Date() as any,
-          updated_at: new Date() as any,
-        }
-        services.push(newService)
-        return newService
-      }),
-    update: (id: ServiceId, data: UpdateLaundryServiceInput) =>
-      Effect.gen(function* () {
-        const index = services.findIndex((s) => s.id === id)
-        if (index === -1) {
-          return yield* Effect.fail(new ServiceNotFound({ serviceId: id }))
-        }
-        const existing = services[index]!
-        const updated: LaundryService = {
-          ...existing,
-          name: data.name ?? existing.name,
-          price: data.price ?? existing.price,
-          unit_type: data.unit_type ?? existing.unit_type,
-          is_active: data.is_active ?? existing.is_active,
-          updated_at: new Date() as any,
-        }
-        services[index] = updated
-        return Effect.succeed(Option.some(updated))
-      }),
-    softDelete: (id: ServiceId) =>
-      Effect.gen(function* () {
-        const index = services.findIndex((s) => s.id === id)
-        if (index === -1) {
-          return yield* Effect.fail(new ServiceNotFound({ serviceId: id }))
-        }
-        const updated: LaundryService = { ...services[index]!, is_active: false, updated_at: new Date() as any }
-        services[index] = updated
-        return Effect.succeed(undefined)
-      }),
-  } as unknown as LaundryServiceService
+const FindServiceByIdLayer = Layer.effect(
+  FindServiceByIdUseCase,
+  Effect.map(findServiceByIdUseCaseImpl, (i) => new FindServiceByIdUseCase(i))
+)
 
-  return Layer.succeed(LaundryServiceService, mockService)
-}
+const buildUseCasesLayer = () =>
+  Layer.mergeAll(
+    Layer.effect(
+      FindActiveServicesUseCase,
+      Effect.map(findActiveServicesUseCaseImpl, (i) => new FindActiveServicesUseCase(i))
+    ),
+    Layer.effect(
+      FindAllServicesUseCase,
+      Effect.map(findAllServicesUseCaseImpl, (i) => new FindAllServicesUseCase(i))
+    ),
+    FindServiceByIdLayer,
+    Layer.effect(
+      CreateServiceUseCase,
+      Effect.map(createServiceUseCaseImpl, (i) => new CreateServiceUseCase(i))
+    ),
+    Layer.effect(
+      UpdateServiceUseCase,
+      Effect.map(updateServiceUseCaseImpl, (i) => new UpdateServiceUseCase(i))
+    ).pipe(Layer.provide(FindServiceByIdLayer)),
+    Layer.effect(
+      SoftDeleteServiceUseCase,
+      Effect.map(softDeleteServiceUseCaseImpl, (i) => new SoftDeleteServiceUseCase(i))
+    ).pipe(Layer.provide(FindServiceByIdLayer))
+  )
 
 const createTestLayer = (services: LaundryService[]) =>
-  Layer.mergeAll(createMockServiceRepo(services), createMockServiceService(services))
+  buildUseCasesLayer().pipe(Layer.provide(createMockServiceRepo(services)))
 
 const provideCurrentUser = (role: 'admin' | 'staff') =>
   Layer.succeed(CurrentUser, {
@@ -161,8 +157,8 @@ describe('GET /api/services', () => {
       const testLayer = createTestLayer(services)
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.findActive()
+        const findActive = yield* FindActiveServicesUseCase
+        return yield* findActive.execute()
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -176,8 +172,8 @@ describe('GET /api/services', () => {
       const testLayer = createTestLayer(services)
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.findActive()
+        const findActive = yield* FindActiveServicesUseCase
+        return yield* findActive.execute()
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -199,12 +195,12 @@ describe('POST /api/services', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.create({
+        const createService = yield* CreateServiceUseCase
+        return yield* createService.execute({
           name: 'Regular Laundry',
           price: 10000,
           unit_type: 'kg',
-        })
+        } as CreateLaundryServiceInput)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -221,12 +217,12 @@ describe('POST /api/services', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.create({
+        const createService = yield* CreateServiceUseCase
+        return yield* createService.execute({
           name: 'New Service',
           price: 20000,
           unit_type: 'set',
-        })
+        } as CreateLaundryServiceInput)
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -259,9 +255,12 @@ describe('PUT /api/services/:id', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        yield* service.update(ServiceId.make('service-1'), { price: 15000 })
-        return yield* service.findById(ServiceId.make('service-1'))
+        const updateService = yield* UpdateServiceUseCase
+        const findById = yield* FindServiceByIdUseCase
+        yield* updateService.execute(ServiceId.make('service-1'), {
+          price: 15000,
+        } as UpdateLaundryServiceInput)
+        return yield* findById.execute(ServiceId.make('service-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -275,8 +274,10 @@ describe('PUT /api/services/:id', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.update(ServiceId.make('non-existent'), { price: 15000 })
+        const updateService = yield* UpdateServiceUseCase
+        return yield* updateService.execute(ServiceId.make('non-existent'), {
+          price: 15000,
+        } as UpdateLaundryServiceInput)
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
@@ -309,9 +310,10 @@ describe('DELETE /api/services/:id', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        yield* service.softDelete(ServiceId.make('service-1'))
-        return yield* service.findById(ServiceId.make('service-1'))
+        const softDelete = yield* SoftDeleteServiceUseCase
+        const findById = yield* FindServiceByIdUseCase
+        yield* softDelete.execute(ServiceId.make('service-1'))
+        return yield* findById.execute(ServiceId.make('service-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
@@ -325,8 +327,8 @@ describe('DELETE /api/services/:id', () => {
       const testLayer = Layer.mergeAll(createTestLayer(services), provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const service = yield* LaundryServiceService
-        return yield* service.softDelete(ServiceId.make('non-existent'))
+        const softDelete = yield* SoftDeleteServiceUseCase
+        return yield* softDelete.execute(ServiceId.make('non-existent'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))

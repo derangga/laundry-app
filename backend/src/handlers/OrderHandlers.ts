@@ -1,7 +1,10 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option, Schema } from 'effect'
 import { AppApi } from '@api/AppApi'
-import { OrderService } from 'src/usecase/order/OrderService'
+import { CreateOrderUseCase } from 'src/usecase/order/CreateOrderUseCase'
+import { CreateWalkInOrderUseCase } from 'src/usecase/order/CreateWalkInOrderUseCase'
+import { UpdateOrderStatusUseCase } from 'src/usecase/order/UpdateOrderStatusUseCase'
+import { UpdatePaymentStatusUseCase } from 'src/usecase/order/UpdatePaymentStatusUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import {
@@ -46,10 +49,10 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
      */
     .handle('createWalkIn', ({ payload }) =>
       Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const createWalkIn = yield* CreateWalkInOrderUseCase
         const currentUser = yield* CurrentUser
 
-        const order = yield* orderService.createWalkIn(payload, currentUser.id)
+        const order = yield* createWalkIn.execute(payload, currentUser.id)
 
         return OrderResponse.make({
           id: order.id,
@@ -97,12 +100,12 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
      */
     .handle('create', ({ payload }) =>
       Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const createOrder = yield* CreateOrderUseCase
         const currentUser = yield* CurrentUser
 
         // Create order with current user as created_by
-        const order = yield* orderService
-          .create({
+        const order = yield* createOrder
+          .execute({
             ...payload,
             created_by: currentUser.id,
           })
@@ -278,11 +281,11 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
      */
     .handle('updateStatus', ({ path, payload }) =>
       Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const updateOrderStatus = yield* UpdateOrderStatusUseCase
         const id = path.id
 
         // Update status and get updated order
-        const order = yield* orderService.updateStatus(OrderId.make(id), payload.status).pipe(
+        const order = yield* updateOrderStatus.execute(OrderId.make(id), payload.status).pipe(
           Effect.catchTags({
             OrderNotFound: () =>
               new OrderNotFound({
@@ -325,12 +328,12 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
      */
     .handle('updatePayment', ({ path, payload }) =>
       Effect.gen(function* () {
-        const orderService = yield* OrderService
+        const updatePaymentStatus = yield* UpdatePaymentStatusUseCase
         const id = path.id
 
         // Update payment status and get updated order
-        const order = yield* orderService
-          .updatePaymentStatus(OrderId.make(id), payload.payment_status)
+        const order = yield* updatePaymentStatus
+          .execute(OrderId.make(id), payload.payment_status)
           .pipe(
             Effect.catchTags({
               OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),

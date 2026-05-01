@@ -8,6 +8,7 @@
 
 ## Backend Conventions
 - **Effect patterns**: Effect.Service for business logic, Effect.gen for generators, Schema for validation
+- **UseCase structure**: One file per use case in `usecase/<domain>/` (e.g., `CreateOrderUseCase.ts`). Each exports a single `Effect.Service` class with `accessors: true` and explicit `dependencies`. No grouped service files.
 - **No `SELECT *`** — Always explicit column lists in SQL queries, explicit `RETURNING` clauses
 - **Snake_case DB columns** — Domain model properties must match DB column names exactly
 - **Typed errors** — Domain-specific error classes (e.g., `CustomerNotFound`), mapped to HTTP by error handler middleware
