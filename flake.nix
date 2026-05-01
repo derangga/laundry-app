@@ -32,7 +32,7 @@
             export PGPORT="5432"
             export DATABASE_HOST="localhost"
             export DATABASE_PORT="5432"
-            export DATABASE_USER="$USER"
+            export DATABASE_USER="dev_user"
             export DATABASE_PASSWORD="postgres_dev_password"
             export DATABASE_NAME="laundry_app_dev"
 

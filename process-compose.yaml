@@ -8,7 +8,7 @@ processes:
     description: "Initialize PostgreSQL data directory (one-shot)"
     command: |
       set -e
-      if [ ! -d "$PGDATA" ]; then
+      if [ ! -f "$PGDATA/PG_VERSION" ]; then
         echo "Initializing PostgreSQL data directory..."
         initdb --auth=trust --no-locale --encoding=UTF8 -D "$PGDATA"
         echo "unix_socket_directories = '$PGDATA'" >> "$PGDATA/postgresql.conf"
@@ -25,19 +25,26 @@ processes:
         condition: process_completed_successfully
     readiness_probe:
       exec:
-        command: 'pg_isready -h "$PGDATA" -p "$PGPORT"'
+        command: 'pg_isready -h "$PGDATA" -p "$PGPORT" -d postgres'
       initial_delay_seconds: 1
       period_seconds: 2
       failure_threshold: 10
     availability:
       restart: on_failure
 
-  postgres-createdb:
-    description: "Create dev database if missing (one-shot)"
+  postgres-setup:
+    description: "Create dev role and database if missing (one-shot)"
     command: |
-      if ! psql -h "$PGDATA" -p "$PGPORT" -lqt | cut -d \| -f 1 | grep -qw "$DATABASE_NAME"; then
+      set -e
+      # Create dev_user role if it doesn't exist
+      if ! psql -h "$PGDATA" -p "$PGPORT" -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DATABASE_USER'" | grep -q 1; then
+        echo "Creating role $DATABASE_USER..."
+        psql -h "$PGDATA" -p "$PGPORT" -d postgres -c "CREATE ROLE $DATABASE_USER WITH LOGIN PASSWORD '$DATABASE_PASSWORD' CREATEDB;"
+      fi
+      # Create database if it doesn't exist
+      if ! psql -h "$PGDATA" -p "$PGPORT" -d postgres -lqt | cut -d \| -f 1 | grep -qw "$DATABASE_NAME"; then
         echo "Creating database $DATABASE_NAME..."
-        createdb -h "$PGDATA" -p "$PGPORT" "$DATABASE_NAME"
+        createdb -h "$PGDATA" -p "$PGPORT" --maintenance-db=postgres -O "$DATABASE_USER" "$DATABASE_NAME"
       fi
     depends_on:
       postgres:
