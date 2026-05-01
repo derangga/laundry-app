@@ -3,7 +3,7 @@ services:
     image: postgres:18-alpine
     container_name: laundry_dev_postgres
     environment:
-      POSTGRES_USER: laundry_app_dev
+      POSTGRES_USER: ${USER}
       POSTGRES_PASSWORD: postgres_dev_password
       POSTGRES_DB: laundry_app_dev
     volumes:
@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U laundry_app_dev"]
+      test: ["CMD-SHELL", "pg_isready -U ${USER}"]
       interval: 5s
       timeout: 3s
       retries: 5

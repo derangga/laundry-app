@@ -42,5 +42,8 @@ ssl/
 
 # Nix
 .nix-postgres/
+.nix-observability/
+process-compose-*.log
 
 .mcp.json
+.gitnexus

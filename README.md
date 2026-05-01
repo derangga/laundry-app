@@ -73,7 +73,7 @@ This drops you into a dev shell with Bun, Node.js, and PostgreSQL. On first run 
 ```env
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
-DATABASE_USER=laundry_app_dev
+DATABASE_USER=$USER
 DATABASE_PASSWORD=postgres_dev_password
 DATABASE_NAME=laundry_app_dev
 
@@ -123,29 +123,55 @@ The application will be available at:
 
 ### Starting the Application
 
-**With Docker:**
+#### Docker
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 bun run dev
 ```
 
-**With Nix:**
+#### Nix
 
 ```bash
-nix develop
-bun run dev
+nix develop          # enter shell — exports all DB and observability env vars
+process-compose up   # start PostgreSQL + Prometheus + Loki + OTel Collector + Grafana
+bun run dev          # start backend + frontend
 ```
+
+> **Tip:** Run `process-compose up --detached` to start services in the background, then use `process-compose attach` to open the TUI or `process-compose process list` to check status.
+
+Services started by `process-compose`:
+
+| Service | URL |
+|---------|-----|
+| PostgreSQL | `localhost:5432` |
+| Grafana | http://localhost:3001 (admin/admin) |
+| Prometheus | http://localhost:9090 |
+| Loki | http://localhost:3100 |
+| OTLP HTTP | http://localhost:4318 |
 
 ### Stopping the Application
 
+#### Docker
+
 ```bash
-# Stop dev servers: Ctrl+C in the terminal running bun run dev
+# Stop dev servers
+Ctrl+C
 
-# Stop PostgreSQL (Docker)
+# Stop PostgreSQL
 docker compose -f docker-compose.dev.yml down
+```
 
-# Stop PostgreSQL (Nix)
+#### Nix
+
+```bash
+# Stop dev servers
+Ctrl+C
+
+# Stop all services (PostgreSQL + observability stack)
+process-compose down
+
+# Stop PostgreSQL only
 pg_ctl stop -D $PGDATA
 ```
 
@@ -162,7 +188,7 @@ docker logs -f laundry_dev_postgres
 **Connect to PostgreSQL shell:**
 
 ```bash
-docker exec -it laundry_dev_postgres psql -U laundry_app_dev -d laundry_app_dev
+docker exec -it laundry_dev_postgres psql -U $USER -d laundry_app_dev
 ```
 
 **Reset database** (WARNING: destroys all data):
@@ -212,7 +238,7 @@ bun run lint
 |----------|-------------|-----------------|
 | `DATABASE_HOST` | PostgreSQL server host | `localhost` |
 | `DATABASE_PORT` | PostgreSQL server port | `5432` |
-| `DATABASE_USER` | PostgreSQL username | `laundry_app_prod` |
+| `DATABASE_USER` | PostgreSQL username | `$USER` (current system user) |
 | `DATABASE_PASSWORD` | PostgreSQL password | `postgres_dev_password` |
 | `DATABASE_NAME` | Database name | `laundry_app_prod` |
 | `JWT_SECRET` | Secret key for JWT signing | *required* |

@@ -11,6 +11,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         pgDataDir = ".nix-postgres";
+        obsDir = ".nix-observability";
       in
       {
         devShells.default = pkgs.mkShell {
@@ -18,6 +19,11 @@
             bun
             nodejs_22
             postgresql_16
+            opentelemetry-collector-contrib
+            prometheus
+            grafana-loki
+            grafana
+            process-compose
           ];
 
           shellHook = ''
@@ -30,40 +36,42 @@
             export DATABASE_PASSWORD="postgres_dev_password"
             export DATABASE_NAME="laundry_app_dev"
 
-            if [ ! -d "$PGDATA" ]; then
-              echo "Initializing PostgreSQL data directory..."
-              initdb --auth=trust --no-locale --encoding=UTF8 -D "$PGDATA"
-              # Use unix socket in project dir to avoid conflicts
-              echo "unix_socket_directories = '$PGDATA'" >> "$PGDATA/postgresql.conf"
-              echo "port = $PGPORT" >> "$PGDATA/postgresql.conf"
-            fi
+            export LAUNDRY_REPO_ROOT="$PWD"
+            export OBS_DIR="$PWD/${obsDir}"
+            export BACKEND_LOG_FILE="$OBS_DIR/logs/backend.log"
+            export OTEL_ENABLED="true"
+            export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+            export LOG_FORMAT="json"
+            export GRAFANA_HOMEPATH="${pkgs.grafana}/share/grafana"
 
-            if ! pg_ctl status -D "$PGDATA" > /dev/null 2>&1; then
-              echo "Starting PostgreSQL..."
-              pg_ctl start -D "$PGDATA" -l "$PGDATA/postgresql.log" -o "-k $PGDATA"
-              # Wait for postgres to be ready
-              for i in $(seq 1 10); do
-                if pg_isready -h "$PGDATA" -p "$PGPORT" > /dev/null 2>&1; then
-                  break
-                fi
-                sleep 0.3
-              done
+            mkdir -p "$PGDATA" \
+                     "$OBS_DIR/prometheus" \
+                     "$OBS_DIR/loki/chunks" "$OBS_DIR/loki/rules" \
+                     "$OBS_DIR/grafana/logs" "$OBS_DIR/grafana/plugins" \
+                     "$OBS_DIR/grafana/provisioning/datasources" \
+                     "$OBS_DIR/grafana/provisioning/dashboards" \
+                     "$OBS_DIR/logs"
+            touch "$BACKEND_LOG_FILE"
 
-              # Create dev database and user if they don't exist
-              if ! psql -h "$PGDATA" -p "$PGPORT" -lqt | cut -d \| -f 1 | grep -qw "$DATABASE_NAME"; then
-                echo "Creating development database..."
-                createdb -h "$PGDATA" -p "$PGPORT" "$DATABASE_NAME"
-              fi
-            fi
+            # Stage Grafana provisioning (Grafana needs an absolute provisioning path)
+            cp -f observability/nix/grafana-provisioning/datasources/datasources.yml \
+                  "$OBS_DIR/grafana/provisioning/datasources/datasources.yml"
+            cp -f observability/nix/grafana-provisioning/dashboards/dashboard.yml \
+                  "$OBS_DIR/grafana/provisioning/dashboards/dashboard.yml"
 
             echo ""
             echo "Laundry App dev environment ready!"
             echo "  PostgreSQL: localhost:$PGPORT (database: $DATABASE_NAME)"
+            echo "  Grafana:    http://localhost:3001 (admin/admin)"
+            echo "  Prometheus: http://localhost:9090"
+            echo "  Loki:       http://localhost:3100"
+            echo "  OTLP HTTP:  http://localhost:4318"
             echo ""
-            echo "  bun install     - install dependencies"
-            echo "  bun run dev     - start backend + frontend"
-            echo ""
-            echo "  pg_ctl stop -D \$PGDATA   - stop PostgreSQL manually"
+            echo "  process-compose up              - start all services"
+            echo "  process-compose up --detached   - start in background"
+            echo "  process-compose attach          - open TUI (if detached)"
+            echo "  process-compose process list    - service status"
+            echo "  process-compose down            - stop all services"
             echo ""
           '';
         };

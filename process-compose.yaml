@@ -1,0 +1,110 @@
+version: "0.5"
+
+log_level: info
+log_location: ${OBS_DIR}/process-compose.log
+
+processes:
+  postgres-init:
+    description: "Initialize PostgreSQL data directory (one-shot)"
+    command: |
+      set -e
+      if [ ! -d "$PGDATA" ]; then
+        echo "Initializing PostgreSQL data directory..."
+        initdb --auth=trust --no-locale --encoding=UTF8 -D "$PGDATA"
+        echo "unix_socket_directories = '$PGDATA'" >> "$PGDATA/postgresql.conf"
+        echo "port = $PGPORT" >> "$PGDATA/postgresql.conf"
+      fi
+    availability:
+      restart: "no"
+
+  postgres:
+    description: "PostgreSQL 16"
+    command: postgres -D "$PGDATA" -k "$PGDATA"
+    depends_on:
+      postgres-init:
+        condition: process_completed_successfully
+    readiness_probe:
+      exec:
+        command: 'pg_isready -h "$PGDATA" -p "$PGPORT"'
+      initial_delay_seconds: 1
+      period_seconds: 2
+      failure_threshold: 10
+    availability:
+      restart: on_failure
+
+  postgres-createdb:
+    description: "Create dev database if missing (one-shot)"
+    command: |
+      if ! psql -h "$PGDATA" -p "$PGPORT" -lqt | cut -d \| -f 1 | grep -qw "$DATABASE_NAME"; then
+        echo "Creating database $DATABASE_NAME..."
+        createdb -h "$PGDATA" -p "$PGPORT" "$DATABASE_NAME"
+      fi
+    depends_on:
+      postgres:
+        condition: process_healthy
+    availability:
+      restart: "no"
+
+  prometheus:
+    description: "Prometheus metrics storage (port 9090)"
+    command: >-
+      prometheus
+      --config.file=observability/nix/prometheus.yml
+      --storage.tsdb.path=${OBS_DIR}/prometheus
+      --storage.tsdb.retention.time=15d
+      --web.enable-remote-write-receiver
+      --web.listen-address=0.0.0.0:9090
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 9090
+        path: /-/ready
+      initial_delay_seconds: 2
+      period_seconds: 3
+      failure_threshold: 10
+    availability:
+      restart: on_failure
+
+  loki:
+    description: "Loki log storage (port 3100)"
+    command: loki -config.file=observability/nix/loki-config.yml -config.expand-env=true
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 3100
+        path: /ready
+      initial_delay_seconds: 2
+      period_seconds: 3
+      failure_threshold: 20
+    availability:
+      restart: on_failure
+
+  otel-collector:
+    description: "OpenTelemetry Collector (OTLP 4317/4318, filelog → Loki)"
+    command: otelcol-contrib --config=observability/nix/otel-collector.yml
+    depends_on:
+      prometheus:
+        condition: process_healthy
+      loki:
+        condition: process_healthy
+    availability:
+      restart: on_failure
+
+  grafana:
+    description: "Grafana dashboards (port 3001, admin/admin)"
+    command: grafana server --homepath=${GRAFANA_HOMEPATH} --config=${PWD}/observability/nix/grafana.ini
+    depends_on:
+      prometheus:
+        condition: process_healthy
+      loki:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 3001
+        path: /api/health
+      initial_delay_seconds: 3
+      period_seconds: 3
+      failure_threshold: 20
+    availability:
+      restart: on_failure
