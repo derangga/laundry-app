@@ -1,113 +1,102 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { Effect, Layer, Option, ConfigProvider } from 'effect'
+import { describe, it, expect } from 'vitest'
+import { Effect, Layer, Option } from 'effect'
 import { LoginUseCase, loginUseCaseImpl } from 'src/usecase/auth/LoginUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
-import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
-import { JwtServiceLive } from 'src/usecase/auth/JwtService'
-import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
-import { User, UserId, UserRole } from '@domain/User'
+import { PasswordService } from 'src/usecase/auth/PasswordService'
+import { JwtService } from 'src/usecase/auth/JwtService'
+import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
+import { UserId, UserRole } from '@domain/User'
 
-const TestConfigProvider = ConfigProvider.fromMap(
-  new Map([
-    ['JWT_SECRET', 'test-secret-key-that-is-at-least-32-characters-long'],
-    ['JWT_ACCESS_EXPIRY', '15m'],
-    ['JWT_REFRESH_EXPIRY', '7d'],
-    ['BCRYPT_ROUNDS', '12'],
-  ])
-)
+const testUser = {
+  id: 'user-123' as UserId,
+  email: 'test@example.com',
+  password_hash: 'already-hashed',
+  name: 'Test User',
+  role: 'admin' as UserRole,
+  created_at: new Date('2024-01-01'),
+  updated_at: new Date('2024-01-01'),
+  deleted_at: undefined,
+}
 
-const TestConfig = Layer.setConfigProvider(TestConfigProvider)
+const MOCK_ACCESS_TOKEN = 'mock-access-token'
+const MOCK_RAW_TOKEN = 'mock-raw-token'
+const MOCK_HASHED_TOKEN = 'mock-hashed-token'
+const MOCK_EXPIRY = new Date('2025-01-01')
 
-describe('LoginUseCase', () => {
-  const validPassword = 'password123'
-  let hashedPassword: string
+const createMockUserRepo = (user: typeof testUser | null) =>
+  Layer.succeed(UserRepository, {
+    findByEmail: (_email: string) =>
+      Effect.succeed(user ? Option.some(user) : Option.none()),
+  } as unknown as UserRepository)
 
-  // Create test user with properly hashed password
-  const createTestUser = (hash: string): User =>
-    ({
-      id: 'user-123' as UserId,
-      email: 'test@example.com',
-      password_hash: hash,
-      name: 'Test User',
-      role: 'admin' as UserRole,
-      created_at: new Date(),
-      updated_at: new Date(),
-    }) as unknown as User
+const createMockPasswordService = (isValid: boolean) =>
+  Layer.succeed(PasswordService, {
+    hash: (_pw: string) => Effect.succeed('hashed'),
+    verify: (_pw: string, _hash: string) => Effect.succeed(isValid),
+  } as unknown as PasswordService)
 
-  // Mock UserRepository
-  const createMockUserRepo = (user: User | null) =>
-    Layer.succeed(UserRepository, {
-      findByEmail: (_email: string) => Effect.succeed(user ? Option.some(user) : Option.none()),
-      findById: (_id: UserId) => Effect.succeed(Option.none()),
-      insert: (_user: typeof User.insert.Type) => Effect.succeed(user!),
-      update: (
-        _id: UserId,
-        _data: Partial<{ email: string; password_hash: string; name: string; role: string }>
-      ) => Effect.succeed(Option.none()),
-      delete: (_id: UserId) => Effect.succeed(true),
-    } as unknown as UserRepository)
+const MockJwtService = Layer.succeed(JwtService, {
+  signAccessToken: (_payload: unknown) => Effect.succeed(MOCK_ACCESS_TOKEN),
+  getRefreshExpiryDate: () => MOCK_EXPIRY,
+} as unknown as JwtService)
 
-  // Mock RefreshTokenRepository
-  const MockRefreshTokenRepo = Layer.succeed(RefreshTokenRepository, {
-    findByTokenHash: (_hash: string) => Effect.succeed(Option.none()),
-    findById: (_id: unknown) => Effect.succeed(Option.none()),
-    insert: (_data: unknown) =>
-      Effect.succeed({
+const MockTokenGenerator = Layer.succeed(TokenGenerator, {
+  generateAndHash: () =>
+    Effect.succeed({ rawToken: MOCK_RAW_TOKEN, hashedToken: MOCK_HASHED_TOKEN }),
+} as unknown as TokenGenerator)
+
+const createMockRefreshTokenRepo = (insertSpy?: (data: unknown) => void) =>
+  Layer.succeed(RefreshTokenRepository, {
+    insert: (data: unknown) => {
+      insertSpy?.(data)
+      return Effect.succeed({
         id: 'token-123',
-        user_id: 'user-123' as UserId,
-        token_hash: 'hashed',
-        expires_at: new Date(),
+        user_id: testUser.id,
+        token_hash: MOCK_HASHED_TOKEN,
+        expires_at: MOCK_EXPIRY,
         created_at: new Date(),
         revoked_at: null,
-      }),
-    revoke: (_id: unknown) => Effect.succeed(true),
-    revokeByTokenHash: (_hash: string) => Effect.succeed(true),
-    revokeAllForUser: (_userId: UserId) => Effect.succeed(1),
-    deleteExpired: () => Effect.succeed(0),
+      })
+    },
   } as unknown as RefreshTokenRepository)
 
-  const createUseCaseLayer = (user: User | null) =>
-    Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))).pipe(
-      Layer.provide(
-        Layer.mergeAll(
-          createMockUserRepo(user),
-          MockRefreshTokenRepo,
-          PasswordServiceLive,
-          JwtServiceLive,
-          TokenGeneratorLive
-        ).pipe(Layer.provide(TestConfig))
+const createTestLayer = (opts: {
+  user?: typeof testUser | null
+  passwordValid?: boolean
+  insertSpy?: (data: unknown) => void
+}) =>
+  Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))).pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        createMockUserRepo('user' in opts ? opts.user ?? null : testUser),
+        createMockPasswordService(opts.passwordValid ?? true),
+        MockJwtService,
+        MockTokenGenerator,
+        createMockRefreshTokenRepo(opts.insertSpy)
       )
     )
+  )
 
-  beforeEach(async () => {
-    // Hash the password before tests
-    const hashEffect = Effect.gen(function* () {
-      const service = yield* PasswordService
-      return yield* service.hash(validPassword)
-    })
-    hashedPassword = await Effect.runPromise(
-      Effect.provide(hashEffect, PasswordServiceLive.pipe(Layer.provide(TestConfig)))
-    )
-  })
-
+describe('LoginUseCase', () => {
   it('should login successfully with valid credentials', async () => {
-    const testUser = createTestUser(hashedPassword)
-
     const program = Effect.gen(function* () {
       const useCase = yield* LoginUseCase
       return yield* useCase.execute({
         email: 'test@example.com',
-        password: validPassword,
+        password: 'password123',
       })
     })
 
-    const result = await Effect.runPromise(Effect.provide(program, createUseCaseLayer(testUser)))
+    const result = await Effect.runPromise(
+      Effect.provide(program, createTestLayer({ user: testUser }))
+    )
 
-    expect(result.accessToken).toBeDefined()
-    expect(result.refreshToken).toBeDefined()
+    expect(result.accessToken).toBe(MOCK_ACCESS_TOKEN)
+    expect(result.refreshToken).toBe(MOCK_RAW_TOKEN)
     expect(result.user.id).toBe('user-123')
     expect(result.user.email).toBe('test@example.com')
+    expect(result.user.name).toBe('Test User')
     expect(result.user.role).toBe('admin')
   })
 
@@ -116,18 +105,18 @@ describe('LoginUseCase', () => {
       const useCase = yield* LoginUseCase
       return yield* useCase.execute({
         email: 'nonexistent@example.com',
-        password: validPassword,
+        password: 'password123',
       })
     })
 
-    const result = await Effect.runPromiseExit(Effect.provide(program, createUseCaseLayer(null)))
+    const result = await Effect.runPromiseExit(
+      Effect.provide(program, createTestLayer({ user: null }))
+    )
 
     expect(result._tag).toBe('Failure')
   })
 
   it('should fail with invalid password', async () => {
-    const testUser = createTestUser(hashedPassword)
-
     const program = Effect.gen(function* () {
       const useCase = yield* LoginUseCase
       return yield* useCase.execute({
@@ -137,9 +126,37 @@ describe('LoginUseCase', () => {
     })
 
     const result = await Effect.runPromiseExit(
-      Effect.provide(program, createUseCaseLayer(testUser))
+      Effect.provide(program, createTestLayer({ passwordValid: false }))
     )
 
     expect(result._tag).toBe('Failure')
+  })
+
+  it('should store refresh token with correct user_id', async () => {
+    let capturedData: Record<string, unknown> | undefined
+
+    const program = Effect.gen(function* () {
+      const useCase = yield* LoginUseCase
+      return yield* useCase.execute({
+        email: 'test@example.com',
+        password: 'password123',
+      })
+    })
+
+    await Effect.runPromise(
+      Effect.provide(
+        program,
+        createTestLayer({
+          insertSpy: (data) => {
+            capturedData = data as Record<string, unknown>
+          },
+        })
+      )
+    )
+
+    expect(capturedData).toBeDefined()
+    expect(capturedData!.user_id).toBe('user-123')
+    expect(capturedData!.token_hash).toBe(MOCK_HASHED_TOKEN)
+    expect(capturedData!.expires_at).toBe(MOCK_EXPIRY)
   })
 })

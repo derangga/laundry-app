@@ -1,13 +1,11 @@
 import { Effect, Option } from 'effect'
-import { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordService } from './PasswordService'
 import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
-import { InvalidCredentialsError, InvalidTokenError } from '@domain/UserErrors'
-import { LoginInput, JwtPayload, LoginResult, AuthResponse, AuthenticatedUser } from '@domain/Auth'
-import { PasswordError } from '@domain/AuthError'
+import { InvalidCredentialsError } from '@domain/UserErrors'
+import { LoginInput, JwtPayload, AuthResponse, AuthenticatedUser } from '@domain/Auth'
 
 export { LoginInput }
 
@@ -18,13 +16,7 @@ export const loginUseCaseImpl = Effect.gen(function* () {
   const jwtService = yield* JwtService
   const tokenGenerator = yield* TokenGenerator
 
-  const execute = (
-    input: LoginInput
-  ): Effect.Effect<
-    LoginResult,
-    InvalidCredentialsError | SqlError.SqlError | PasswordError | InvalidTokenError
-  > =>
-    Effect.gen(function* () {
+  const execute = Effect.fn("LoginUseCase.execute")(function* (input: LoginInput) {
       // Find user by email
       const userOption = yield* userRepo.findByEmail(input.email)
       if (Option.isNone(userOption)) {
@@ -73,6 +65,7 @@ export const loginUseCaseImpl = Effect.gen(function* () {
 })
 
 export class LoginUseCase extends Effect.Service<LoginUseCase>()('LoginUseCase', {
+  accessors: true,
   effect: loginUseCaseImpl,
   dependencies: [
     UserRepository.Default,
