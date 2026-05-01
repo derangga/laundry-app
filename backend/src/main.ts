@@ -9,9 +9,6 @@ import { AppLogger, makeLoggerLayer } from './http/Logger.js'
 import { makeTelemetryLayer } from '@laundry-app/observability'
 import { gracefulShutdown } from './http/GracefulShutdown.js'
 import { RequestLoggingMiddleware } from './middleware/RequestLoggingMiddleware.js'
-// import { SecurityHeadersMiddleware } from './middleware/SecurityHeadersMiddleware.js'
-// import { RequestSecurityMiddleware } from './middleware/RequestSecurityMiddleware.js'
-// import { RateLimitMiddleware } from './middleware/RateLimitMiddleware.js'
 
 /**
  * Application Composition
