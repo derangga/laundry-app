@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
         pgDataDir = ".nix-postgres";
@@ -18,7 +24,7 @@
           buildInputs = with pkgs; [
             bun
             nodejs_22
-            postgresql_16
+            postgresql_18
             opentelemetry-collector-contrib
             prometheus
             grafana-loki
@@ -75,5 +81,6 @@
             echo ""
           '';
         };
-      });
+      }
+    );
 }
