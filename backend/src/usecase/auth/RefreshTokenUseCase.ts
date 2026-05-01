@@ -18,7 +18,7 @@ export const refreshUseCaseImpl = Effect.gen(function* () {
   const jwtService = yield* JwtService
   const tokenGenerator = yield* TokenGenerator
 
-  const execute = Effect.fn("RefreshTokenUseCase.execute")(function* (input: RefreshTokenInput) {
+  const execute = Effect.fn('RefreshTokenUseCase.execute')(function* (input: RefreshTokenInput) {
     if (!input.refreshToken) {
       return yield* Effect.fail(InvalidTokenError.invalid())
     }

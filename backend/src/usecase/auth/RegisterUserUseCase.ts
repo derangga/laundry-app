@@ -8,7 +8,7 @@ export const registerUserUseCaseImpl = Effect.gen(function* () {
   const userRepo = yield* UserRepository
   const passwordService = yield* PasswordService
 
-  const execute = Effect.fn("RegisterUserUseCase.execute")(function* (input: CreateUserInput) {
+  const execute = Effect.fn('RegisterUserUseCase.execute')(function* (input: CreateUserInput) {
     const existingUser = yield* userRepo.findByEmail(input.email)
     if (Option.isSome(existingUser)) {
       return yield* Effect.fail(UserAlreadyExistsError.make(input.email))

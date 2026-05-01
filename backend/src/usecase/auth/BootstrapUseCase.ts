@@ -9,7 +9,7 @@ export const bootstrapUseCaseImpl = Effect.gen(function* () {
   const userRepo = yield* UserRepository
   const passwordService = yield* PasswordService
 
-  const execute = Effect.fn("BootstrapUseCase.execute")(function* (input: BootstrapInput) {
+  const execute = Effect.fn('BootstrapUseCase.execute')(function* (input: BootstrapInput) {
     const hasUsers = yield* userRepo.hasAnyUsers()
     if (hasUsers) {
       return yield* Effect.fail(BootstrapNotAllowedError.make())

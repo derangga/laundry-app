@@ -9,7 +9,7 @@ export const logoutUseCaseImpl = Effect.gen(function* () {
   const refreshTokenRepo = yield* RefreshTokenRepository
   const tokenGenerator = yield* TokenGenerator
 
-  const execute = Effect.fn("LogoutUseCase.execute")(function* (input: LogoutInput) {
+  const execute = Effect.fn('LogoutUseCase.execute')(function* (input: LogoutInput) {
     const userOption = yield* CurrentUser.getOption
     if (Option.isNone(userOption)) {
       return yield* Effect.fail(UnauthorizedError.make())

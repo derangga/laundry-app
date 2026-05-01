@@ -16,50 +16,50 @@ export const loginUseCaseImpl = Effect.gen(function* () {
   const jwtService = yield* JwtService
   const tokenGenerator = yield* TokenGenerator
 
-  const execute = Effect.fn("LoginUseCase.execute")(function* (input: LoginInput) {
-      // Find user by email
-      const userOption = yield* userRepo.findByEmail(input.email)
-      if (Option.isNone(userOption)) {
-        return yield* Effect.fail(InvalidCredentialsError.make())
-      }
-      const user = userOption.value
+  const execute = Effect.fn('LoginUseCase.execute')(function* (input: LoginInput) {
+    // Find user by email
+    const userOption = yield* userRepo.findByEmail(input.email)
+    if (Option.isNone(userOption)) {
+      return yield* Effect.fail(InvalidCredentialsError.make())
+    }
+    const user = userOption.value
 
-      // Verify password
-      const isValidPassword = yield* passwordService.verify(input.password, user.password_hash)
-      if (!isValidPassword) {
-        return yield* Effect.fail(InvalidCredentialsError.make())
-      }
+    // Verify password
+    const isValidPassword = yield* passwordService.verify(input.password, user.password_hash)
+    if (!isValidPassword) {
+      return yield* Effect.fail(InvalidCredentialsError.make())
+    }
 
-      // Generate access token
-      const jwtPayload: JwtPayload = {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-      }
-      const accessToken = yield* jwtService.signAccessToken(jwtPayload)
+    // Generate access token
+    const jwtPayload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    }
+    const accessToken = yield* jwtService.signAccessToken(jwtPayload)
 
-      // Generate refresh token
-      const { rawToken, hashedToken } = yield* tokenGenerator.generateAndHash()
-      const expiresAt = jwtService.getRefreshExpiryDate()
+    // Generate refresh token
+    const { rawToken, hashedToken } = yield* tokenGenerator.generateAndHash()
+    const expiresAt = jwtService.getRefreshExpiryDate()
 
-      // Store refresh token in database
-      yield* refreshTokenRepo.insert({
-        user_id: user.id,
-        token_hash: hashedToken,
-        expires_at: expiresAt,
-      })
-
-      return AuthResponse.make({
-        accessToken,
-        refreshToken: rawToken,
-        user: AuthenticatedUser.make({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        }),
-      })
+    // Store refresh token in database
+    yield* refreshTokenRepo.insert({
+      user_id: user.id,
+      token_hash: hashedToken,
+      expires_at: expiresAt,
     })
+
+    return AuthResponse.make({
+      accessToken,
+      refreshToken: rawToken,
+      user: AuthenticatedUser.make({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }),
+    })
+  })
 
   return { execute } as const
 })
