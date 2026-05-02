@@ -1,7 +1,8 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
-import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
+import { GetWeeklyAnalyticsUseCase } from 'src/usecase/analytics/GetWeeklyAnalyticsUseCase'
+import { GetDashboardStatsUseCase } from 'src/usecase/analytics/GetDashboardStatsUseCase'
 import { AnalyticsPaymentFilter } from '@domain/Analytics'
 import { ValidationError, InternalServerError } from '@domain/http/HttpErrors'
 
@@ -51,7 +52,7 @@ export const AnalyticsHandlersLive = HttpApiBuilder.group(AppApi, 'Analytics', (
   handlers
     .handle('weekly', ({ urlParams }) =>
       Effect.gen(function* () {
-        const analyticsService = yield* AnalyticsService
+        const getWeeklyAnalytics = yield* GetWeeklyAnalyticsUseCase
 
         // payment_status already type-safe from schema; undefined → default to 'all'
         const paymentFilter: AnalyticsPaymentFilter = urlParams.payment_status ?? 'all'
@@ -85,8 +86,8 @@ export const AnalyticsHandlersLive = HttpApiBuilder.group(AppApi, 'Analytics', (
           endDate = end
         }
 
-        return yield* analyticsService
-          .getWeeklyAnalytics(startDate, endDate, paymentFilter)
+        return yield* getWeeklyAnalytics
+          .execute(startDate, endDate, paymentFilter)
           .pipe(
             Effect.catchTag(
               'SqlError',
@@ -97,9 +98,9 @@ export const AnalyticsHandlersLive = HttpApiBuilder.group(AppApi, 'Analytics', (
     )
     .handle('dashboard', () =>
       Effect.gen(function* () {
-        const analyticsService = yield* AnalyticsService
-        return yield* analyticsService
-          .getDashboardStats()
+        const getDashboardStats = yield* GetDashboardStatsUseCase
+        return yield* getDashboardStats
+          .execute()
           .pipe(
             Effect.catchTag(
               'SqlError',
