@@ -5,7 +5,8 @@ import {
   createWalkInOrderUseCaseImpl,
 } from 'src/usecase/order/CreateWalkInOrderUseCase'
 import { CreateOrderUseCase } from 'src/usecase/order/CreateOrderUseCase'
-import { CustomerService } from 'src/usecase/customer/CustomerService'
+import { CheckCustomerExistsUseCase } from 'src/usecase/customer/CheckCustomerExistsUseCase'
+import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 import {
   CreateWalkInOrderInput,
@@ -28,12 +29,15 @@ const customerRecord = {
   updated_at: new Date(),
 } as unknown as Customer
 
-const createMockCustomerService = (exists: boolean) =>
-  Layer.succeed(CustomerService, {
-    checkExists: (_phone: string) => Effect.succeed(exists),
-    create: (_data: unknown) => Effect.succeed(customerRecord),
-    findByPhone: (_phone: string) => Effect.succeed(customerRecord),
-  } as unknown as CustomerService)
+const createMockCheckCustomerExists = (exists: boolean) =>
+  Layer.succeed(CheckCustomerExistsUseCase, {
+    execute: (_phone: string) => Effect.succeed(exists),
+  } as unknown as CheckCustomerExistsUseCase)
+
+const createMockCreateCustomer = () =>
+  Layer.succeed(CreateCustomerUseCase, {
+    execute: (_data: unknown) => Effect.succeed(customerRecord),
+  } as unknown as CreateCustomerUseCase)
 
 const createMockCreateOrderUseCase = (capture?: { input?: unknown }) =>
   Layer.succeed(CreateOrderUseCase, {
@@ -60,7 +64,8 @@ const createTestLayer = (opts: { exists: boolean; capture?: { input?: unknown } 
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
-        createMockCustomerService(opts.exists),
+        createMockCheckCustomerExists(opts.exists),
+        createMockCreateCustomer(),
         createMockCreateOrderUseCase(opts.capture)
       )
     )

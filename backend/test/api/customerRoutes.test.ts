@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { CustomerService } from 'src/usecase/customer/CustomerService'
+import {
+  FindCustomerByPhoneUseCase,
+  findCustomerByPhoneUseCaseImpl,
+} from 'src/usecase/customer/FindCustomerByPhoneUseCase'
+import {
+  CheckCustomerExistsUseCase,
+  checkCustomerExistsUseCaseImpl,
+} from 'src/usecase/customer/CheckCustomerExistsUseCase'
+import {
+  CreateCustomerUseCase,
+  createCustomerUseCaseImpl,
+} from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
-import { CustomerNotFound, CustomerAlreadyExists } from '@domain/CustomerErrors'
-import { normalizePhoneNumber } from '@domain/PhoneNumber'
 import { CurrentUser } from '@domain/CurrentUser'
 import { UserId } from '@domain/User'
 
@@ -36,52 +45,22 @@ const createMockCustomerRepo = (customers: Customer[]) => {
   return Layer.succeed(CustomerRepository, repo)
 }
 
-const createMockCustomerService = (customers: Customer[]) => {
-  const mockService = {
-    findByPhone: (phoneInput: string) =>
-      Effect.gen(function* () {
-        const phone = yield* normalizePhoneNumber(phoneInput)
-        const customerOption = yield* Effect.succeed(
-          customers.find((c) => c.phone === phone)
-            ? Option.some(customers.find((c) => c.phone === phone)!)
-            : Option.none<Customer>()
-        )
-        if (Option.isNone(customerOption)) {
-          return yield* Effect.fail(new CustomerNotFound({ phone }))
-        }
-        return customerOption.value
-      }),
-    checkExists: (phoneInput: string) =>
-      Effect.gen(function* () {
-        const phone = yield* normalizePhoneNumber(phoneInput)
-        const exists = customers.some((c) => c.phone === phone)
-        return exists
-      }),
-    create: (data: { name: string; phone: string; address?: string }) =>
-      Effect.gen(function* () {
-        const phone = yield* normalizePhoneNumber(data.phone)
-        const existing = customers.find((c) => c.phone === phone)
-        if (existing) {
-          return yield* Effect.fail(new CustomerAlreadyExists({ phone }))
-        }
-        const newCustomer = {
-          id: `customer-${Date.now()}-${Math.random().toString(36).slice(2)}` as CustomerId,
-          name: data.name,
-          phone,
-          address: data.address ?? null,
-          created_at: new Date() as any,
-          updated_at: new Date() as any,
-        }
-        customers.push(newCustomer)
-        return newCustomer
-      }),
-  } as unknown as CustomerService
-
-  return Layer.succeed(CustomerService, mockService)
+const createUseCasesLayer = (customers: Customer[]) => {
+  const repoLayer = createMockCustomerRepo(customers)
+  const findByPhoneLayer = Layer.effect(
+    FindCustomerByPhoneUseCase,
+    Effect.map(findCustomerByPhoneUseCaseImpl, (impl) => new FindCustomerByPhoneUseCase(impl))
+  ).pipe(Layer.provide(repoLayer))
+  const checkExistsLayer = Layer.effect(
+    CheckCustomerExistsUseCase,
+    Effect.map(checkCustomerExistsUseCaseImpl, (impl) => new CheckCustomerExistsUseCase(impl))
+  ).pipe(Layer.provide(repoLayer))
+  const createLayer = Layer.effect(
+    CreateCustomerUseCase,
+    Effect.map(createCustomerUseCaseImpl, (impl) => new CreateCustomerUseCase(impl))
+  ).pipe(Layer.provide(repoLayer))
+  return Layer.mergeAll(repoLayer, findByPhoneLayer, checkExistsLayer, createLayer)
 }
-
-const createTestLayer = (customers: Customer[]) =>
-  Layer.mergeAll(createMockCustomerRepo(customers), createMockCustomerService(customers))
 
 const provideCurrentUser = (user: Customer | null) =>
   Layer.succeed(CurrentUser, {
@@ -109,14 +88,14 @@ describe('GET /api/customers?phone={phone}', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.findByPhone('08123456789')
+        const useCase = yield* FindCustomerByPhoneUseCase
+        return yield* useCase.execute('08123456789')
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.name).toBe('John Doe')
       expect(result.phone).toBe('+628123456789')
@@ -134,14 +113,14 @@ describe('GET /api/customers?phone={phone}', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.findByPhone('+628123456789')
+        const useCase = yield* FindCustomerByPhoneUseCase
+        return yield* useCase.execute('+628123456789')
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.name).toBe('Jane Smith')
       expect(result.phone).toBe('+628123456789')
@@ -158,14 +137,14 @@ describe('GET /api/customers?phone={phone}', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.findByPhone('628123456789')
+        const useCase = yield* FindCustomerByPhoneUseCase
+        return yield* useCase.execute('628123456789')
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.name).toBe('Bob Wilson')
       expect(result.phone).toBe('+628123456789')
@@ -174,14 +153,14 @@ describe('GET /api/customers?phone={phone}', () => {
 
   describe('Validation Error Cases', () => {
     it('should fail with invalid phone number format', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.findByPhone('invalid')
+        const useCase = yield* FindCustomerByPhoneUseCase
+        return yield* useCase.execute('invalid')
       })
 
-      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result._tag).toBe('Failure')
     })
@@ -189,14 +168,14 @@ describe('GET /api/customers?phone={phone}', () => {
 
   describe('Not Found Cases', () => {
     it('should fail when customer does not exist', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.findByPhone('08999999999')
+        const useCase = yield* FindCustomerByPhoneUseCase
+        return yield* useCase.execute('08999999999')
       })
 
-      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result._tag).toBe('Failure')
     })
@@ -218,18 +197,20 @@ describe('POST /api/customers', () => {
 
   describe('Success Cases', () => {
     it('should create customer with all fields', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create({
-          name: 'Jane Smith',
-          phone: '08987654321',
-          address: 'Bandung',
-        })
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
+          new CreateCustomerInput({
+            name: 'Jane Smith',
+            phone: '08987654321',
+            address: 'Bandung',
+          })
+        )
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.name).toBe('Jane Smith')
       expect(result.phone).toBe('+628987654321')
@@ -238,11 +219,9 @@ describe('POST /api/customers', () => {
     })
 
     it('should create customer without address (optional field)', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Bob Wilson',
             phone: '08555666777',
@@ -250,7 +229,9 @@ describe('POST /api/customers', () => {
         )
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.name).toBe('Bob Wilson')
       expect(result.phone).toBe('+628555666777')
@@ -259,11 +240,9 @@ describe('POST /api/customers', () => {
     })
 
     it('should normalize phone from 08XX to +628XX format', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Phone Normalized',
             phone: '08123456789',
@@ -271,7 +250,9 @@ describe('POST /api/customers', () => {
         )
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.phone).toBe('+628123456789')
     })
@@ -279,11 +260,9 @@ describe('POST /api/customers', () => {
 
   describe('Validation Error Cases', () => {
     it('should fail with invalid phone number format', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'John Doe',
             phone: 'invalid-phone',
@@ -291,7 +270,9 @@ describe('POST /api/customers', () => {
         )
       })
 
-      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result._tag).toBe('Failure')
     })
@@ -309,11 +290,9 @@ describe('POST /api/customers', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Another Person',
             phone: '08123456789',
@@ -321,7 +300,9 @@ describe('POST /api/customers', () => {
         )
       })
 
-      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result._tag).toBe('Failure')
     })
@@ -337,11 +318,9 @@ describe('POST /api/customers', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Another Person',
             phone: '+628123456789',
@@ -349,7 +328,9 @@ describe('POST /api/customers', () => {
         )
       })
 
-      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result._tag).toBe('Failure')
     })
@@ -363,12 +344,11 @@ describe('POST /api/customers', () => {
 
   describe('Role Access Cases', () => {
     it('should allow staff to create customer', async () => {
-      const testLayer = createTestLayer(customers)
-      const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser(null))
+      const fullLayer = Layer.mergeAll(createUseCasesLayer(customers), provideCurrentUser(null))
 
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Customer A',
             phone: '08111222333',
@@ -383,12 +363,11 @@ describe('POST /api/customers', () => {
     })
 
     it('should allow admin to create customer', async () => {
-      const testLayer = createTestLayer(customers)
-      const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser(null))
+      const fullLayer = Layer.mergeAll(createUseCasesLayer(customers), provideCurrentUser(null))
 
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
-        return yield* service.create(
+        const useCase = yield* CreateCustomerUseCase
+        return yield* useCase.execute(
           CreateCustomerInput.make({
             name: 'Customer B',
             phone: '08222333444',
@@ -423,14 +402,14 @@ describe('GET /api/customers/:id', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
         return yield* repo.findById(CustomerId.make('customer-1'))
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
       const customer = Option.getOrThrow(result)
 
       expect(Option.isSome(result)).toBe(true)
@@ -441,14 +420,14 @@ describe('GET /api/customers/:id', () => {
 
   describe('Not Found Cases', () => {
     it('should return none for non-existent customer ID', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
         return yield* repo.findById('00000000-0000-0000-0000-000000000000' as CustomerId)
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(Option.isNone(result)).toBe(true)
     })
@@ -472,8 +451,10 @@ describe('GET /api/customers/:id', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-      const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser(existingCustomer))
+      const fullLayer = Layer.mergeAll(
+        createUseCasesLayer(customers),
+        provideCurrentUser(existingCustomer)
+      )
 
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
@@ -498,8 +479,10 @@ describe('GET /api/customers/:id', () => {
       } as unknown as Customer
       customers.push(existingCustomer)
 
-      const testLayer = createTestLayer(customers)
-      const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser(existingCustomer))
+      const fullLayer = Layer.mergeAll(
+        createUseCasesLayer(customers),
+        provideCurrentUser(existingCustomer)
+      )
 
       const program = Effect.gen(function* () {
         const repo = yield* CustomerRepository
@@ -524,41 +507,37 @@ describe('Integration Flow Tests', () => {
 
   describe('Complete Customer Lifecycle', () => {
     it('should complete full customer workflow', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
+        const findByPhone = yield* FindCustomerByPhoneUseCase
+        const checkExists = yield* CheckCustomerExistsUseCase
+        const createCustomer = yield* CreateCustomerUseCase
 
-        const searchBefore = yield* Effect.succeed(
-          Option.isSome(
-            yield* Effect.succeed(
-              customers.find((c) => c.phone === '+628123456789')
-                ? Option.some(customers.find((c) => c.phone === '+628123456789')!)
-                : Option.none<Customer>()
-            )
-          )
+        const existsBefore = yield* checkExists.execute('08123456789')
+
+        const created = yield* createCustomer.execute(
+          new CreateCustomerInput({
+            name: 'John Doe',
+            phone: '08123456789',
+            address: 'Jakarta Selatan',
+          })
         )
 
-        const created = yield* service.create({
-          name: 'John Doe',
-          phone: '08123456789',
-          address: 'Jakarta Selatan',
-        })
-
-        const searchAfter1 = yield* service.findByPhone('08123456789')
-        const searchAfter2 = yield* service.findByPhone('+628123456789')
+        const searchAfter1 = yield* findByPhone.execute('08123456789')
+        const searchAfter2 = yield* findByPhone.execute('+628123456789')
 
         return {
-          searchBefore,
+          existsBefore,
           created,
           searchAfter1,
           searchAfter2,
         }
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
-      expect(result.searchBefore).toBe(false)
+      expect(result.existsBefore).toBe(false)
       expect(result.created.name).toBe('John Doe')
       expect(result.created.phone).toBe('+628123456789')
       expect(result.searchAfter1.name).toBe('John Doe')
@@ -568,29 +547,31 @@ describe('Integration Flow Tests', () => {
 
   describe('Phone Normalization Across Formats', () => {
     it('should handle all phone formats consistently', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
+        const findByPhone = yield* FindCustomerByPhoneUseCase
+        const checkExists = yield* CheckCustomerExistsUseCase
+        const createCustomer = yield* CreateCustomerUseCase
 
-        const created = yield* service.create(
+        const created = yield* createCustomer.execute(
           CreateCustomerInput.make({
             name: 'Phone Test',
             phone: '08123456789',
           })
         )
 
-        const find1 = yield* service.findByPhone('08123456789')
-        const find2 = yield* service.findByPhone('+628123456789')
+        const find1 = yield* findByPhone.execute('08123456789')
+        const find2 = yield* findByPhone.execute('+628123456789')
 
-        const exists1 = yield* service.checkExists('08123456789')
-        const exists2 = yield* service.checkExists('+628123456789')
-        const exists3 = yield* service.checkExists('628123456789')
+        const exists1 = yield* checkExists.execute('08123456789')
+        const exists2 = yield* checkExists.execute('+628123456789')
+        const exists3 = yield* checkExists.execute('628123456789')
 
         return { created, find1, find2, exists1, exists2, exists3 }
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.created.phone).toBe('+628123456789')
       expect(result.find1.phone).toBe('+628123456789')
@@ -603,12 +584,10 @@ describe('Integration Flow Tests', () => {
 
   describe('Concurrent Creation', () => {
     it('should handle concurrent customer creation attempts', async () => {
-      const testLayer = createTestLayer(customers)
-
       const program = Effect.gen(function* () {
-        const service = yield* CustomerService
+        const createCustomer = yield* CreateCustomerUseCase
 
-        const create1 = yield* service.create(
+        const create1 = yield* createCustomer.execute(
           CreateCustomerInput.make({
             name: 'First Customer',
             phone: '08111111111',
@@ -616,7 +595,7 @@ describe('Integration Flow Tests', () => {
         )
 
         const create2Exit = yield* Effect.exit(
-          service.create(
+          createCustomer.execute(
             CreateCustomerInput.make({
               name: 'Second Customer',
               phone: '08111111111',
@@ -627,7 +606,9 @@ describe('Integration Flow Tests', () => {
         return { create1, create2Exit }
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromise(
+        Effect.provide(program, createUseCasesLayer(customers))
+      )
 
       expect(result.create1.name).toBe('First Customer')
       expect(result.create1.phone).toBe('+628111111111')
