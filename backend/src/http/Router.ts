@@ -42,7 +42,8 @@ import { UpdateOrderStatusUseCase } from 'src/usecase/order/UpdateOrderStatusUse
 import { UpdatePaymentStatusUseCase } from 'src/usecase/order/UpdatePaymentStatusUseCase'
 import { FindOrdersByCustomerIdUseCase } from 'src/usecase/order/FindOrdersByCustomerIdUseCase'
 import { ReceiptService } from '@usecase/receipt/ReceiptService'
-import { AnalyticsService } from 'src/usecase/analytics/AnalyticsService'
+import { GetWeeklyAnalyticsUseCase } from 'src/usecase/analytics/GetWeeklyAnalyticsUseCase'
+import { GetDashboardStatsUseCase } from 'src/usecase/analytics/GetDashboardStatsUseCase'
 import { ListUsersUseCase } from 'src/usecase/user/ListUsersUseCase'
 import { UpdateUserUseCase } from 'src/usecase/user/UpdateUserUseCase'
 import { DeleteUserUseCase } from 'src/usecase/user/DeleteUserUseCase'
@@ -82,7 +83,8 @@ const UseCasesLive = Layer.mergeAll(
   UpdatePaymentStatusUseCase.Default,
   FindOrdersByCustomerIdUseCase.Default,
   ReceiptService.Default,
-  AnalyticsService.Default,
+  GetWeeklyAnalyticsUseCase.Default,
+  GetDashboardStatsUseCase.Default,
   ListUsersUseCase.Default,
   UpdateUserUseCase.Default,
   DeleteUserUseCase.Default
