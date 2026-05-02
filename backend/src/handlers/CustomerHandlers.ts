@@ -1,7 +1,8 @@
 import { HttpApiBuilder } from '@effect/platform'
 import { Effect, Option } from 'effect'
 import { AppApi } from '@api/AppApi'
-import { CustomerService } from 'src/usecase/customer/CustomerService'
+import { FindCustomerByPhoneUseCase } from 'src/usecase/customer/FindCustomerByPhoneUseCase'
+import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { CustomerId, CustomerResponse } from '@domain/Customer'
 import {
@@ -31,9 +32,9 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
      */
     .handle('searchByPhone', ({ urlParams }) =>
       Effect.gen(function* () {
-        const customerService = yield* CustomerService
+        const useCase = yield* FindCustomerByPhoneUseCase
 
-        const customer = yield* customerService.findByPhone(urlParams.phone).pipe(
+        const customer = yield* useCase.execute(urlParams.phone).pipe(
           Effect.catchTags({
             CustomerNotFound: (cause) =>
               new CustomerNotFound({
@@ -65,10 +66,10 @@ export const CustomerHandlersLive = HttpApiBuilder.group(AppApi, 'Customers', (h
      */
     .handle('create', ({ payload }) =>
       Effect.gen(function* () {
-        const customerService = yield* CustomerService
+        const useCase = yield* CreateCustomerUseCase
 
         // Create customer, map domain errors to HTTP errors
-        return yield* customerService.create(payload).pipe(
+        return yield* useCase.execute(payload).pipe(
           Effect.catchTags({
             CustomerAlreadyExists: (cause) =>
               new CustomerAlreadyExists({

@@ -11,7 +11,9 @@ import { AnalyticsHandlersLive } from '@handlers/AnalyticsHandlers'
 import { UserHandlersLive } from '@handlers/UserHandlers'
 import { AuthAdminMiddlewareLive, AuthMiddlewareLive } from '@middleware/AuthMiddleware'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { CustomerService } from 'src/usecase/customer/CustomerService'
+import { FindCustomerByPhoneUseCase } from 'src/usecase/customer/FindCustomerByPhoneUseCase'
+import { CheckCustomerExistsUseCase } from 'src/usecase/customer/CheckCustomerExistsUseCase'
+import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { OrderRepository } from '@repositories/OrderRepository'
@@ -64,7 +66,9 @@ const UseCasesLive = Layer.mergeAll(
   LogoutUseCase.Default,
   RegisterUserUseCase.Default,
   BootstrapUseCase.Default,
-  CustomerService.Default,
+  FindCustomerByPhoneUseCase.Default,
+  CheckCustomerExistsUseCase.Default,
+  CreateCustomerUseCase.Default,
   FindActiveServicesUseCase.Default,
   FindAllServicesUseCase.Default,
   FindServiceByIdUseCase.Default,

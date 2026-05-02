@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
-import { CustomerService } from 'src/usecase/customer/CustomerService'
+import { CheckCustomerExistsUseCase } from 'src/usecase/customer/CheckCustomerExistsUseCase'
+import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CreateOrderUseCase } from './CreateOrderUseCase'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 import { CreateWalkInOrderInput, CreateOrderInput } from '@domain/Order'
@@ -7,20 +8,21 @@ import { CreateCustomerInput } from '@domain/Customer'
 import { UserId } from '@domain/User'
 
 export const createWalkInOrderUseCaseImpl = Effect.gen(function* () {
-  const customerService = yield* CustomerService
+  const checkCustomerExists = yield* CheckCustomerExistsUseCase
+  const createCustomer = yield* CreateCustomerUseCase
   const createOrderUseCase = yield* CreateOrderUseCase
 
   const execute = Effect.fn('CreateWalkInOrderUseCase.execute')(function* (
     data: CreateWalkInOrderInput,
     createdBy: UserId
   ) {
-    const exists = yield* customerService.checkExists(data.customer_phone)
+    const exists = yield* checkCustomerExists.execute(data.customer_phone)
 
     if (exists) {
       return yield* Effect.fail(new CustomerAlreadyExists({ phone: data.customer_phone }))
     }
 
-    const customer = yield* customerService.create(
+    const customer = yield* createCustomer.execute(
       new CreateCustomerInput({
         name: data.customer_name,
         phone: data.customer_phone,
@@ -46,6 +48,10 @@ export class CreateWalkInOrderUseCase extends Effect.Service<CreateWalkInOrderUs
   {
     accessors: true,
     effect: createWalkInOrderUseCaseImpl,
-    dependencies: [CustomerService.Default, CreateOrderUseCase.Default],
+    dependencies: [
+      CheckCustomerExistsUseCase.Default,
+      CreateCustomerUseCase.Default,
+      CreateOrderUseCase.Default,
+    ],
   }
 ) {}
