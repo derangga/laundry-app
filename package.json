@@ -16,12 +16,16 @@
     "lint:frontend": "bun --cwd ./frontend lint",
     "format": "bun run --parallel format:backend format:frontend",
     "format:backend": "bun --cwd ./backend format",
-    "format:frontend": "bun --cwd ./frontend format"
+    "format:frontend": "bun --cwd ./frontend format",
+    "prepare": "lefthook install"
   },
   "workspaces": [
     "packages/shared",
     "packages/observability",
     "backend",
     "frontend"
-  ]
+  ],
+  "devDependencies": {
+    "lefthook": "^2.1.6"
+  }
 }
