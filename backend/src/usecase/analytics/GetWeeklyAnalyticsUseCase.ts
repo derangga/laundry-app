@@ -1,9 +1,6 @@
 import { Effect, Option } from 'effect'
 import { AnalyticsRepository } from '@repositories/AnalyticsRepository'
-import {
-  AnalyticsPaymentFilter,
-  WeeklyAnalyticsResponse,
-} from '@domain/Analytics'
+import { AnalyticsPaymentFilter, WeeklyAnalyticsResponse } from '@domain/Analytics'
 import { PaymentStatus } from '@domain/Order'
 import { zeroFillWeeks } from './zeroFillWeeks'
 
@@ -18,11 +15,7 @@ export const getWeeklyAnalyticsUseCaseImpl = Effect.gen(function* () {
     const paymentStatusOption: Option.Option<PaymentStatus> =
       paymentFilter === 'all' ? Option.none() : Option.some(paymentFilter)
 
-    const rows = yield* analyticsRepo.getWeeklyAggregation(
-      startDate,
-      endDate,
-      paymentStatusOption
-    )
+    const rows = yield* analyticsRepo.getWeeklyAggregation(startDate, endDate, paymentStatusOption)
 
     const weeks = zeroFillWeeks(rows, startDate, endDate)
 
