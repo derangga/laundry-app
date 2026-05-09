@@ -92,10 +92,10 @@ function DashboardHome() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setOrderDialogOpen(true)}>
-              New Order
+              Existing Customer
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setRegisterDialogOpen(true)}>
-              New Order + Register Customer
+              New Customer
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -16,12 +16,14 @@ A modern web application for managing laundry business operations. Streamline cu
 ## Tech Stack
 
 ### Backend
+
 - **Runtime**: [Bun](https://bun.sh/)
 - **Framework**: [Effect TypeScript](https://effect.website/) (`@effect/platform-bun`, `@effect/sql-pg`, `effect/Schema`)
 - **Database**: PostgreSQL 18 (direct SQL, no ORM, UUID v7 for primary keys)
 - **Authentication**: JWT access tokens + refresh tokens in httpOnly cookies
 
 ### Frontend
+
 - **Framework**: [TanStack Start](https://tanstack.com/start) (React)
 - **Routing**: [TanStack React Router](https://tanstack.com/router)
 - **State Management**: [TanStack React Query](https://tanstack.com/query)
@@ -95,10 +97,12 @@ API_INTERNAL_URL=http://localhost:3000
 ```
 
 > **How API routing works in dev:**
+>
 > - **Browser (client-side)** requests use relative URLs (`/api/...`). The Vite dev server proxies these to the backend via the `server.proxy` setting in `frontend/vite.config.ts`.
 > - **Server-side (SSR)** requests use `API_INTERNAL_URL` directly, since relative URLs can't be resolved without a host.
 >
 > If you run the backend on a different port (e.g. `4000`), update **both**:
+>
 > 1. `API_INTERNAL_URL` in `frontend/.env` → `http://localhost:4000`
 > 2. `server.proxy['/api'].target` in `frontend/vite.config.ts` → `http://localhost:4000`
 
@@ -115,6 +119,7 @@ bun run dev
 ```
 
 The application will be available at:
+
 - **Frontend**: http://localhost:3100
 - **Backend API**: http://localhost:3000
 - **API Health**: http://localhost:3000/health
@@ -138,17 +143,19 @@ process-compose up   # start PostgreSQL + Prometheus + Loki + OTel Collector + G
 bun run dev          # start backend + frontend
 ```
 
+> **Important:** `bun run dev` must be executed from inside the `nix develop` shell. The flake's `shellHook` is the only place that exports `OTEL_ENABLED=true`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `LOG_FORMAT=json`, `BACKEND_LOG_FILE`, and the `DATABASE_*` variables. If you start the backend from a plain shell, `OTEL_ENABLED` falls back to `false` and the backend will silently skip exporting traces/metrics to the OTel Collector — Grafana dashboards will stay empty. If you need to run the backend in a separate terminal, run `nix develop` there too before `bun run dev` (or open a new shell with `nix develop -c bun run dev`).
+
 > **Tip:** Run `process-compose up --detached` to start services in the background, then use `process-compose attach` to open the TUI or `process-compose process list` to check status.
 
 Services started by `process-compose`:
 
-| Service | URL |
-|---------|-----|
-| PostgreSQL | `localhost:5432` |
-| Grafana | http://localhost:3001 (admin/admin) |
-| Prometheus | http://localhost:9090 |
-| Loki | http://localhost:3100 |
-| OTLP HTTP | http://localhost:4318 |
+| Service    | URL                                 |
+| ---------- | ----------------------------------- |
+| PostgreSQL | `localhost:5432`                    |
+| Grafana    | http://localhost:3001 (admin/admin) |
+| Prometheus | http://localhost:9090               |
+| Loki       | http://localhost:3100               |
+| OTLP HTTP  | http://localhost:4318               |
 
 ### Stopping the Application
 
@@ -234,36 +241,37 @@ bun run lint
 
 ### Required
 
-| Variable | Description | Default/Example |
-|----------|-------------|-----------------|
-| `DATABASE_HOST` | PostgreSQL server host | `localhost` |
-| `DATABASE_PORT` | PostgreSQL server port | `5432` |
-| `DATABASE_USER` | PostgreSQL username | `$USER` (current system user) |
-| `DATABASE_PASSWORD` | PostgreSQL password | `postgres_dev_password` |
-| `DATABASE_NAME` | Database name | `laundry_app_prod` |
-| `JWT_SECRET` | Secret key for JWT signing | *required* |
+| Variable            | Description                | Default/Example               |
+| ------------------- | -------------------------- | ----------------------------- |
+| `DATABASE_HOST`     | PostgreSQL server host     | `localhost`                   |
+| `DATABASE_PORT`     | PostgreSQL server port     | `5432`                        |
+| `DATABASE_USER`     | PostgreSQL username        | `$USER` (current system user) |
+| `DATABASE_PASSWORD` | PostgreSQL password        | `postgres_dev_password`       |
+| `DATABASE_NAME`     | Database name              | `laundry_app_prod`            |
+| `JWT_SECRET`        | Secret key for JWT signing | _required_                    |
 
 ### Optional (Backend)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `JWT_ACCESS_EXPIRY` | `15m` | JWT access token expiry |
-| `JWT_REFRESH_EXPIRY` | `7d` | JWT refresh token expiry |
-| `PORT` | `3000` | Backend server port |
-| `HOST` | `127.0.0.1` | Backend server host |
-| `NODE_ENV` | `development` | Environment mode |
-| `BCRYPT_ROUNDS` | `12` | Bcrypt hashing rounds |
-| `CORS_ORIGIN` | `http://localhost:3100` | Allowed CORS origin for frontend |
-| `LOG_LEVEL` | `info` | Log verbosity (debug, info, warn, error) |
-| `LOG_FORMAT` | `pretty` | Log format (json or pretty) |
+| Variable             | Default                 | Description                              |
+| -------------------- | ----------------------- | ---------------------------------------- |
+| `JWT_ACCESS_EXPIRY`  | `15m`                   | JWT access token expiry                  |
+| `JWT_REFRESH_EXPIRY` | `7d`                    | JWT refresh token expiry                 |
+| `PORT`               | `3000`                  | Backend server port                      |
+| `HOST`               | `127.0.0.1`             | Backend server host                      |
+| `NODE_ENV`           | `development`           | Environment mode                         |
+| `BCRYPT_ROUNDS`      | `12`                    | Bcrypt hashing rounds                    |
+| `CORS_ORIGIN`        | `http://localhost:3100` | Allowed CORS origin for frontend         |
+| `LOG_LEVEL`          | `info`                  | Log verbosity (debug, info, warn, error) |
+| `LOG_FORMAT`         | `pretty`                | Log format (json or pretty)              |
 
 ### Frontend (`frontend/.env`)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable           | Default      | Description                                                                              |
+| ------------------ | ------------ | ---------------------------------------------------------------------------------------- |
 | `API_INTERNAL_URL` | `""` (empty) | Backend URL for server-side (SSR) requests. Set to `http://localhost:3000` in local dev. |
 
 Client-side (browser) API requests don't need a base URL — they use relative paths (`/api/...`) which are routed by:
+
 - **Local dev**: Vite dev server proxy (`server.proxy` in `frontend/vite.config.ts`)
 - **Production (Docker)**: nginx reverse proxy
 
@@ -271,13 +279,13 @@ Client-side (browser) API requests don't need a base URL — they use relative p
 
 ### Root Commands
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start backend + frontend in parallel |
-| `bun run build` | Build both backend and frontend |
+| Command             | Description                          |
+| ------------------- | ------------------------------------ |
+| `bun run dev`       | Start backend + frontend in parallel |
+| `bun run build`     | Build both backend and frontend      |
 | `bun run typecheck` | Type-check both backend and frontend |
-| `bun run format` | Format both backend and frontend |
-| `bun run lint` | Lint frontend code |
+| `bun run format`    | Format both backend and frontend     |
+| `bun run lint`      | Lint frontend code                   |
 
 ### Backend Commands
 
@@ -348,4 +356,3 @@ laundry-app/
 ├── package.json           # Root package.json
 └── README.md
 ```
-
