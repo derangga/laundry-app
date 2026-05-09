@@ -13,7 +13,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(increase(effect_span_count_total{span_name=~\"OrderRepository.*create.*\"}[1h]))",
+          "expr": "sum(increase(effect_span_count_total{span_name=\"OrderRepository.insert\"}[1h]))",
           "legendFormat": "Orders Created",
           "refId": "A"
         }

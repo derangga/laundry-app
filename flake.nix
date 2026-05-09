@@ -45,8 +45,11 @@
             export LAUNDRY_REPO_ROOT="$PWD"
             export OBS_DIR="$PWD/${obsDir}"
             export BACKEND_LOG_FILE="$OBS_DIR/logs/backend.log"
+
+            # You can comment this variable when you use .env to enable OTEL
             export OTEL_ENABLED="true"
             export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+
             export LOG_FORMAT="json"
             export GRAFANA_HOMEPATH="${pkgs.grafana}/share/grafana"
 
