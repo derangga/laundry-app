@@ -11,7 +11,7 @@
     "build:frontend": "bun --cwd ./frontend build",
     "typecheck": "bun run --parallel typecheck:backend typecheck:frontend",
     "typecheck:backend": "bun --cwd ./backend typecheck",
-    "typecheck:frontend": "bun --cwd ./frontend check",
+    "typecheck:frontend": "bun --cwd ./frontend typecheck",
     "lint": "bun run --parallel lint:frontend",
     "lint:frontend": "bun --cwd ./frontend lint",
     "format": "bun run --parallel format:backend format:frontend",

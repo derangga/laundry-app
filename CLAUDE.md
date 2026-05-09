@@ -46,6 +46,7 @@ frontend/src/
 ## Documentation
 
 Read these for detailed context:
+
 - `docs/PRD.md` — Product requirements, API specs, frontend routes
 - `docs/ADR_BACKEND.md` — Architecture decisions, database schema
 - `docs/CONTEXT.md` — Effect patterns, service composition, middleware, layer setup
@@ -68,6 +69,10 @@ Read these for detailed context:
 2. **Shared models in `packages/shared/`** — All request/response DTOs, branded IDs, and enums go in `packages/shared/src/`. Backend `domain/` contains error classes and re-exports shared types. Never define data models inside `usecase/`.
 3. **Snake_case DB columns** — Domain model property names must match database column names exactly (`snake_case`).
 4. **Typed errors** — Use domain-specific error classes (e.g., `CustomerNotFound`). The error handler middleware maps them to HTTP responses.
+
+## Effect Code Reviews
+
+After implementing or modifying anything in `backend/src/usecase/`, `backend/src/repositories/`, `backend/src/handlers/`, `backend/src/api/`, `backend/src/domain/`, or `packages/shared/src/`, you MUST spawn the `effect-reviewer` agent before declaring the task done. If it returns `FAIL`, fix the listed issues and re-invoke. Skip only for trivial edits (renames, comment changes, formatting).
 
 ## Git Workflow
 
@@ -94,6 +99,7 @@ Always use Serena's semantic tools for code exploration instead of reading entir
 - Only fall back to full file reads when symbolic tools are insufficient
 
 <!-- gitnexus:start -->
+
 # GitNexus — Code Intelligence
 
 This project is indexed by GitNexus as **laundry-app** (3363 symbols, 5055 relationships, 33 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
@@ -130,35 +136,36 @@ This project is indexed by GitNexus as **laundry-app** (3363 symbols, 5055 relat
 
 ## Tools Quick Reference
 
-| Tool | When to use | Command |
-|------|-------------|---------|
-| `query` | Find code by concept | `gitnexus_query({query: "auth validation"})` |
-| `context` | 360-degree view of one symbol | `gitnexus_context({name: "validateUser"})` |
-| `impact` | Blast radius before editing | `gitnexus_impact({target: "X", direction: "upstream"})` |
-| `detect_changes` | Pre-commit scope check | `gitnexus_detect_changes({scope: "staged"})` |
-| `rename` | Safe multi-file rename | `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` |
-| `cypher` | Custom graph queries | `gitnexus_cypher({query: "MATCH ..."})` |
+| Tool             | When to use                   | Command                                                                 |
+| ---------------- | ----------------------------- | ----------------------------------------------------------------------- |
+| `query`          | Find code by concept          | `gitnexus_query({query: "auth validation"})`                            |
+| `context`        | 360-degree view of one symbol | `gitnexus_context({name: "validateUser"})`                              |
+| `impact`         | Blast radius before editing   | `gitnexus_impact({target: "X", direction: "upstream"})`                 |
+| `detect_changes` | Pre-commit scope check        | `gitnexus_detect_changes({scope: "staged"})`                            |
+| `rename`         | Safe multi-file rename        | `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` |
+| `cypher`         | Custom graph queries          | `gitnexus_cypher({query: "MATCH ..."})`                                 |
 
 ## Impact Risk Levels
 
-| Depth | Meaning | Action |
-|-------|---------|--------|
-| d=1 | WILL BREAK — direct callers/importers | MUST update these |
-| d=2 | LIKELY AFFECTED — indirect deps | Should test |
-| d=3 | MAY NEED TESTING — transitive | Test if critical path |
+| Depth | Meaning                               | Action                |
+| ----- | ------------------------------------- | --------------------- |
+| d=1   | WILL BREAK — direct callers/importers | MUST update these     |
+| d=2   | LIKELY AFFECTED — indirect deps       | Should test           |
+| d=3   | MAY NEED TESTING — transitive         | Test if critical path |
 
 ## Resources
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/laundry-app/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/laundry-app/clusters` | All functional areas |
-| `gitnexus://repo/laundry-app/processes` | All execution flows |
-| `gitnexus://repo/laundry-app/process/{name}` | Step-by-step execution trace |
+| Resource                                     | Use for                                  |
+| -------------------------------------------- | ---------------------------------------- |
+| `gitnexus://repo/laundry-app/context`        | Codebase overview, check index freshness |
+| `gitnexus://repo/laundry-app/clusters`       | All functional areas                     |
+| `gitnexus://repo/laundry-app/processes`      | All execution flows                      |
+| `gitnexus://repo/laundry-app/process/{name}` | Step-by-step execution trace             |
 
 ## Self-Check Before Finishing
 
 Before completing any code modification task, verify:
+
 1. `gitnexus_impact` was run for all modified symbols
 2. No HIGH/CRITICAL risk warnings were ignored
 3. `gitnexus_detect_changes()` confirms changes match expected scope
@@ -184,13 +191,13 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 
 ## CLI
 
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Task                                         | Read this skill file                                        |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md`       |
+| Blast radius / "What breaks if I change X?"  | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?"             | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md`       |
+| Rename / extract / split / refactor          | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md`     |
+| Tools, resources, schema reference           | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md`           |
+| Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
 
 <!-- gitnexus:end -->
