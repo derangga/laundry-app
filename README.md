@@ -356,3 +356,12 @@ laundry-app/
 ├── package.json           # Root package.json
 └── README.md
 ```
+
+## Optional
+
+Copy claude settings to get full configuration ai orchestration
+
+```
+$ cd .claude/
+$ cp project-settings.json settings.local.json
+```
