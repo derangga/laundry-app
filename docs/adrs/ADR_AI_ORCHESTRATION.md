@@ -404,7 +404,7 @@ Explicitly **not** part of v1. Each is justifiable but unjustified at current sc
 
 ## 5. References
 
-- `docs/poc_deterministic_ai.md` — Praetorian Development Platform writeup.
+- [Deterministic AI Orchestration: A Platform Architecture for Autonomous Development](https://www.praetorian.com/blog/deterministic-ai-orchestration-a-platform-architecture-for-autonomous-development/).
 - `docs/adrs/ADR_BACKEND.md` — backend architecture; this ADR's process governs changes to it.
 - `docs/adrs/ADR_FRONTEND.md` — frontend architecture; same.
 - `CLAUDE.md` — current rule set; orchestrate skill enforces several of these rules in-process.
