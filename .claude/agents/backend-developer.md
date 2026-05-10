@@ -22,7 +22,8 @@ Load the `gateway-backend` skill via the Skill tool. It defines required skills,
    - Snake_case columns matching property names exactly.
    - Domain-specific tagged errors only.
 6. **Tests.** Add or update tests under `backend/test/` mirroring the changed module. Match the existing convention (Vitest + Effect testing patterns from `effect-best-practices`).
-7. **Verify locally.** Run `cd backend && bun run typecheck` and `cd backend && bun run test`. Fix until green. Do not exit with failing tests.
+7. **Verify locally.** Run `cd backend && bun run typecheck` and `cd backend && bun run test:run`. Fix until green. Do not exit with failing tests.
+   - **Enforcement.** A SubagentStop hook (`.claude/hooks/developer-tests-pass.sh`) runs typecheck and tests deterministically when you exit. If either fails, the hook **blocks your exit** and the orchestrator sees the failure. Exiting with broken tests is not an option — the kernel will catch it. Fix it before you exit yourself; debugging is faster from inside your own context than from the orchestrator's.
 
 ## Hard rules
 

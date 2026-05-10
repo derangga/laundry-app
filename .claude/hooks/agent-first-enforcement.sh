@@ -53,10 +53,18 @@ EOF
   exit 2
 fi
 
-# Frontend source tree — frontend-developer not yet implemented in v1; allow with a warning.
-# (When the frontend lane lands, change this branch to mirror the backend/src/ block.)
+# Frontend source tree — block main thread
 if [[ "$REL" == frontend/src/* ]]; then
-  exit 0
+  cat >&2 <<EOF
+BLOCKED: main thread cannot Edit/Write to frontend/src/**.
+
+  File: $REL
+  Fix: spawn the 'frontend-developer' sub-agent via the Task tool. The sub-agent
+       follows the gateway-frontend skill and will be reviewed by frontend-reviewer.
+
+This rule comes from .claude/hooks/agent-first-enforcement.sh (per ADR_AI_ORCHESTRATION).
+EOF
+  exit 2
 fi
 
 # Anything else — allow

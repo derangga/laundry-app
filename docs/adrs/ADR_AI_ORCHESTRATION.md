@@ -225,7 +225,13 @@ Reads `.data/feedback-loop.json`. If `dirty_domains` is non-empty and any domain
 
 **Supporting hook: `post-edit-dirty-bit.sh` (PostToolUse, matcher `Edit|Write`)**
 
-Sets `dirty_domains.{backend|frontend} = true` in `.data/feedback-loop.json` whenever an Edit/Write touches the corresponding source tree. Deterministic; no LLM involvement in setting the bit.
+Sets `dirty_domains.{backend|frontend} = true` in `.data/feedback-loop.json` whenever an Edit/Write touches the corresponding source tree. Also resets `reviewer_status` and `tests_status` to `PENDING` so subsequent edits invalidate prior verdicts. Deterministic; no LLM involvement in setting the bit.
+
+**Hook 3 (added 2026-05-10): `developer-tests-pass.sh` (SubagentStop, matcher `""`)**
+
+Runs `bun run typecheck` and `bun run test:run` for every dirty domain whose `tests_status` is `PENDING`, and writes the result to `.data/feedback-loop.json` deterministically. Blocks the sub-agent's exit on FAIL. Idempotent — once `tests_status` is PASS or FAIL it is not re-run until a fresh edit lands.
+
+This hook was added after observing the agent prompt rule "Fix until green" being rationalized past in practice. It converts that soft instruction into a kernel-level constraint: the LLM cannot rationalize a SubagentStop blocked by an actual non-zero test exit code.
 
 #### Rationale
 
@@ -345,7 +351,7 @@ Build the **full backend lane end-to-end first**, validate it on a real backend 
 7. `.claude/hooks/post-edit-dirty-bit.sh` — scoped to `backend/src/**`.
 8. `.claude/hooks/feedback-loop-stop.sh` — checks only `dirty_domains.backend`.
 9. **Run a real backend feature end-to-end. Iterate.**
-10. Once stable: add `gateway-frontend`, `frontend-developer`, `frontend-reviewer`, expand hook scopes.
+10. Once stable: add `gateway-frontend`, `frontend-developer`, `frontend-reviewer`, expand hook scopes. **Completed 2026-05-10** — frontend lane is live: `gateway-frontend` skill, `frontend-developer` + `frontend-reviewer` agents, `agent-first-enforcement.sh` blocks main-thread edits to `frontend/src/**`, `developer-tests-pass.sh` runs real `bun run typecheck` + `bun run test` for frontend (lint deferred — eslint not installed in monorepo), and `post-edit-dirty-bit.sh` now routes `packages/shared/**` to BOTH domains so cross-cutting schema changes are reviewed and tested by both lanes.
 
 #### Rationale
 
@@ -362,8 +368,9 @@ Build the **full backend lane end-to-end first**, validate it on a real backend 
 
 #### Consequences
 
-- Frontend lane lags backend by some interval. Acceptable.
-- The orchestrate skill will likely need a small revision when the second lane reveals asymmetries — plan for one cleanup pass after step 10.
+- ~~Frontend lane lags backend by some interval. Acceptable.~~ Frontend lane completed 2026-05-10.
+- ~~The orchestrate skill will likely need a small revision when the second lane reveals asymmetries — plan for one cleanup pass after step 10.~~ Cleanup applied: orchestrate skill domain-routing and reviewer-protocol sections now cover both domains symmetrically.
+- Lint enforcement is deferred for the frontend lane: the `lint` script exists in `frontend/package.json` but eslint is not installed. When eslint is added, re-enable the lint step in `.claude/hooks/developer-tests-pass.sh::run_frontend()` and update the developer agent's exit-summary contract.
 
 ---
 
@@ -371,18 +378,18 @@ Build the **full backend lane end-to-end first**, validate it on a real backend 
 
 Explicitly **not** part of v1. Each is justifiable but unjustified at current scale.
 
-| Praetorian primitive                                    | Reason for deferral                                                                             |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Tier-2 skill library (`.claude/skill-library/`)         | 10 skills total; attention dilution is not the problem. Revisit at 30+.                         |
-| Compaction gates (75/85% thresholds)                    | Solo dev sessions rarely hit 85% on this codebase. Add when observed.                           |
-| Escalation Advisor (out-of-band LLM hint)               | Premature; no observed deadlocks.                                                               |
-| Parallel agent dispatch (`dispatching-parallel-agents`) | Single-machine, single-developer; serial is fine.                                               |
-| `inject-reminders.sh` (UserPromptSubmit hook)           | Largely redundant with skill loading.                                                           |
-| `SubagentStop` validation                               | No multi-output-directory problem to solve.                                                     |
-| Self-Annealing meta-agent                               | Praetorian Q1 2026 roadmap item; far beyond current need.                                       |
-| 16-phase compression for solo workflows                 | Adopt Praetorian §4.3 classification (with a TRIVIAL escape hatch) until pain proves otherwise. |
-| Per-feature manifest paths                              | Single `.data/manifest.yaml` is sufficient; per-feature paths add complexity.                   |
-| `/resume` slash command                                 | Manifest persistence supports it but no implementation in v1.                                   |
+| Praetorian primitive                                    | Reason for deferral                                                                                                                           |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tier-2 skill library (`.claude/skill-library/`)         | 10 skills total; attention dilution is not the problem. Revisit at 30+.                                                                       |
+| Compaction gates (75/85% thresholds)                    | Solo dev sessions rarely hit 85% on this codebase. Add when observed.                                                                         |
+| Escalation Advisor (out-of-band LLM hint)               | Premature; no observed deadlocks.                                                                                                             |
+| Parallel agent dispatch (`dispatching-parallel-agents`) | Single-machine, single-developer; serial is fine.                                                                                             |
+| `inject-reminders.sh` (UserPromptSubmit hook)           | Largely redundant with skill loading.                                                                                                         |
+| ~~`SubagentStop` validation~~                           | **Added 2026-05-10** as `developer-tests-pass.sh` after the soft rule "Fix until green" was observed being rationalized past. See Decision 4. |
+| Self-Annealing meta-agent                               | Praetorian Q1 2026 roadmap item; far beyond current need.                                                                                     |
+| 16-phase compression for solo workflows                 | Adopt Praetorian §4.3 classification (with a TRIVIAL escape hatch) until pain proves otherwise.                                               |
+| Per-feature manifest paths                              | Single `.data/manifest.yaml` is sufficient; per-feature paths add complexity.                                                                 |
+| `/resume` slash command                                 | Manifest persistence supports it but no implementation in v1.                                                                                 |
 
 ---
 

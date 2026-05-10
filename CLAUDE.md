@@ -59,7 +59,7 @@ Read these for detailed context:
 - `bun run typecheck` — Type-check both
 - `bun run format` — Format both
 - `bun run lint` — Lint frontend
-- Backend tests: `cd backend && bun run test`
+- Backend tests: `cd backend && bun run test:run`
 - Frontend tests: `cd frontend && bun run test`
 - Migrations: `cd backend && bun run migrate:up` / `migrate:down`
 

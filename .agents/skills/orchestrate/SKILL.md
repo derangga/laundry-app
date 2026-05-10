@@ -72,8 +72,8 @@ State lives at `.data/manifest.yaml`. Schema in `.data/SCHEMA.md`.
 Decide the domain from the task's nature, not the file path:
 
 - **Backend domain** — task primarily modifies `backend/src/**`, or modifies `packages/shared/**` for a backend feature. Invoke `gateway-backend` skill. In Phase 8, spawn `backend-developer` agent.
-- **Frontend domain** — _not yet implemented in this slice._ When the user's task is clearly frontend-only, fall back to free-form work for now and note in `findings` that the frontend lane is pending.
-- **Cross-domain** — both gateways apply. Invoke them in sequence; spawn each developer agent in Phase 8 in dependency order (usually backend first when there is an API contract).
+- **Frontend domain** — task primarily modifies `frontend/src/**`, or modifies `packages/shared/**` for a frontend feature. Invoke `gateway-frontend` skill. In Phase 8, spawn `frontend-developer` agent.
+- **Cross-domain** — both gateways apply. Invoke them in sequence; spawn each developer agent in Phase 8 in dependency order (usually backend first when there is an API contract). Note: edits to `packages/shared/**` automatically dirty BOTH domains, so both reviewers and both test suites will run regardless of which agent did the edit.
 
 Pass the developer agent only the context it needs:
 
@@ -85,12 +85,19 @@ Do NOT pass the full manifest or session history.
 
 ## Reviewer protocol
 
-After Phase 8 implementation in domain `backend`:
+After Phase 8 implementation, for each dirty domain:
 
-1. Spawn the `effect-reviewer` agent. Reviewer reads the diff, checks against invariants, returns `VERDICT: PASS | FAIL | SKIP`.
-2. Reviewer self-writes its verdict to `.data/feedback-loop.json` under `domain_status.backend.reviewer_status` (and `reviewer_notes`).
-3. On `VERDICT: FAIL`: collect issues, return to Phase 8 with the issue list as additional context, re-spawn `backend-developer` for fixes. Re-spawn the reviewer afterward. **Maximum 3 retries.** On the 3rd consecutive FAIL, escalate to the user via `AskUserQuestion`.
+| Domain     | Reviewer agent      | Verdict written to                       |
+| ---------- | ------------------- | ---------------------------------------- |
+| `backend`  | `effect-reviewer`   | `domain_status.backend.reviewer_status`  |
+| `frontend` | `frontend-reviewer` | `domain_status.frontend.reviewer_status` |
+
+1. Spawn the matching reviewer agent. Reviewer reads the diff, checks against invariants, returns `VERDICT: PASS | FAIL | SKIP`.
+2. Reviewer self-writes its verdict (and `reviewer_notes`) to `.data/feedback-loop.json`.
+3. On `VERDICT: FAIL`: collect issues, return to Phase 8 with the issue list as additional context, re-spawn the matching `*-developer` for fixes. Re-spawn the reviewer afterward. **Maximum 3 retries per domain.** On the 3rd consecutive FAIL, escalate to the user via `AskUserQuestion`.
 4. On `VERDICT: PASS`: proceed to Phase 9 (or skip per the SMALL rule).
+
+For cross-domain tasks: spawn reviewers serially (backend first if there's an API contract). Each reviewer writes only its own domain's status; they do not interact.
 
 The Stop hook (`feedback-loop-stop.sh`) is the safety net — it refuses to end the session if any dirty domain is not `PASS`. Treat the reviewer protocol as the primary gate; the hook only catches lapses.
 

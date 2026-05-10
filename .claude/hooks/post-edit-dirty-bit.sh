@@ -36,30 +36,37 @@ case "$FILE_PATH" in
   *) REL="$FILE_PATH" ;;
 esac
 
-# Decide domain
-DOMAIN=""
+# Decide which domains this edit dirties.
+# packages/shared/** is consumed by both sides — mark both dirty so both
+# reviewers see it and both test suites run. Conservative but correct.
+DOMAINS=()
 case "$REL" in
-  backend/src/* | packages/shared/*) DOMAIN="backend" ;;
-  frontend/src/*) DOMAIN="frontend" ;;
+  backend/src/*) DOMAINS=("backend") ;;
+  frontend/src/*) DOMAINS=("frontend") ;;
+  packages/shared/*) DOMAINS=("backend" "frontend") ;;
   *) exit 0 ;;  # unrouted path — no dirty bit
 esac
 
 # Initialize state file if missing or corrupted
 mkdir -p "$STATE_DIR"
-DEFAULT='{"version":1,"dirty_domains":{"backend":false,"frontend":false},"domain_status":{"backend":{"reviewer_status":"PENDING","reviewer_notes":""},"frontend":{"reviewer_status":"PENDING","reviewer_notes":""}}}'
+DEFAULT='{"version":1,"dirty_domains":{"backend":false,"frontend":false},"domain_status":{"backend":{"reviewer_status":"PENDING","reviewer_notes":"","tests_status":"PENDING","tests_notes":""},"frontend":{"reviewer_status":"PENDING","reviewer_notes":"","tests_status":"PENDING","tests_notes":""}}}'
 
 if [[ ! -f "$STATE_FILE" ]] || ! jq -e . "$STATE_FILE" >/dev/null 2>&1; then
   echo "$DEFAULT" >"$STATE_FILE"
 fi
 
-# Set the dirty bit. Reset reviewer_status to PENDING since the domain has new uncommitted changes.
-TMP=$(mktemp)
-jq --arg d "$DOMAIN" \
-  '.dirty_domains[$d] = true | .domain_status[$d].reviewer_status = "PENDING"' \
-  "$STATE_FILE" >"$TMP" 2>/dev/null && mv "$TMP" "$STATE_FILE" || {
-  rm -f "$TMP"
-  echo "post-edit-dirty-bit: jq update failed — leaving state untouched" >&2
-  exit 0
-}
+# Set dirty bits for each routed domain. Reset both reviewer_status and
+# tests_status to PENDING since the domain has new uncommitted changes.
+for DOMAIN in "${DOMAINS[@]}"; do
+  TMP=$(mktemp)
+  if jq --arg d "$DOMAIN" \
+    '.dirty_domains[$d] = true | .domain_status[$d].reviewer_status = "PENDING" | .domain_status[$d].tests_status = "PENDING"' \
+    "$STATE_FILE" >"$TMP" 2>/dev/null; then
+    mv "$TMP" "$STATE_FILE"
+  else
+    rm -f "$TMP"
+    echo "post-edit-dirty-bit: jq update for domain=$DOMAIN failed — continuing" >&2
+  fi
+done
 
 exit 0
