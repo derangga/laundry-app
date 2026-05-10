@@ -1,7 +1,7 @@
 ## Table of Contents
 
-| Date | Title |
-|------|-------|
+| Date       | Title                                                             |
+| ---------- | ----------------------------------------------------------------- |
 | 2026-03-05 | Effect HttpClient Scoping Pitfall — `ResponseError: Decode error` |
 
 ---
@@ -116,7 +116,7 @@ function apiClient<T>(method, path, schema?, body?) {
 
 > **Scope the entire program, not individual requests.**
 >
-> `Effect.scoped` should wrap the outermost effect that includes both the HTTP request *and* all response body reads. Never scope a bare `client.execute()` if you need to read the body later.
+> `Effect.scoped` should wrap the outermost effect that includes both the HTTP request _and_ all response body reads. Never scope a bare `client.execute()` if you need to read the body later.
 
 ## Key Takeaways
 

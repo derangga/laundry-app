@@ -1,7 +1,7 @@
 ## Table of Contents
 
-| Date | Title |
-|------|-------|
+| Date       | Title                                           |
+| ---------- | ----------------------------------------------- |
 | 2026-03-02 | Raw SQL Returns JS Date Instead of DateTime.Utc |
 
 ---
@@ -22,7 +22,7 @@ Two things combine to cause this:
 
 ### 1. `sql<T>` template literals don't decode at runtime
 
-Raw SQL queries using `sql<Customer>\`...\`` only provide **TypeScript type hints**. The PostgreSQL driver returns `TIMESTAMPTZ` columns as raw JS `Date` objects — they are NOT decoded through the `Customer` Model schema.
+Raw SQL queries using `sql<Customer>\`...\``only provide **TypeScript type hints**. The PostgreSQL driver returns`TIMESTAMPTZ`columns as raw JS`Date`objects — they are NOT decoded through the`Customer` Model schema.
 
 ```typescript
 // This does NOT decode through the schema at runtime
@@ -44,11 +44,13 @@ When the handler returns a value, `HttpApiBuilder` encodes it through `CustomerR
 
 ```typescript
 // Model.makeRepository decodes through the schema — Date → DateTime.Utc
-const repo = yield* Model.makeRepository(Customer, {
-  tableName: 'customers',
-  spanPrefix: 'CustomerRepository',
-  idColumn: 'id',
-})
+const repo =
+  yield *
+  Model.makeRepository(Customer, {
+    tableName: 'customers',
+    spanPrefix: 'CustomerRepository',
+    idColumn: 'id',
+  })
 // repo.insert properly returns DateTime.Utc for timestamp fields
 ```
 
@@ -93,9 +95,7 @@ const findByPhone = (phone: string) =>
     SELECT id, name, phone, address, created_at, updated_at
     FROM customers WHERE phone = ${phone}
   `.pipe(
-    Effect.flatMap((rows) =>
-      rows[0] ? decodeCustomer(rows[0]) : Effect.succeed(Option.none())
-    ),
+    Effect.flatMap((rows) => (rows[0] ? decodeCustomer(rows[0]) : Effect.succeed(Option.none()))),
     Effect.map(Option.some),
     Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
   )
@@ -113,11 +113,11 @@ This is the more robust fix since it ensures the domain model is always properly
 
 ## Affected Column Types
 
-| PostgreSQL Type | Raw JS Return | Schema Expects | Fix |
-|-----------------|---------------|----------------|-----|
-| TIMESTAMPTZ | `Date` | `DateTime.Utc` | `DateTime.unsafeFromDate()` |
-| TIMESTAMP | `Date` | `DateTime.Utc` | `DateTime.unsafeFromDate()` |
-| DECIMAL(x,y) | `string` | `number` | `DecimalNumber` schema |
+| PostgreSQL Type | Raw JS Return | Schema Expects | Fix                         |
+| --------------- | ------------- | -------------- | --------------------------- |
+| TIMESTAMPTZ     | `Date`        | `DateTime.Utc` | `DateTime.unsafeFromDate()` |
+| TIMESTAMP       | `Date`        | `DateTime.Utc` | `DateTime.unsafeFromDate()` |
+| DECIMAL(x,y)    | `string`      | `number`       | `DecimalNumber` schema      |
 
 ## Files Changed in This Fix
 
