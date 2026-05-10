@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import {
-  CreateOrderUseCase,
-  createOrderUseCaseImpl,
-} from 'src/usecase/order/CreateOrderUseCase'
+import { CreateOrderUseCase, createOrderUseCaseImpl } from 'src/usecase/order/CreateOrderUseCase'
 import {
   FindOrderByIdUseCase,
   findOrderByIdUseCaseImpl,
@@ -262,8 +259,7 @@ const OrderServiceShim = Effect.gen(function* () {
   return {
     create: (data: CreateOrderInput) => createOrder.execute(data),
     findById: (id: OrderId) => findOrder.execute(id),
-    updateStatus: (id: OrderId, status: OrderStatus) =>
-      updateOrderStatus.execute(id, status),
+    updateStatus: (id: OrderId, status: OrderStatus) => updateOrderStatus.execute(id, status),
     updatePaymentStatus: (id: OrderId, status: PaymentStatus) =>
       updatePaymentStatus.execute(id, status),
     findByCustomerId: (id: CustomerId) => findOrdersByCustomer.execute(id),
@@ -918,7 +914,10 @@ describe('PUT /api/orders/:id/status', () => {
     orders = [
       createTestOrder('order-1', { status: 'received' as OrderStatus }),
       createTestOrder('order-2', { status: 'in_progress' as OrderStatus }),
-      createTestOrder('order-3', { status: 'ready' as OrderStatus }),
+      createTestOrder('order-3', {
+        status: 'ready' as OrderStatus,
+        payment_status: 'paid' as PaymentStatus,
+      }),
       createTestOrder('order-4', { status: 'delivered' as OrderStatus }),
     ]
     orderItems = []
@@ -1232,6 +1231,8 @@ describe('Integration Flow Tests', () => {
 
         yield* orderService.updateStatus(created.id, 'ready')
         const step2 = yield* orderService.findById(created.id)
+
+        yield* orderService.updatePaymentStatus(created.id, 'paid')
 
         yield* orderService.updateStatus(created.id, 'delivered')
         const step3 = yield* orderService.findById(created.id)

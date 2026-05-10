@@ -4,6 +4,8 @@ import { FindOrderByIdUseCase } from './FindOrderByIdUseCase'
 import { validateStatusTransition } from '@domain/OrderStatusValidator'
 import { OrderId, OrderStatus } from '@domain/Order'
 
+import { OrderPaymentRequired } from '@domain/OrderErrors'
+
 export const updateOrderStatusUseCaseImpl = Effect.gen(function* () {
   const orderRepo = yield* OrderRepository
   const findOrderByIdUseCase = yield* FindOrderByIdUseCase
@@ -13,6 +15,10 @@ export const updateOrderStatusUseCaseImpl = Effect.gen(function* () {
     newStatus: OrderStatus
   ) {
     const order = yield* findOrderByIdUseCase.execute(id)
+
+    if (newStatus === 'delivered' && order.payment_status === 'unpaid') {
+      return yield* Effect.fail(new OrderPaymentRequired({ orderId: id }))
+    }
 
     yield* validateStatusTransition(order.status, newStatus)
 

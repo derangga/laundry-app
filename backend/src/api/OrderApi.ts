@@ -17,6 +17,7 @@ import {
   ValidationError,
   UnprocessibleEntity,
   RetrieveDataEror,
+  OrderPaymentRequired,
 } from '@domain/http/HttpErrors'
 import { AuthMiddleware } from '@middleware/AuthMiddleware'
 
@@ -70,6 +71,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addSuccess(OrderResponse)
       .addError(OrderNotFound)
       .addError(InvalidOrderStatus)
+      .addError(OrderPaymentRequired)
       .addError(ValidationError)
       .addError(UnprocessibleEntity)
   )
