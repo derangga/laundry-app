@@ -1,36 +1,38 @@
-# Laundry App — Project Overview
+# Project Overview — laundry-app
 
-## Purpose
-Laundry management web application for managing customers, orders, services, payments, and analytics. Web only.
+A laundry management web app for managing customers, orders, services, payments, and analytics. Web only.
+
+## Monorepo Structure (Bun workspace)
+
+- `packages/shared/src/` — Shared domain models (DTOs, branded IDs, enums) used by both backend and frontend
+  - `common/`, `user.ts`, `auth.ts`, `customer.ts`, `service.ts`, `order.ts`, `analytics.ts`, `receipt.ts`
+- `backend/src/` — Effect-TS backend
+  - `domain/` — Backend-only error types + re-exports from @laundry-app/shared
+  - `usecase/` — Business logic (Effect.Service pattern)
+  - `repositories/` — Database access (SQL queries, no ORM)
+  - `handlers/` — Route handler implementations
+  - `api/` — HttpApi route definitions
+  - `middleware/` — AuthMiddleware (JWT verification)
+  - `configs/` — Environment variable parsing
+  - `http/` — HTTP server setup, router
+  - `main.ts` — Entry point
+- `frontend/src/` — TanStack Start / React frontend
+  - `routes/` — TanStack Router file-based routes
+  - `components/` — React components
+  - `data/` — Data fetching, API clients
+  - `lib/` — Utilities
+  - `hooks/`, `api/`, `domain/`, `integrations/`
 
 ## Tech Stack
-- **Runtime**: Bun
-- **Monorepo**: Bun workspaces with 4 packages: `packages/shared`, `packages/observability`, `backend`, `frontend`
-- **Backend**: Effect TypeScript (`@effect/platform-bun`, `@effect/sql-pg`, `effect/Schema`)
-- **UseCase pattern**: One file per use case (e.g., `CreateOrderUseCase.ts`, `UpdateOrderStatusUseCase.ts`), each as its own `Effect.Service` class
-- **Frontend**: TanStack Start (React 19), TanStack Router, TanStack Query, TanStack Table, Tailwind CSS v4, shadcn/ui (Radix UI), Recharts
-- **Shared**: `@laundry-app/shared` — domain models (DTOs, branded IDs, enums) shared between backend & frontend
-- **Database**: PostgreSQL (direct SQL via `@effect/sql-pg`, no ORM)
-- **Auth**: JWT access tokens + refresh tokens in httpOnly cookies
-- **Testing**: Vitest (both backend and frontend), Testing Library (frontend)
-- **OS**: Darwin (macOS)
 
-## Project Structure
-```
-packages/shared/src/   # Shared domain models
-backend/src/
-  domain/              # Error types + re-exports from shared
-  usecase/             # Business logic (Effect.Service pattern)
-  repositories/        # Database access (SQL queries)
-  handlers/            # Route handler implementations
-  api/                 # HttpApi route definitions
-  middleware/           # AuthMiddleware (JWT)
-  configs/             # Env var parsing
-  http/                # HTTP server setup, router
-  main.ts              # Entry point
-frontend/src/
-  routes/              # TanStack Router file-based routes
-  components/          # React components
-  data/                # Data fetching, API clients
-  lib/                 # Utilities
-```
+- **Runtime**: Bun
+- **Backend**: Effect TypeScript (`@effect/platform-bun`, `@effect/sql-pg`, `effect/Schema`)
+- **Frontend**: TanStack Start (React), Tailwind CSS v4
+- **Shared**: `@laundry-app/shared` (imported via `workspace:*`)
+- **Database**: PostgreSQL (direct SQL, no ORM)
+- **Auth**: JWT access tokens + refresh tokens in httpOnly cookies
+- **Observability**: OpenTelemetry, Prometheus, Loki, Grafana
+
+## AI Orchestration
+
+Uses deterministic AI orchestration via the `orchestrate` skill (16-phase workflow). Main thread coordinates only — source edits are delegated to `backend-developer` and `frontend-developer` sub-agents. Reviewer agents (`effect-reviewer`, `frontend-reviewer`) audit changes.
