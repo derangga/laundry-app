@@ -1,7 +1,7 @@
 ## Table of Contents
 
-| Date | Title |
-|------|-------|
+| Date       | Title                                            |
+| ---------- | ------------------------------------------------ |
 | 2026-02-14 | PostgreSQL DECIMAL Returns Strings in Effect SQL |
 
 ---
@@ -67,7 +67,7 @@ import { DecimalNumber } from './common/DecimalNumber.js'
 export class LaundryService extends Model.Class<LaundryService>('LaundryService')({
   id: Model.Generated(ServiceId),
   name: Schema.String,
-  price: DecimalNumber,  // Changed from Schema.Number
+  price: DecimalNumber, // Changed from Schema.Number
   // ...
 }) {}
 ```
@@ -78,7 +78,7 @@ export class LaundryService extends Model.Class<LaundryService>('LaundryService'
 export class CreateLaundryServiceInput extends Schema.Class<CreateLaundryServiceInput>(
   'CreateLaundryServiceInput'
 )({
-  price: Schema.Number,  // Keep as Schema.Number for JSON input
+  price: Schema.Number, // Keep as Schema.Number for JSON input
 }) {}
 ```
 
@@ -113,9 +113,7 @@ const insert = (data: CreateInput): Effect.Effect<LaundryService, SqlError.SqlEr
   `.pipe(
     Effect.flatMap((rows) => {
       const first = rows[0]
-      return first !== undefined
-        ? decodeService(first)
-        : Effect.fail(new Error('Insert failed'))
+      return first !== undefined ? decodeService(first) : Effect.fail(new Error('Insert failed'))
     }),
     Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
   )
@@ -130,13 +128,13 @@ const insert = (data: CreateInput): Effect.Effect<LaundryService, SqlError.SqlEr
 
 ## Affected Column Types
 
-| PostgreSQL Type | JavaScript Return | Solution |
-|-----------------|-------------------|----------|
-| DECIMAL(x,y) | string | DecimalNumber schema |
-| NUMERIC(x,y) | string | DecimalNumber schema |
-| BIGINT | string (if > Number.MAX_SAFE_INTEGER) | Similar transform |
-| INTEGER | number | No fix needed |
-| REAL/FLOAT | number | No fix needed |
+| PostgreSQL Type | JavaScript Return                     | Solution             |
+| --------------- | ------------------------------------- | -------------------- |
+| DECIMAL(x,y)    | string                                | DecimalNumber schema |
+| NUMERIC(x,y)    | string                                | DecimalNumber schema |
+| BIGINT          | string (if > Number.MAX_SAFE_INTEGER) | Similar transform    |
+| INTEGER         | number                                | No fix needed        |
+| REAL/FLOAT      | number                                | No fix needed        |
 
 ## Files Changed in This Fix
 

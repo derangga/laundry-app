@@ -1,14 +1,14 @@
 ## Table of Contents
 
-| Date | Title |
-|------|-------|
+| Date       | Title                                                 |
+| ---------- | ----------------------------------------------------- |
 | 2026-02-14 | Schema DateTimeUtc Decoding Error in Repository Tests |
 
 ---
+
 ## Overview
 
 This document contains common issues encountered during unit testing and their solutions.
-
 
 ## Schema DateTimeUtc Decoding Error in Repository Tests
 
@@ -31,10 +31,10 @@ When testing repository methods that use `Schema.decodeUnknown()`, the mock data
 
 **Schema types behave differently:**
 
-| Schema Type | Encoded (DB) | Decoded (Domain) |
-|-------------|--------------|------------------|
-| `Schema.DateTimeUtc` | `string` | `DateTime.Utc` |
-| `Model.DateTimeInsertFromDate` | `Date` | `DateTime.Utc` |
+| Schema Type                    | Encoded (DB) | Decoded (Domain) |
+| ------------------------------ | ------------ | ---------------- |
+| `Schema.DateTimeUtc`           | `string`     | `DateTime.Utc`   |
+| `Model.DateTimeInsertFromDate` | `Date`       | `DateTime.Utc`   |
 
 The error occurs when using `.make()` with `DateTime.unsafeMake()`:
 
@@ -70,15 +70,16 @@ const createMockOrderItemWithService = (
 ```
 
 **Key points:**
+
 - Use string ISO format for `Schema.DateTimeUtc` fields
 - Use `Date` object for `Model.DateTimeInsertFromDate` fields
 - Follow existing mock helper patterns in the test file
 
 ### Quick Reference
 
-| Domain Field Schema | Mock Value Type | Example |
-|---------------------|-----------------|---------|
-| `Schema.DateTimeUtc` | `string` | `'2024-01-01T00:00:00.000Z'` |
-| `Model.DateTimeInsertFromDate` | `Date` | `new Date('2024-01-01')` |
-| `DecimalNumber` | `number` | `10000` |
-| Branded types (`OrderId`, etc.) | `string` | `'order-123'` |
+| Domain Field Schema             | Mock Value Type | Example                      |
+| ------------------------------- | --------------- | ---------------------------- |
+| `Schema.DateTimeUtc`            | `string`        | `'2024-01-01T00:00:00.000Z'` |
+| `Model.DateTimeInsertFromDate`  | `Date`          | `new Date('2024-01-01')`     |
+| `DecimalNumber`                 | `number`        | `10000`                      |
+| Branded types (`OrderId`, etc.) | `string`        | `'order-123'`                |
