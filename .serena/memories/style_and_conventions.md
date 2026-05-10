@@ -1,27 +1,38 @@
-# Code Style & Conventions
+# Style and Conventions — laundry-app
 
-## General
-- **Language**: TypeScript (strict mode)
-- **Formatter**: Prettier
-- **Linter**: ESLint (frontend only)
-- **Module system**: ES modules (`"type": "module"`)
+## Language & Formatting
 
-## Backend Conventions
-- **Effect patterns**: Effect.Service for business logic, Effect.gen for generators, Schema for validation
-- **UseCase structure**: One file per use case in `usecase/<domain>/` (e.g., `CreateOrderUseCase.ts`). Each exports a single `Effect.Service` class with `accessors: true` and explicit `dependencies`. No grouped service files.
-- **No `SELECT *`** — Always explicit column lists in SQL queries, explicit `RETURNING` clauses
-- **Snake_case DB columns** — Domain model properties must match DB column names exactly
-- **Typed errors** — Domain-specific error classes (e.g., `CustomerNotFound`), mapped to HTTP by error handler middleware
-- **No data models in usecase/** — All DTOs, branded IDs, enums in `packages/shared/src/`
-- **Path aliases**: `@domain`, `@usecase`, `@repositories`, `@api`, `@http`, `@configs`, `@shared`, `@middleware`, `@handlers`, `@infrastructure`
+- TypeScript throughout (backend + frontend + shared)
+- Prettier for formatting (`.prettierrc` at root)
+- File encoding: utf-8
 
-## Frontend Conventions
-- **File-based routing**: TanStack Router
-- **Data fetching**: TanStack Query
-- **UI components**: shadcn/ui (Radix UI primitives) + Tailwind CSS v4
-- **Import alias**: `#/*` maps to `./src/*`
+## Naming Conventions
 
-## Git Workflow
-- Never push directly to master — always create a branch
-- Branch prefixes: `feature/`, `fix/`, `refactor/`, `docs/`, `chore/`
-- Plans for non-trivial work go in `docs/plans/<NAME>_<DATE>.md`
+- **DB columns**: `snake_case` — domain model property names must match DB column names exactly
+- **TypeScript**: camelCase for variables/functions, PascalCase for types/classes
+
+## Code Rules
+
+1. **No `SELECT *`** — Always use explicit column lists in SQL queries; explicit `RETURNING` clauses too.
+2. **Shared models in `packages/shared/`** — All request/response DTOs, branded IDs, and enums go there. Backend `domain/` contains error classes and re-exports. Never define data models inside `usecase/`.
+3. **Snake_case DB columns** — Domain model property names must match database column names exactly.
+4. **Typed errors** — Use domain-specific error classes (e.g., `CustomerNotFound`). Error handler middleware maps them to HTTP responses.
+
+## Effect-TS Patterns
+
+- Services use `Effect.Service` pattern
+- Errors use `Schema.TaggedError`
+- Layer composition for dependency injection
+- `HttpApi` for route definitions
+
+## Frontend Patterns
+
+- TanStack Router for file-based routing
+- TanStack Query for server state
+- shadcn/ui components
+- Tailwind CSS v4 for styling
+
+## Comments
+
+- Default to no comments; only add when WHY is non-obvious
+- No multi-paragraph docstrings or multi-line comment blocks

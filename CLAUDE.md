@@ -52,6 +52,28 @@ Read these for detailed context:
 - `docs/CONTEXT.md` — Effect patterns, service composition, middleware, layer setup
 - Use available **skills** for framework-specific patterns (Effect, TanStack Router, TanStack Query, shadcn/ui, Tailwind, etc.)
 
+## AI Orchestration
+
+This repo uses **deterministic AI orchestration** so every agent (Claude Code and other LLM tools) follows the same process. The full operational protocol lives in the `orchestrate` skill — invoke it (it auto-invokes on any non-trivial coding prompt) and follow it.
+
+**The main thread is a coordinator, not an implementer.** It cannot `Edit`/`Write` to `backend/src/**` or `frontend/src/**` — the `agent-first-enforcement.sh` PreToolUse hook blocks those edits and forces delegation to a developer sub-agent. If you find yourself wanting to edit source from the main thread, spawn the right developer agent instead.
+
+The pieces:
+
+- **`orchestrate` skill** — 16-phase workflow auto-invoked on any non-trivial coding prompt. Phase 2 (Triage) classifies the task as TRIVIAL/SMALL/MEDIUM/LARGE and skips phases accordingly. Read-only questions and explanations bypass orchestrate entirely.
+- **Gateway skills** — `gateway-backend` and `gateway-frontend` route work to the right Tier-1 skills, repo invariants, and required reviewer.
+- **Developer agents** — `backend-developer` and `frontend-developer` implement changes per their gateway in fresh context. Thin (<150 lines), one-shot, no further delegation.
+- **Reviewer agents** — `effect-reviewer` and `frontend-reviewer` audit changes in fresh context and self-write `PASS`/`FAIL` verdicts to `.data/feedback-loop.json`.
+- **`manifest-writer` agent** — the orchestrator delegates every `.data/manifest.yaml` mutation to this one-shot agent. Main thread never edits the manifest directly.
+- **Hooks** —
+  - `agent-first-enforcement.sh` (PreToolUse): blocks main-thread source edits.
+  - `post-edit-dirty-bit.sh` (PostToolUse): marks dirty domains; `packages/shared/**` dirties both.
+  - `developer-tests-pass.sh` (SubagentStop): deterministically runs typecheck + tests for every dirty domain; blocks sub-agent exit on failure.
+  - `feedback-loop-stop.sh` (Stop): refuses to end the session until every dirty domain has both `reviewer_status` and `tests_status` equal to `PASS`.
+- **State** — `.data/manifest.yaml` (persistent narrative state) and `.data/feedback-loop.json` (ephemeral enforcement state). Schema in `.data/SCHEMA.md`. Both files are gitignored; the schema is committed.
+
+**Layout convention:** knowledge (skills) lives under `.agents/skills/` so collaborator tools can read it; Claude Code-specific mechanisms (agents, hooks) live under `.claude/`. Skills are symlinked into `.claude/skills/`.
+
 ## Dev Commands (from repo root)
 
 - `bun run dev` — Start backend + frontend in parallel
@@ -59,7 +81,7 @@ Read these for detailed context:
 - `bun run typecheck` — Type-check both
 - `bun run format` — Format both
 - `bun run lint` — Lint frontend
-- Backend tests: `cd backend && bun run test`
+- Backend tests: `cd backend && bun run test:run`
 - Frontend tests: `cd frontend && bun run test`
 - Migrations: `cd backend && bun run migrate:up` / `migrate:down`
 
@@ -98,7 +120,7 @@ Always use Serena's semantic tools for code exploration instead of reading entir
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **laundry-app** (3363 symbols, 5055 relationships, 33 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **laundry-app** (3404 symbols, 5112 relationships, 33 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -110,44 +132,12 @@ This project is indexed by GitNexus as **laundry-app** (3363 symbols, 5055 relat
 - When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
 - When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
 
-## When Debugging
-
-1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
-2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/laundry-app/process/{processName}` — trace the full execution flow step by step
-4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
-
-## When Refactoring
-
-- **Renaming**: MUST use `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` first. Review the preview — graph edits are safe, text_search edits need manual review. Then run with `dry_run: false`.
-- **Extracting/Splitting**: MUST run `gitnexus_context({name: "target"})` to see all incoming/outgoing refs, then `gitnexus_impact({target: "target", direction: "upstream"})` to find all external callers before moving code.
-- After any refactor: run `gitnexus_detect_changes({scope: "all"})` to verify only expected files changed.
-
 ## Never Do
 
 - NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
 - NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
 - NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
-
-## Tools Quick Reference
-
-| Tool             | When to use                   | Command                                                                 |
-| ---------------- | ----------------------------- | ----------------------------------------------------------------------- |
-| `query`          | Find code by concept          | `gitnexus_query({query: "auth validation"})`                            |
-| `context`        | 360-degree view of one symbol | `gitnexus_context({name: "validateUser"})`                              |
-| `impact`         | Blast radius before editing   | `gitnexus_impact({target: "X", direction: "upstream"})`                 |
-| `detect_changes` | Pre-commit scope check        | `gitnexus_detect_changes({scope: "staged"})`                            |
-| `rename`         | Safe multi-file rename        | `gitnexus_rename({symbol_name: "old", new_name: "new", dry_run: true})` |
-| `cypher`         | Custom graph queries          | `gitnexus_cypher({query: "MATCH ..."})`                                 |
-
-## Impact Risk Levels
-
-| Depth | Meaning                               | Action                |
-| ----- | ------------------------------------- | --------------------- |
-| d=1   | WILL BREAK — direct callers/importers | MUST update these     |
-| d=2   | LIKELY AFFECTED — indirect deps       | Should test           |
-| d=3   | MAY NEED TESTING — transitive         | Test if critical path |
 
 ## Resources
 
@@ -157,33 +147,6 @@ This project is indexed by GitNexus as **laundry-app** (3363 symbols, 5055 relat
 | `gitnexus://repo/laundry-app/clusters`       | All functional areas                     |
 | `gitnexus://repo/laundry-app/processes`      | All execution flows                      |
 | `gitnexus://repo/laundry-app/process/{name}` | Step-by-step execution trace             |
-
-## Self-Check Before Finishing
-
-Before completing any code modification task, verify:
-
-1. `gitnexus_impact` was run for all modified symbols
-2. No HIGH/CRITICAL risk warnings were ignored
-3. `gitnexus_detect_changes()` confirms changes match expected scope
-4. All d=1 (WILL BREAK) dependents were updated
-
-## Keeping the Index Fresh
-
-After committing code changes, the GitNexus index becomes stale. Re-run analyze to update it:
-
-```bash
-npx gitnexus analyze
-```
-
-If the index previously included embeddings, preserve them by adding `--embeddings`:
-
-```bash
-npx gitnexus analyze --embeddings
-```
-
-To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.embeddings` field shows the count (0 means no embeddings). **Running analyze without `--embeddings` will delete any previously generated embeddings.**
-
-> Claude Code users: A PostToolUse hook handles this automatically after `git commit` and `git merge`.
 
 ## CLI
 

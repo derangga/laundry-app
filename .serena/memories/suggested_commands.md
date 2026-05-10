@@ -1,34 +1,42 @@
-# Suggested Commands
+# Suggested Commands — laundry-app
+
+All commands run from repo root unless noted. Use `rtk` prefix (token-optimized proxy).
 
 ## Development
-- `bun run dev` — Start backend + frontend in parallel (from repo root)
-- `bun run dev:backend` — Start backend only
-- `bun run dev:frontend` — Start frontend only (Vite on port 3100)
 
-## Build
-- `bun run build` — Build both backend and frontend
-- `bun run build:backend` — Build backend only
-- `bun run build:frontend` — Build frontend only
-
-## Type Checking
-- `bun run typecheck` — Type-check both
-- `bun run typecheck:backend` — Backend only
-- `bun run typecheck:frontend` — Frontend only (prettier --check)
+```bash
+bun run dev          # Start backend + frontend in parallel
+bun run build        # Build both
+bun run typecheck    # Type-check both
+bun run format       # Format both
+bun run lint         # Lint frontend
+```
 
 ## Testing
-- `cd backend && bun run test` — Run backend tests (Vitest)
-- `cd frontend && bun run test` — Run frontend tests (Vitest)
 
-## Linting & Formatting
-- `bun run lint` — Lint frontend (ESLint)
-- `bun run format` — Format both (Prettier)
+```bash
+# Backend tests (run from backend/)
+cd backend && bun run test:run   # Run tests (NOT bun run test)
+
+# Frontend tests
+cd frontend && bun run test
+```
 
 ## Database Migrations
-- `cd backend && bun run migrate:up` — Run migrations
-- `cd backend && bun run migrate:down` — Rollback migrations
 
-## System Utilities (macOS/Darwin)
-- `git` — Version control
-- `ls` — List files
-- `find` / `grep` — Search (prefer Serena symbolic tools for code)
-- `bun` — Package manager and runtime
+```bash
+cd backend && bun run migrate:up
+cd backend && bun run migrate:down
+```
+
+## Git Workflow
+
+- Never push directly to master — always create a branch
+- Branch prefixes: `feature/`, `fix/`, `refactor/`, `docs/`, `chore/`
+- Plans for non-trivial work in `docs/plans/<NAME>_<DATE>.md`
+
+## CLI Tools
+
+- `rtk` — Token-optimized CLI proxy (use instead of raw shell commands)
+- `rtk gain` — Show token savings analytics
+- `rtk discover` — Analyze Claude Code history for missed opportunities
