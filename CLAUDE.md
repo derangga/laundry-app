@@ -70,10 +70,6 @@ Read these for detailed context:
 3. **Snake_case DB columns** — Domain model property names must match database column names exactly (`snake_case`).
 4. **Typed errors** — Use domain-specific error classes (e.g., `CustomerNotFound`). The error handler middleware maps them to HTTP responses.
 
-## Effect Code Reviews
-
-After implementing or modifying anything in `backend/src/usecase/`, `backend/src/repositories/`, `backend/src/handlers/`, `backend/src/api/`, `backend/src/domain/`, or `packages/shared/src/`, you MUST spawn the `effect-reviewer` agent before declaring the task done. If it returns `FAIL`, fix the listed issues and re-invoke. Skip only for trivial edits (renames, comment changes, formatting).
-
 ## Git Workflow
 
 - **Never push directly to master** — always create a branch
