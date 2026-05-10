@@ -231,6 +231,15 @@ export class InvalidOrderStatus extends Schema.TaggedError<InvalidOrderStatus>()
   HttpApiSchema.annotations({ status: 422 })
 ) {}
 
+export class OrderPaymentRequired extends Schema.TaggedError<OrderPaymentRequired>()(
+  'OrderPaymentRequired',
+  {
+    message: Schema.String,
+    orderId: Schema.String,
+  },
+  HttpApiSchema.annotations({ status: 422 })
+) {}
+
 export class EmptyOrderError extends Schema.TaggedError<EmptyOrderError>()(
   'EmptyOrderError',
   {

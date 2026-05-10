@@ -26,6 +26,7 @@ import {
   ValidationError,
   UnprocessibleEntity,
   RetrieveDataEror,
+  OrderPaymentRequired as OrderPaymentRequiredHttp,
 } from '@domain/http/HttpErrors'
 
 /**
@@ -297,6 +298,11 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
                 message: `Invalid status transition from ${error.from} to ${error.to}`,
                 currentStatus: error.from,
                 attemptedStatus: error.to,
+              }),
+            OrderPaymentRequired: (error) =>
+              new OrderPaymentRequiredHttp({
+                message: 'Order must be paid before it can be marked as delivered',
+                orderId: error.orderId,
               }),
             SqlError: () =>
               new UnprocessibleEntity({

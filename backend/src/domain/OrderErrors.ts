@@ -15,6 +15,10 @@ export class InvalidOrderTransition extends Data.TaggedError('InvalidOrderTransi
   to: string
 }> {}
 
+export class OrderPaymentRequired extends Data.TaggedError('OrderPaymentRequired')<{
+  orderId: string
+}> {}
+
 export class OrderValidationError extends Data.TaggedError('OrderValidationError')<{
   errors: Array<{ field: string; message: string }>
 }> {}

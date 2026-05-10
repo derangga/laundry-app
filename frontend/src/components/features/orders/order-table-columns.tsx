@@ -96,6 +96,9 @@ export function getOrderColumns(
       cell: ({ row }) => {
         const { status, payment_status, id } = row.original
         const nextStatus = ORDER_STATUS_NEXT[status]
+        const blockedByPayment =
+          nextStatus === 'delivered' && payment_status === 'unpaid'
+        const advanceDisabled = !nextStatus || blockedByPayment
 
         return (
           <DropdownMenu>
@@ -107,7 +110,7 @@ export function getOrderColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                disabled={!nextStatus}
+                disabled={advanceDisabled}
                 onClick={() => {
                   if (nextStatus) {
                     callbacks.onAdvanceStatus(id, nextStatus)
@@ -115,10 +118,16 @@ export function getOrderColumns(
                 }}
               >
                 Advance Status
-                {nextStatus && (
+                {blockedByPayment ? (
                   <span className="ml-1 text-muted-foreground">
-                    → {ORDER_STATUS_LABELS[nextStatus]}
+                    (payment required)
                   </span>
+                ) : (
+                  nextStatus && (
+                    <span className="ml-1 text-muted-foreground">
+                      → {ORDER_STATUS_LABELS[nextStatus]}
+                    </span>
+                  )
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem
