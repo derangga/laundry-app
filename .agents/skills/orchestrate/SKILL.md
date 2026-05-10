@@ -48,7 +48,7 @@ When in doubt, run Phase 1 + Phase 2 (Triage) only — the cost is small and the
 | 15  | Test Quality          | Validate assertions are meaningful; no false positives                                                     |
 | 16  | Completion            | **Run `gitnexus_detect_changes`**; verify reviewer PASS for all dirty domains; record final manifest entry |
 
-## Skip rules (adapted from the Praetorian article §4.3)
+## Skip rules (adapted from the Praetorian article 4.3)
 
 Phase 2 classifies the task and selects the phase subset. Apply strictly.
 
