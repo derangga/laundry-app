@@ -1,3 +1,5 @@
+import { Effect } from 'effect'
+
 interface SessionEventInput {
   event: { type: string }
 }
@@ -8,8 +10,15 @@ interface TuiClient {
   }): Promise<boolean>
 }
 
-export function handleSessionEvent(input: SessionEventInput, _client?: { tui: TuiClient }): void {
-  if (input.event.type === 'session.created') {
-    return
-  }
+export const handleSessionEvent = async (
+  input: SessionEventInput,
+  _client?: { tui: TuiClient }
+): Promise<void> => {
+  const program = Effect.gen(function* () {
+    if (input.event.type === 'session.created') {
+      yield* Effect.log('Orchestration hooks loaded')
+    }
+  })
+
+  await Effect.runPromise(program)
 }

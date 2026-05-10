@@ -1,3 +1,6 @@
+import { Effect } from 'effect'
+import { RtkBlockError } from './errors'
+
 const RTK_PREFIX_RE = /^rtk\s/
 
 const SHELL_BUILTINS = [
@@ -77,22 +80,35 @@ const SHELL_BUILTINS = [
   'tee',
   'printf',
   'echo',
-]
+] as const
 
-export function isRtkPrefixed(command: string): boolean {
-  return RTK_PREFIX_RE.test(command)
-}
+export class RtkService extends Effect.Service<RtkService>()('RtkService', {
+  accessors: true,
+  effect: Effect.gen(function* () {
+    const isRtkPrefixed = (command: string): boolean => RTK_PREFIX_RE.test(command)
 
-export function isShellBuiltin(command: string): boolean {
-  const trimmed = command.trimStart()
-  const firstWord = trimmed.split(/\s+/)[0]
-  return SHELL_BUILTINS.includes(firstWord)
-}
+    const isShellBuiltin = (command: string): boolean => {
+      const trimmed = command.trimStart()
+      const firstWord = trimmed.split(/\s+/)[0]
+      return SHELL_BUILTINS.includes(firstWord as (typeof SHELL_BUILTINS)[number])
+    }
 
-export function isVariableAssignment(command: string): boolean {
-  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(command)
-}
+    const isVariableAssignment = (command: string): boolean =>
+      /^[A-Za-z_][A-Za-z0-9_]*=/.test(command)
 
-export function buildRtkBlockMessage(command: string): string {
+    const validateCommand = Effect.fn('RtkService.validateCommand')(function* (command: string) {
+      if (isRtkPrefixed(command)) return
+      if (isShellBuiltin(command)) return
+      if (isVariableAssignment(command)) return
+      return yield* new RtkBlockError({ command, message: buildBlockMessage(command) })
+    })
+
+    return { isRtkPrefixed, isShellBuiltin, isVariableAssignment, validateCommand }
+  }),
+}) {}
+
+function buildBlockMessage(command: string): string {
   return `BLOCKED: Command must be prefixed with 'rtk'.\n\n  Your command: ${command}\n  Fix: rtk ${command}\n\nrtk compresses output for 60-90% token savings. It passes through unchanged if no filter exists.\nEven in chains: rtk git add && rtk git commit`
 }
+
+export const RtkServiceLive = RtkService.Default

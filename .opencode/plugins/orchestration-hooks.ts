@@ -48,15 +48,15 @@ interface PluginInput {
 export const OrchestrationHooks = async (_input: PluginInput) => {
   return {
     'tool.execute.before': async (input: ToolBeforeInput, output: ToolBeforeOutput) => {
-      handleToolBefore(input, output)
+      await handleToolBefore(input, output)
     },
 
     'tool.execute.after': async (input: ToolAfterInput, _output: ToolAfterOutput) => {
-      handleToolAfter(input)
+      await handleToolAfter(input)
     },
 
     event: async (input: SessionEventInput) => {
-      handleSessionEvent(input)
+      await handleSessionEvent(input)
     },
   }
 }

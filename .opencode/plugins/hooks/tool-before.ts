@@ -1,11 +1,8 @@
+import { Effect } from 'effect'
 import { BASH_TOOL, EDIT_WRITE_TOOLS } from '../lib/patterns'
-import {
-  isRtkPrefixed,
-  isShellBuiltin,
-  isVariableAssignment,
-  buildRtkBlockMessage,
-} from '../lib/rtk'
-import { toRepoRelative, buildAgentFirstBlockMessage } from '../lib/agent-first'
+import { RtkService } from '../lib/rtk'
+import { AgentFirstService } from '../lib/agent-first'
+import { RtkBlockError, AgentFirstBlockError } from '../lib/errors'
 
 interface ToolBeforeInput {
   tool: string
@@ -17,25 +14,35 @@ interface ToolBeforeOutput {
   args: Record<string, unknown>
 }
 
-export function handleToolBefore(input: ToolBeforeInput, output: ToolBeforeOutput): void {
-  const { tool } = input
-  const args = output.args
+export const handleToolBefore = async (
+  input: ToolBeforeInput,
+  output: ToolBeforeOutput
+): Promise<void> => {
+  const program = Effect.gen(function* () {
+    const rtk = yield* RtkService
+    const agentFirst = yield* AgentFirstService
 
-  if (tool === BASH_TOOL && args?.command) {
-    const command = String(args.command)
-    if (isRtkPrefixed(command) || isShellBuiltin(command) || isVariableAssignment(command)) {
+    const { tool } = input
+    const args = output.args
+
+    if (tool === BASH_TOOL && args?.command) {
+      const command = String(args.command)
+      yield* rtk.validateCommand(command)
       return
     }
-    throw new Error(buildRtkBlockMessage(command))
-  }
 
-  if ((EDIT_WRITE_TOOLS as readonly string[]).includes(tool) && args?.filePath) {
-    const rel = toRepoRelative(String(args.filePath))
-    if (rel.startsWith('backend/src/')) {
-      throw new Error(buildAgentFirstBlockMessage(rel, 'backend'))
+    if ((EDIT_WRITE_TOOLS as readonly string[]).includes(tool) && args?.filePath) {
+      const rel = agentFirst.toRepoRelative(String(args.filePath))
+      yield* agentFirst.checkPath(rel)
     }
-    if (rel.startsWith('frontend/src/')) {
-      throw new Error(buildAgentFirstBlockMessage(rel, 'frontend'))
+  }).pipe(Effect.provide(RtkService.Default), Effect.provide(AgentFirstService.Default))
+
+  try {
+    await Effect.runPromise(program)
+  } catch (e) {
+    if (e instanceof RtkBlockError || e instanceof AgentFirstBlockError) {
+      throw new Error(e.message)
     }
+    throw e
   }
 }
