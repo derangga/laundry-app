@@ -45,6 +45,7 @@ This ADR documents the architectural decisions for the laundry management applic
 The backend uses JWT access tokens (15min expiry) and refresh tokens (7 days). As of backend phase 15, the backend sets httpOnly cookies on login/refresh/logout via `Set-Cookie` headers. Tokens are also returned in the response body for non-browser clients. The `AuthMiddleware` supports dual security: httpOnly cookie (primary for browsers) and `Authorization: Bearer` header (for non-browser clients).
 
 Key backend implementation:
+
 - **`GET /api/auth/me` endpoint** — added in backend phase 14. Returns `{ id, email, name, role }` from the JWT token
 - **`AuthMiddleware`** supports dual security: `HttpApiSecurity.apiKey({ key: 'accessToken', in: 'cookie' })` and `HttpApiSecurity.bearer` — Bearer takes priority
 - **httpOnly cookies set by backend** — `AuthHandlers.ts` calls `appendAuthCookies()` on login/refresh and `appendClearAuthCookies()` on logout
@@ -54,6 +55,7 @@ Key backend implementation:
 #### Decision
 
 Tokens stored in httpOnly cookies managed by the backend. The frontend determines auth state via `GET /api/auth/me`. No client-side token management:
+
 - **No token storage in JavaScript** — httpOnly cookies are invisible to JS, eliminating XSS token theft
 - **Browser sends cookies automatically** — `credentials: 'include'` on all fetch requests
 - Cache **user profile data** in TanStack Query via `GET /api/auth/me`
@@ -215,6 +217,7 @@ frontend/src/api/analytics.ts     — Analytics endpoints + hooks
 ```
 
 **apiClient responsibilities:**
+
 1. Prepend base URL (`http://localhost:3000`)
 2. Set `Content-Type: application/json` and `credentials: 'include'` (httpOnly cookies sent automatically)
 3. On 401: attempt `POST /api/auth/refresh` with empty body `{}` (refresh token cookie sent automatically), retry original request
@@ -222,6 +225,7 @@ frontend/src/api/analytics.ts     — Analytics endpoints + hooks
 5. Throw typed `ApiError { status, code, message }` on non-OK responses
 
 **Each API module exports:**
+
 1. Query key factory (e.g., `orderKeys`)
 2. Raw fetch functions (e.g., `fetchOrders`)
 3. TanStack Query hooks (e.g., `useActiveOrders`, `useUpdateOrderStatus`)
@@ -230,20 +234,43 @@ frontend/src/api/analytics.ts     — Analytics endpoints + hooks
 
 ```typescript
 // GET /api/orders → OrderWithDetails[]
-{ id, order_number, customer_id, customer_name, customer_phone,
-  status, payment_status, total_price, created_by, created_by_name,
-  created_at, updated_at }
+{
+  ;(id,
+    order_number,
+    customer_id,
+    customer_name,
+    customer_phone,
+    status,
+    payment_status,
+    total_price,
+    created_by,
+    created_by_name,
+    created_at,
+    updated_at)
+}
 
 // PUT /api/orders/:id/status → OrderResponse
-{ id, order_number, customer_id, status, payment_status,
-  total_price, created_by, created_at, updated_at }
+{
+  ;(id,
+    order_number,
+    customer_id,
+    status,
+    payment_status,
+    total_price,
+    created_by,
+    created_at,
+    updated_at)
+}
 
 // GET /api/analytics/weekly → WeeklyAnalyticsResponse
-{ weeks: [{ week_start, total_revenue, order_count }],
-  start_date, end_date, payment_filter }
+{
+  weeks: ([{ week_start, total_revenue, order_count }], start_date, end_date, payment_filter)
+}
 
 // GET /api/analytics/dashboard → DashboardStatsResponse
-{ todays_orders, pending_payments, weekly_revenue, total_customers }
+{
+  ;(todays_orders, pending_payments, weekly_revenue, total_customers)
+}
 ```
 
 **Important**: `GET /api/orders` returns a flat array with no pagination wrapper. Pagination is handled client-side using TanStack Table's `getPaginationRowModel()`.
@@ -321,55 +348,57 @@ Every page that fetches data MUST handle all three states explicitly.
 
 Every data-fetching component handles these states:
 
-| State | UI |
-|-------|-----|
-| Loading | Skeleton placeholders (shimmer effect via shadcn `Skeleton`) |
-| Success + has data | Render data (table, chart, cards) |
-| Success + empty data | `<EmptyState />` with icon, message, optional action |
-| Error | `<ErrorState />` with error message and "Try again" button |
+| State                | UI                                                           |
+| -------------------- | ------------------------------------------------------------ |
+| Loading              | Skeleton placeholders (shimmer effect via shadcn `Skeleton`) |
+| Success + has data   | Render data (table, chart, cards)                            |
+| Success + empty data | `<EmptyState />` with icon, message, optional action         |
+| Error                | `<ErrorState />` with error message and "Try again" button   |
 
 #### Shared State Components
 
 **`components/shared/empty-state.tsx`:**
+
 ```typescript
 interface EmptyStateProps {
-  icon?: React.ReactNode     // lucide-react icon
-  title: string              // "No active orders"
-  description?: string       // "Orders with status received or in progress will appear here"
-  action?: React.ReactNode   // Optional CTA button
+  icon?: React.ReactNode // lucide-react icon
+  title: string // "No active orders"
+  description?: string // "Orders with status received or in progress will appear here"
+  action?: React.ReactNode // Optional CTA button
 }
 ```
 
 **`components/shared/error-state.tsx`:**
+
 ```typescript
 interface ErrorStateProps {
-  title?: string             // Default: "Something went wrong"
-  description?: string       // Error message from API or default
-  onRetry?: () => void       // Calls query.refetch()
+  title?: string // Default: "Something went wrong"
+  description?: string // Error message from API or default
+  onRetry?: () => void // Calls query.refetch()
 }
 ```
 
 #### Toast Notification Rules
 
-| Trigger | Toast Type | Example |
-|---------|------------|---------|
-| Mutation success | `toast.success()` | "Order status updated" |
-| Mutation error | `toast.error()` | "Failed to update order status" |
-| Auth error (after refresh fails) | `toast.error()` | "Session expired. Please log in again." |
-| Permission denied (403) | `toast.error()` | "You don't have permission to perform this action" |
-| Network/server error (500) | `toast.error()` | "Something went wrong. Please try again." |
-| Form validation (client-side) | Inline error text | Shown below the invalid field, NOT as toast |
+| Trigger                          | Toast Type        | Example                                            |
+| -------------------------------- | ----------------- | -------------------------------------------------- |
+| Mutation success                 | `toast.success()` | "Order status updated"                             |
+| Mutation error                   | `toast.error()`   | "Failed to update order status"                    |
+| Auth error (after refresh fails) | `toast.error()`   | "Session expired. Please log in again."            |
+| Permission denied (403)          | `toast.error()`   | "You don't have permission to perform this action" |
+| Network/server error (500)       | `toast.error()`   | "Something went wrong. Please try again."          |
+| Form validation (client-side)    | Inline error text | Shown below the invalid field, NOT as toast        |
 
 #### API Error Mapping
 
-| Status | Behavior |
-|--------|----------|
-| 401 | Auto-refresh token → retry. If refresh fails: clear tokens, redirect to `/login`, toast "Session expired" |
-| 403 | Toast: "You don't have permission to perform this action" |
-| 404 | Toast with backend message (e.g., "Order not found") |
-| 409 | Toast with backend message (e.g., "User already exists with email: ...") |
-| 400 | Inline form errors when field info available, otherwise toast with backend message |
-| 500 | Toast: "Something went wrong. Please try again." |
+| Status | Behavior                                                                                                  |
+| ------ | --------------------------------------------------------------------------------------------------------- |
+| 401    | Auto-refresh token → retry. If refresh fails: clear tokens, redirect to `/login`, toast "Session expired" |
+| 403    | Toast: "You don't have permission to perform this action"                                                 |
+| 404    | Toast with backend message (e.g., "Order not found")                                                      |
+| 409    | Toast with backend message (e.g., "User already exists with email: ...")                                  |
+| 400    | Inline form errors when field info available, otherwise toast with backend message                        |
+| 500    | Toast: "Something went wrong. Please try again."                                                          |
 
 #### Implementation
 
@@ -413,14 +442,14 @@ useMutation({
 
 #### Page-by-Page State Handling
 
-| Page | Loading State | Empty State | Error State |
-|------|--------------|-------------|-------------|
-| Dashboard (Home) | Skeleton table rows | "No active orders" with Inbox icon | Error message + retry button |
-| History Order | Skeleton table rows | "No orders found" (may vary with filters) | Error message + retry button |
-| Analytics — Stats | 4 skeleton cards | N/A (stats always return numbers) | Error message + retry button |
-| Analytics — Charts | Skeleton chart area | "No data for selected period" | Error message + retry button |
-| Manage Staff | N/A (form page) | N/A | Toast on submit error |
-| Login | Loading spinner on button | N/A | Toast "Wrong email or password" |
+| Page               | Loading State             | Empty State                               | Error State                     |
+| ------------------ | ------------------------- | ----------------------------------------- | ------------------------------- |
+| Dashboard (Home)   | Skeleton table rows       | "No active orders" with Inbox icon        | Error message + retry button    |
+| History Order      | Skeleton table rows       | "No orders found" (may vary with filters) | Error message + retry button    |
+| Analytics — Stats  | 4 skeleton cards          | N/A (stats always return numbers)         | Error message + retry button    |
+| Analytics — Charts | Skeleton chart area       | "No data for selected period"             | Error message + retry button    |
+| Manage Staff       | N/A (form page)           | N/A                                       | Toast on submit error           |
+| Login              | Loading spinner on button | N/A                                       | Toast "Wrong email or password" |
 
 ---
 
@@ -435,6 +464,7 @@ The backend enforces two roles: `admin` (full access) and `staff` (limited — n
 Apply RBAC at two levels:
 
 **Route-level** — `beforeLoad` in route definitions for admin-only pages:
+
 ```typescript
 // _dashboard/analytics.tsx
 beforeLoad: async ({ context }) => {
@@ -446,6 +476,7 @@ beforeLoad: async ({ context }) => {
 ```
 
 **Component-level** — `useCurrentUser()` hook for conditional rendering:
+
 ```typescript
 // In app-sidebar.tsx
 const { data: user } = useCurrentUser()
@@ -457,13 +488,13 @@ const { data: user } = useCurrentUser()
 
 #### Role Access Matrix
 
-| Feature | Admin | Staff |
-|---------|-------|-------|
-| Home Dashboard (active orders) | yes | yes |
-| History Order (all orders) | yes | yes |
-| Update order status/payment | yes | yes |
-| Analytics page | yes | no |
-| Manage Staff page | yes | no |
+| Feature                        | Admin | Staff |
+| ------------------------------ | ----- | ----- |
+| Home Dashboard (active orders) | yes   | yes   |
+| History Order (all orders)     | yes   | yes   |
+| Update order status/payment    | yes   | yes   |
+| Analytics page                 | yes   | no    |
+| Manage Staff page              | yes   | no    |
 
 ### Decision 8: Shared Effect Schema Package
 
@@ -476,6 +507,7 @@ The backend uses Effect `Schema.Class` for all domain types — branded IDs, req
 Create a `@laundry-app/shared` workspace package (`packages/shared/`) that exports Effect Schema types as the single source of truth for API contracts. The frontend imports schemas from this shared package instead of maintaining its own domain type definitions.
 
 **Key constraints:**
+
 - The shared package depends **only** on `effect` — no `@effect/platform`, `@effect/sql`, or other backend-only packages
 - The frontend API client remains plain `fetch` + TanStack Query — no Effect runtime on the frontend
 - Effect Schema types are used purely for TypeScript type inference on the frontend (e.g., `typeof LoginInput.Type`)
@@ -569,11 +601,7 @@ All domain types are imported from `@laundry-app/shared` — the frontend does *
 
 ```typescript
 // Import types from the shared package
-import type {
-  LoginInput,
-  AuthenticatedUser,
-  AuthResponse,
-} from '@laundry-app/shared'
+import type { LoginInput, AuthenticatedUser, AuthResponse } from '@laundry-app/shared'
 
 import type {
   OrderStatus,
@@ -582,10 +610,7 @@ import type {
   UpdateOrderStatusInput,
 } from '@laundry-app/shared'
 
-import type {
-  WeeklyAnalyticsResponse,
-  DashboardStatsResponse,
-} from '@laundry-app/shared'
+import type { WeeklyAnalyticsResponse, DashboardStatsResponse } from '@laundry-app/shared'
 ```
 
 > **Note**: The frontend uses `import type` for pure type inference. The `effect` package is a dependency for Schema type resolution, but no Effect runtime code runs on the frontend. The API client remains plain `fetch` + TanStack Query.
@@ -595,4 +620,3 @@ import type {
 - Backend API: See `docs/API_TEST.md` for all endpoint curl examples and response shapes
 - Backend Architecture: See `docs/ADR_BACKEND.md` for backend decisions and database schema
 - Product Requirements: See `docs/PRD.md` for full feature specifications
-

@@ -47,3 +47,7 @@ process-compose-*.log
 
 .mcp.json
 .gitnexus
+
+# AI orchestration runtime state (per-machine, per-session)
+.data/
+!.data/SCHEMA.md

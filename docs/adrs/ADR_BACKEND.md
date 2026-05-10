@@ -1522,6 +1522,7 @@ The frontend needs the same type definitions used by the backend for API request
 Extract public Schema types (branded IDs, `Schema.Class` DTOs, `Schema.Literal` enums) to a `@laundry-app/shared` workspace package (`packages/shared/`). The backend re-exports these types from its domain files so existing backend imports remain unchanged.
 
 **What moves to shared:**
+
 - Branded IDs: `UserId`, `CustomerId`, `ServiceId`, `OrderId`, `OrderItemId`
 - Enum literals: `UserRole`, `OrderStatus`, `PaymentStatus`, `UnitType`, `AnalyticsPaymentFilter`
 - Request DTOs: `LoginInput`, `CreateUserInput`, `CreateCustomerInput`, `CreateOrderInput`, etc.
@@ -1529,6 +1530,7 @@ Extract public Schema types (branded IDs, `Schema.Class` DTOs, `Schema.Literal` 
 - Common schemas: `DecimalNumber`, `DateTimeUtcString`
 
 **What stays in backend:**
+
 - `Model.Class` entities (`User`, `Customer`, `Order`, `OrderItem`, `LaundryService`) — depend on `@effect/sql`
 - `Context.Tag` services (`CurrentUser`) — internal DI concern
 - Error classes (`CustomerNotFound`, `OrderNotFound`, etc.) — backend-only error handling
@@ -1551,12 +1553,14 @@ Extract public Schema types (branded IDs, `Schema.Class` DTOs, `Schema.Literal` 
 #### Consequences
 
 **Positive**:
+
 - Type-safe API contracts between frontend and backend
 - Frontend gets branded IDs, literal unions, and exact optionality from schemas
 - Runtime validation available if frontend chooses to use `Schema.decode`
 - Backend imports unchanged (re-export pattern)
 
 **Negative**:
+
 - New workspace dependency to manage
 - Shared package must be kept dependency-light (only `effect`)
 - Changes to shared types affect both frontend and backend (intended, but requires awareness)
