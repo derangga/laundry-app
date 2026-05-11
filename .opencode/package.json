@@ -1,0 +1,17 @@
+{
+  "name": "@laundry-app/opencode-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.14.35",
+    "effect": "^3.21.2"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.73.1",
+    "@types/node": "^22.19.18",
+    "typescript": "^5.9.3"
+  }
+}

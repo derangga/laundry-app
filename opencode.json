@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "serena": {
+      "type": "local",
+      "command": ["sh", "-c", "serena start-mcp-server --context claude-code --project \"$(pwd)\""]
+    }
+  },
+  "plugin": [".opencode/plugins/orchestration-hooks.ts"]
+}
