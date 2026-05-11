@@ -23,3 +23,7 @@ export class FeedbackStateWriteError extends Schema.TaggedError<FeedbackStateWri
   'FeedbackStateWriteError',
   { path: Schema.String, message: Schema.String }
 ) {}
+
+export class ShowToastError extends Schema.TaggedError<ShowToastError>()('ShowToastError', {
+  message: Schema.String,
+}) {}

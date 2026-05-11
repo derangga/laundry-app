@@ -110,5 +110,3 @@ export class RtkService extends Effect.Service<RtkService>()('RtkService', {
 function buildBlockMessage(command: string): string {
   return `BLOCKED: Command must be prefixed with 'rtk'.\n\n  Your command: ${command}\n  Fix: rtk ${command}\n\nrtk compresses output for 60-90% token savings. It passes through unchanged if no filter exists.\nEven in chains: rtk git add && rtk git commit`
 }
-
-export const RtkServiceLive = RtkService.Default

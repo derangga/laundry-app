@@ -1,10 +1,10 @@
 import { Layer } from 'effect'
-import { RtkServiceLive } from './rtk'
-import { AgentFirstServiceLive } from './agent-first'
-import { FeedbackStateServiceLive } from './dirty-bit'
+import { RtkService } from './rtk'
+import { AgentFirstService } from './agent-first'
+import { FeedbackStateService } from './dirty-bit'
+import { RepoRootLive } from './repo-root'
 
-export const HooksLive = Layer.mergeAll(
-  RtkServiceLive,
-  AgentFirstServiceLive,
-  FeedbackStateServiceLive
-)
+export const makeHooksLive = (repoRoot: string) =>
+  Layer.mergeAll(RtkService.Default, AgentFirstService.Default, FeedbackStateService.Default).pipe(
+    Layer.provide(RepoRootLive(repoRoot))
+  )

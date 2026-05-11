@@ -1,48 +1,48 @@
-import { Effect } from 'effect'
+import { Cause, Effect, Exit, type Layer, type ManagedRuntime, Option } from 'effect'
+import type { Hooks } from '@opencode-ai/plugin'
 import { BASH_TOOL, EDIT_WRITE_TOOLS } from '../lib/patterns'
 import { RtkService } from '../lib/rtk'
 import { AgentFirstService } from '../lib/agent-first'
-import { RtkBlockError, AgentFirstBlockError } from '../lib/errors'
+import { RtkBlockError } from '../lib/errors'
+import type { makeHooksLive } from '../lib/shared'
 
-interface ToolBeforeInput {
-  tool: string
-  sessionID: string
-  callID: string
-}
+type ToolBeforeFn = NonNullable<Hooks['tool.execute.before']>
+type ToolBeforeInput = Parameters<ToolBeforeFn>[0]
+type ToolBeforeOutput = Parameters<ToolBeforeFn>[1]
 
-interface ToolBeforeOutput {
-  args: Record<string, unknown>
-}
+export type HooksRuntime = ManagedRuntime.ManagedRuntime<
+  Layer.Layer.Success<ReturnType<typeof makeHooksLive>>,
+  never
+>
 
 export const handleToolBefore = async (
+  runtime: HooksRuntime,
   input: ToolBeforeInput,
   output: ToolBeforeOutput
 ): Promise<void> => {
+  const { tool } = input
+  const args = output.args as Record<string, unknown> | undefined
+
   const program = Effect.gen(function* () {
-    const rtk = yield* RtkService
-    const agentFirst = yield* AgentFirstService
-
-    const { tool } = input
-    const args = output.args
-
-    if (tool === BASH_TOOL && args?.command) {
-      const command = String(args.command)
-      yield* rtk.validateCommand(command)
+    if (tool === BASH_TOOL && typeof args?.command === 'string') {
+      yield* RtkService.validateCommand(args.command)
       return
     }
 
-    if ((EDIT_WRITE_TOOLS as readonly string[]).includes(tool) && args?.filePath) {
-      const rel = agentFirst.toRepoRelative(String(args.filePath))
-      yield* agentFirst.checkPath(rel)
+    if (
+      (EDIT_WRITE_TOOLS as readonly string[]).includes(tool) &&
+      typeof args?.filePath === 'string'
+    ) {
+      yield* AgentFirstService.checkPath(args.filePath)
     }
-  }).pipe(Effect.provide(RtkService.Default), Effect.provide(AgentFirstService.Default))
+  })
 
-  try {
-    await Effect.runPromise(program)
-  } catch (e) {
-    if (e instanceof RtkBlockError || e instanceof AgentFirstBlockError) {
-      throw new Error(e.message)
+  const exit = await runtime.runPromiseExit(program)
+  if (Exit.isFailure(exit)) {
+    const failure = Cause.failureOption(exit.cause)
+    if (Option.isSome(failure) && failure.value instanceof RtkBlockError) {
+      throw new Error(failure.value.message)
     }
-    throw e
+    console.error('tool.execute.before unexpected failure:', Cause.pretty(exit.cause))
   }
 }

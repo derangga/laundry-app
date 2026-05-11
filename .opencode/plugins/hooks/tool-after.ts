@@ -1,38 +1,41 @@
-import { Effect } from 'effect'
-import { EDIT_WRITE_TOOLS } from '../lib/patterns'
+import { Cause, Effect, Exit } from 'effect'
+import type { Hooks } from '@opencode-ai/plugin'
+import { BACKEND_SRC_RE, EDIT_WRITE_TOOLS, FRONTEND_SRC_RE, SHARED_RE } from '../lib/patterns'
 import { FeedbackStateService } from '../lib/dirty-bit'
+import type { HooksRuntime } from './tool-before'
 
-interface ToolAfterInput {
-  tool: string
-  sessionID: string
-  callID: string
-  args: Record<string, unknown>
-}
+type ToolAfterFn = NonNullable<Hooks['tool.execute.after']>
+type ToolAfterInput = Parameters<ToolAfterFn>[0]
 
-export const handleToolAfter = async (input: ToolAfterInput): Promise<void> => {
+export const handleToolAfter = async (
+  runtime: HooksRuntime,
+  input: ToolAfterInput
+): Promise<void> => {
+  if (!(EDIT_WRITE_TOOLS as readonly string[]).includes(input.tool)) return
+
+  const args = input.args as Record<string, unknown> | undefined
+  const filePath = args?.filePath
+  if (typeof filePath !== 'string') return
+
   const program = Effect.gen(function* () {
-    const fb = yield* FeedbackStateService
-
-    if (!(EDIT_WRITE_TOOLS as readonly string[]).includes(input.tool)) return
-
-    const filePath = input.args?.filePath
-    if (!filePath || typeof filePath !== 'string') return
-
-    const rel = fb.toRepoRelative(filePath)
+    const rel = yield* FeedbackStateService.toRepoRelative(filePath)
     const domains: string[] = []
 
-    if (rel.startsWith('backend/src/')) {
+    if (BACKEND_SRC_RE.test(rel)) {
       domains.push('backend')
-    } else if (rel.startsWith('frontend/src/')) {
+    } else if (FRONTEND_SRC_RE.test(rel)) {
       domains.push('frontend')
-    } else if (rel.startsWith('packages/shared/')) {
+    } else if (SHARED_RE.test(rel)) {
       domains.push('backend', 'frontend')
     } else {
       return
     }
 
-    yield* fb.setDirtyBit(domains)
-  }).pipe(Effect.provide(FeedbackStateService.Default))
+    yield* FeedbackStateService.setDirtyBit(domains)
+  })
 
-  await Effect.runPromise(program)
+  const exit = await runtime.runPromiseExit(program)
+  if (Exit.isFailure(exit)) {
+    console.error('tool.execute.after unexpected failure:', Cause.pretty(exit.cause))
+  }
 }

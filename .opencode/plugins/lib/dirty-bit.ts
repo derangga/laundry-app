@@ -1,8 +1,8 @@
 import { Effect } from 'effect'
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-
-const REPO_ROOT = process.cwd()
+import { RepoRoot } from './repo-root'
+import { FeedbackStateReadError, FeedbackStateWriteError } from './errors'
 
 export interface DomainStatus {
   reviewer_status: string
@@ -44,68 +44,71 @@ export class FeedbackStateService extends Effect.Service<FeedbackStateService>()
   {
     accessors: true,
     effect: Effect.gen(function* () {
-      const stateFile = join(REPO_ROOT, '.data', 'feedback-loop.json')
+      const repoRoot = yield* RepoRoot
+      const stateFile = join(repoRoot, '.data', 'feedback-loop.json')
+      const stateDir = join(repoRoot, '.data')
 
       const toRepoRelative = (filePath: string): string => {
-        if (filePath.startsWith(REPO_ROOT + '/')) {
-          return filePath.slice(REPO_ROOT.length + 1)
+        if (filePath.startsWith(repoRoot + '/')) {
+          return filePath.slice(repoRoot.length + 1)
         }
-        if (filePath.startsWith('/')) return filePath
         return filePath
       }
 
-      const readEffect = Effect.acquireRelease(
-        Effect.sync(() => {
+      const readFeedbackState = Effect.try({
+        try: (): FeedbackState | null => {
           if (!existsSync(stateFile)) return null
-          try {
-            const content = readFileSync(stateFile, 'utf-8')
-            return JSON.parse(content) as FeedbackState
-          } catch {
-            return null
-          }
-        }),
-        () => Effect.void
-      )
+          const content = readFileSync(stateFile, 'utf-8')
+          return JSON.parse(content) as FeedbackState
+        },
+        catch: (cause) => new FeedbackStateReadError({ path: stateFile, message: String(cause) }),
+      })
 
-      const readFeedbackState = (): Effect.Effect<FeedbackState | null> => Effect.scoped(readEffect)
-
-      const writeEffect = (state: FeedbackState): Effect.Effect<void> =>
-        Effect.sync(() => {
-          try {
-            mkdirSync(join(REPO_ROOT, '.data'), { recursive: true })
+      const writeFeedbackState = (state: FeedbackState) =>
+        Effect.try({
+          try: () => {
+            mkdirSync(stateDir, { recursive: true })
             writeFileSync(stateFile, JSON.stringify(state, null, 2))
-          } catch {
-            // fail silently
-          }
+          },
+          catch: (cause) =>
+            new FeedbackStateWriteError({ path: stateFile, message: String(cause) }),
         })
 
-      const writeFeedbackState = (state: FeedbackState): Effect.Effect<void> => writeEffect(state)
-
-      const setDirtyBit = (domains: readonly string[]): Effect.Effect<void> =>
-        Effect.gen(function* () {
-          const current = yield* readFeedbackState()
-          const state: FeedbackState = current ?? makeResetFeedbackState()
-          const next: FeedbackState = {
-            version: state.version,
-            dirty_domains: { ...state.dirty_domains },
-            domain_status: {
-              backend: { ...state.domain_status.backend },
-              frontend: { ...state.domain_status.frontend },
-            },
+      const setDirtyBit = Effect.fn('FeedbackStateService.setDirtyBit')(function* (
+        domains: readonly string[]
+      ) {
+        // PostToolUse must fail-open: tolerate missing/corrupt state and write failures.
+        const current = yield* readFeedbackState.pipe(
+          Effect.catchTag('FeedbackStateReadError', (err) =>
+            Effect.logWarning(`feedback-state read failed: ${err.message}`).pipe(
+              Effect.as(null as FeedbackState | null)
+            )
+          )
+        )
+        const state: FeedbackState = current ?? makeResetFeedbackState()
+        const next: FeedbackState = {
+          version: state.version,
+          dirty_domains: { ...state.dirty_domains },
+          domain_status: {
+            backend: { ...state.domain_status.backend },
+            frontend: { ...state.domain_status.frontend },
+          },
+        }
+        for (const domain of domains) {
+          if (domain === 'backend' || domain === 'frontend') {
+            next.dirty_domains[domain] = true
+            next.domain_status[domain].reviewer_status = 'PENDING'
+            next.domain_status[domain].tests_status = 'PENDING'
           }
-          for (const domain of domains) {
-            if (domain === 'backend' || domain === 'frontend') {
-              next.dirty_domains[domain] = true
-              next.domain_status[domain].reviewer_status = 'PENDING'
-              next.domain_status[domain].tests_status = 'PENDING'
-            }
-          }
-          yield* writeFeedbackState(next)
-        })
+        }
+        yield* writeFeedbackState(next).pipe(
+          Effect.catchTag('FeedbackStateWriteError', (err) =>
+            Effect.logWarning(`feedback-state write failed: ${err.message}`)
+          )
+        )
+      })
 
       return { toRepoRelative, readFeedbackState, writeFeedbackState, setDirtyBit }
     }),
   }
 ) {}
-
-export const FeedbackStateServiceLive = FeedbackStateService.Default
