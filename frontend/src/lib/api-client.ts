@@ -87,7 +87,7 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
      * Execute a request using the appropriate client method
      */
     function executeRequest(
-      method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
       path: string,
       body?: unknown,
     ) {
@@ -100,6 +100,8 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
           return httpClient.put(path, options)
         case 'DELETE':
           return httpClient.del(path, options)
+        case 'PATCH':
+          return httpClient.patch(path, options)
         default:
           return httpClient.get(path)
       }
@@ -109,7 +111,7 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
      * Core API client function with automatic token refresh
      */
     function request<T, TInput = T>(
-      method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
       path: string,
       schema?: Schema.Schema<T, TInput, never>,
       body?: unknown,
@@ -181,6 +183,13 @@ class ApiClient extends Effect.Service<ApiClient>()('ApiClient', {
         schema?: Schema.Schema<T, TInput, never>,
       ): Effect.Effect<T, ApiClientError> => request('PUT', path, schema, data),
 
+      patch: <T, TInput = T>(
+        path: string,
+        data?: unknown,
+        schema?: Schema.Schema<T, TInput, never>,
+      ): Effect.Effect<T, ApiClientError> =>
+        request('PATCH', path, schema, data),
+
       del: <T, TInput = T>(
         path: string,
         schema?: Schema.Schema<T, TInput, never>,
@@ -227,6 +236,16 @@ export const api = {
     Effect.gen(function* () {
       const client = yield* ApiClient
       return yield* client.put(path, data, schema)
+    }).pipe(Effect.provide(ApiClientLive)),
+
+  patch: <T, TInput = T>(
+    path: string,
+    data?: unknown,
+    schema?: Schema.Schema<T, TInput, never>,
+  ): Effect.Effect<T, ApiClientError> =>
+    Effect.gen(function* () {
+      const client = yield* ApiClient
+      return yield* client.patch(path, data, schema)
     }).pipe(Effect.provide(ApiClientLive)),
 
   del: <T, TInput = T>(

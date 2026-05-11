@@ -73,3 +73,27 @@ export class BootstrapInput extends Schema.Class<BootstrapInput>('BootstrapInput
   password: Schema.String.pipe(Schema.nonEmptyString()),
   name: Schema.String.pipe(Schema.nonEmptyString()),
 }) {}
+
+/**
+ * Input schema for changing user password.
+ * Requires current password and confirmation of new password.
+ */
+export class ChangePasswordInput extends Schema.Class<ChangePasswordInput>('ChangePasswordInput')({
+  currentPassword: Schema.String.pipe(
+    Schema.minLength(8, { message: () => 'Password must be at least 8 characters' })
+  ),
+  newPassword: Schema.String.pipe(
+    Schema.minLength(8, { message: () => 'Password must be at least 8 characters' })
+  ),
+  confirmPassword: Schema.String.pipe(
+    Schema.minLength(8, { message: () => 'Password must be at least 8 characters' })
+  ),
+}) {}
+
+/**
+ * Success response for password change operation.
+ */
+export class ChangePasswordSuccess extends Schema.Class<ChangePasswordSuccess>('ChangePasswordSuccess')({
+  success: Schema.Boolean,
+  message: Schema.String,
+}) {}

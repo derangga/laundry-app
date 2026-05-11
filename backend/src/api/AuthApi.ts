@@ -7,6 +7,8 @@ import {
   AuthResponse,
   LogoutResult,
   AuthenticatedUser,
+  ChangePasswordInput,
+  ChangePasswordSuccess,
 } from '@domain/Auth'
 import { CreateUserInput, UserWithoutPassword } from '@domain/User'
 import {
@@ -65,5 +67,15 @@ export const AuthGroup = HttpApiGroup.make('Auth')
     HttpApiEndpoint.get('me', '/api/auth/me')
       .addSuccess(AuthenticatedUser)
       .addError(Unauthorized)
+      .middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.patch('changePassword', '/api/auth/change-password')
+      .setPayload(ChangePasswordInput)
+      .addSuccess(ChangePasswordSuccess)
+      .addError(InvalidCredentials)
+      .addError(ValidationError)
+      .addError(Unauthorized)
+      .addError(UnprocessibleEntity)
       .middleware(AuthMiddleware)
   )

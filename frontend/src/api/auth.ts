@@ -6,12 +6,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { toast } from 'sonner'
-import type { LoginInput, CreateUserInput } from '@laundry-app/shared'
+import type {
+  LoginInput,
+  CreateUserInput,
+  ChangePasswordInput,
+} from '@laundry-app/shared'
 import {
   AuthResponse,
   AuthenticatedUser,
   LogoutResult,
   UserWithoutPassword,
+  ChangePasswordSuccess,
 } from '@laundry-app/shared'
 
 import { api, HttpError } from '@/lib/api-client'
@@ -50,6 +55,14 @@ export async function registerUserFn(
 ): Promise<UserWithoutPassword> {
   return Effect.runPromise(
     api.post('/api/auth/register', input, UserWithoutPassword),
+  )
+}
+
+export async function changePasswordFn(
+  input: ChangePasswordInput,
+): Promise<ChangePasswordSuccess> {
+  return Effect.runPromise(
+    api.patch('/api/auth/change-password', input, ChangePasswordSuccess),
   )
 }
 
@@ -149,6 +162,26 @@ export function useLogout() {
 
       // Navigate to login
       navigate({ to: '/login' })
+    },
+  })
+}
+
+/**
+ * Change password mutation
+ */
+export function useChangePassword(options?: { onSuccess?: () => void }) {
+  return useMutation({
+    mutationFn: changePasswordFn,
+    onSuccess: (data) => {
+      toast.success(data.message || 'Password changed successfully')
+      options?.onSuccess?.()
+    },
+    onError: (error) => {
+      if (error instanceof HttpError) {
+        toast.error(error.message || 'Failed to change password')
+      } else {
+        toast.error('Failed to change password')
+      }
     },
   })
 }
