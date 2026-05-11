@@ -47,6 +47,7 @@ import { GetDashboardStatsUseCase } from 'src/usecase/analytics/GetDashboardStat
 import { ListUsersUseCase } from 'src/usecase/user/ListUsersUseCase'
 import { UpdateUserUseCase } from 'src/usecase/user/UpdateUserUseCase'
 import { DeleteUserUseCase } from 'src/usecase/user/DeleteUserUseCase'
+import { ChangePasswordUseCase } from 'src/usecase/auth/ChangePasswordUseCase'
 
 const HandlersLive = Layer.mergeAll(
   HealthHandlersLive,
@@ -87,7 +88,8 @@ const UseCasesLive = Layer.mergeAll(
   GetDashboardStatsUseCase.Default,
   ListUsersUseCase.Default,
   UpdateUserUseCase.Default,
-  DeleteUserUseCase.Default
+  DeleteUserUseCase.Default,
+  ChangePasswordUseCase.Default
 )
 
 const RepositoriesLive = Layer.mergeAll(

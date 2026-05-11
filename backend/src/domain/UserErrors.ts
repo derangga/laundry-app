@@ -82,6 +82,15 @@ export class BootstrapNotAllowedError extends Data.TaggedError('BootstrapNotAllo
     })
 }
 
+export class PasswordMismatchError extends Data.TaggedError('PasswordMismatchError')<{
+  readonly message: string
+}> {
+  static readonly make = () =>
+    new PasswordMismatchError({
+      message: 'New password and confirm password do not match',
+    })
+}
+
 export type AuthError =
   | InvalidCredentialsError
   | UserNotFoundError
@@ -91,3 +100,4 @@ export type AuthError =
   | UnauthorizedError
   | ForbiddenError
   | BootstrapNotAllowedError
+  | PasswordMismatchError

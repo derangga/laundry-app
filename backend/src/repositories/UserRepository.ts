@@ -105,6 +105,22 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         )
       )
 
+    const findByIdWithPassword = (
+      id: UserId
+    ): Effect.Effect<Option.Option<UserFromDb>, SqlError.SqlError> =>
+      sql`
+        SELECT id, email, password_hash, name, role, created_at, updated_at, deleted_at
+        FROM users
+        WHERE id = ${id} AND deleted_at IS NULL
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) =>
+          row
+            ? decodeUser(row).pipe(Effect.map(Option.some), Effect.orDie)
+            : Effect.succeed(Option.none())
+        )
+      )
+
     const hasAnyUsers = (): Effect.Effect<boolean, SqlError.SqlError> =>
       sql`
         SELECT EXISTS(SELECT 1 FROM users WHERE deleted_at IS NULL) as exists
@@ -154,6 +170,8 @@ export class UserRepository extends Effect.Service<UserRepository>()('UserReposi
         withSpanCount('UserRepository.findByEmail', findByEmail(...args)),
       findByIdWithoutPassword: (...args: Parameters<typeof findByIdWithoutPassword>) =>
         withSpanCount('UserRepository.findByIdWithoutPassword', findByIdWithoutPassword(...args)),
+      findByIdWithPassword: (...args: Parameters<typeof findByIdWithPassword>) =>
+        withSpanCount('UserRepository.findByIdWithPassword', findByIdWithPassword(...args)),
       findBasicInfo: (...args: Parameters<typeof findBasicInfo>) =>
         withSpanCount('UserRepository.findBasicInfo', findBasicInfo(...args)),
       hasAnyUsers: (...args: Parameters<typeof hasAnyUsers>) =>
