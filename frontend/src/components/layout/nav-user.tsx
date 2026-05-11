@@ -1,4 +1,6 @@
-import { ChevronsUpDown, LogOut, User } from 'lucide-react'
+import { useState } from 'react'
+
+import { ChevronsUpDown, Key, LogOut } from 'lucide-react'
 
 import { useCurrentUser, useLogout } from '@/api/auth'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,10 +19,13 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
+import { ChangePasswordDialog } from '@/components/auth/change-password-dialog'
+
 export function NavUser() {
   const { data: user } = useCurrentUser()
   const logoutMutation = useLogout()
   const { isMobile } = useSidebar()
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
   if (!user) {
     return null
@@ -79,9 +84,9 @@ export function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <User className="mr-2 h-4 w-4" />
-              Account
+            <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)}>
+              <Key className="mr-2 h-4 w-4" />
+              Change Password
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -94,6 +99,10 @@ export function NavUser() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <ChangePasswordDialog
+          open={isChangePasswordOpen}
+          onOpenChange={setIsChangePasswordOpen}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   )

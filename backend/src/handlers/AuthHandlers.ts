@@ -6,6 +6,7 @@ import { RefreshTokenUseCase } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase } from 'src/usecase/auth/LogoutUseCase'
 import { RegisterUserUseCase } from 'src/usecase/auth/RegisterUserUseCase'
 import { BootstrapUseCase } from 'src/usecase/auth/BootstrapUseCase'
+import { ChangePasswordUseCase } from 'src/usecase/auth/ChangePasswordUseCase'
 import {
   appendAuthCookies,
   appendClearAuthCookies,
@@ -234,6 +235,34 @@ export const AuthHandlersLive = HttpApiBuilder.group(AppApi, 'Auth', (handlers) 
           name: user.name,
           role: user.role,
         })
+      })
+    )
+    /**
+     * Change password for authenticated user
+     * PATCH /api/auth/change-password
+     * Protected: Requires valid access token (via AuthMiddleware)
+     * Payload: ChangePasswordInput (currentPassword, newPassword, confirmPassword)
+     * Returns: ChangePasswordSuccess
+     * Errors: 400 (validation/password mismatch), 401 (invalid credentials or user not found)
+     *
+     * Note: CurrentUser context is provided by AuthMiddleware.
+     */
+    .handle('changePassword', ({ payload }) =>
+      Effect.gen(function* () {
+        const changePasswordUseCase = yield* ChangePasswordUseCase
+
+        // Execute change password use case and map errors
+        return yield* changePasswordUseCase.execute(payload).pipe(
+          Effect.catchTags({
+            InvalidCredentialsError: () =>
+              new InvalidCredentials({ message: 'Current password is incorrect' }),
+            PasswordMismatchError: () =>
+              new ValidationError({ message: 'New password and confirm password do not match' }),
+            PasswordError: (cause) => new ValidationError({ message: cause.message }),
+            UserNotFoundError: () => new Unauthorized({ message: 'User not found' }),
+            SqlError: () => new UnprocessibleEntity({ message: 'Password change failed' }),
+          })
+        )
       })
     )
 )

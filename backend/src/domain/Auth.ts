@@ -20,6 +20,8 @@ export {
   LogoutResult,
   RefreshTokenInput,
   BootstrapInput,
+  ChangePasswordInput,
+  ChangePasswordSuccess,
 } from '@laundry-app/shared'
 
 export type LoginResult = AuthResponse
