@@ -1,62 +1,20 @@
+import type { Plugin } from '@opencode-ai/plugin'
 import { handleToolBefore } from './hooks/tool-before'
 import { handleToolAfter } from './hooks/tool-after'
 import { handleSessionEvent } from './hooks/session-event'
 
-interface ToolBeforeInput {
-  tool: string
-  sessionID: string
-  callID: string
-}
-
-interface ToolBeforeOutput {
-  args: Record<string, unknown>
-}
-
-interface ToolAfterInput {
-  tool: string
-  sessionID: string
-  callID: string
-  args: Record<string, unknown>
-}
-
-interface ToolAfterOutput {
-  title: string
-  output: string
-  metadata: unknown
-}
-
-interface SessionEventInput {
-  event: { type: string }
-}
-
-interface PluginInput {
-  client: {
-    tui: {
-      showToast(args: {
-        body: { message: string; variant: string; duration: number }
-      }): Promise<boolean>
-    }
-  }
-  project: unknown
-  directory: string
-  worktree: string
-  experimental_workspace: unknown
-  serverUrl: URL
-  $: unknown
-}
-
-export const OrchestrationHooks = async (_input: PluginInput) => {
+export const OrchestrationHooks: Plugin = async ({ project, client, $, directory, worktree }) => {
   return {
-    'tool.execute.before': async (input: ToolBeforeInput, output: ToolBeforeOutput) => {
+    'tool.execute.before': async (input, output) => {
       await handleToolBefore(input, output)
     },
 
-    'tool.execute.after': async (input: ToolAfterInput, _output: ToolAfterOutput) => {
+    'tool.execute.after': async (input, _output) => {
       await handleToolAfter(input)
     },
 
-    event: async (input: SessionEventInput) => {
-      await handleSessionEvent(input)
+    event: async (input) => {
+      await handleSessionEvent(input, client)
     },
   }
 }
