@@ -19,7 +19,7 @@
         "@effect/sql-pg": "^0.24.4",
         "@laundry-app/observability": "workspace:*",
         "@laundry-app/shared": "workspace:*",
-        "effect": "^3.19.16",
+        "effect": "^3.21.2",
         "jose": "^5.10.0",
       },
       "devDependencies": {
@@ -53,7 +53,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
-        "effect": "^3.19.16",
+        "effect": "^3.21.2",
         "lucide-react": "^0.575.0",
         "next-themes": "^0.4.6",
         "radix-ui": "^1.4.3",
@@ -92,7 +92,7 @@
       "dependencies": {
         "@effect/opentelemetry": "^0.61.0",
         "@effect/platform": "^0.72.2",
-        "effect": "^3.19.16",
+        "effect": "^3.21.2",
       },
     },
     "packages/shared": {
@@ -962,7 +962,7 @@
 
     "domutils": ["domutils@3.2.2", "", { "dependencies": { "dom-serializer": "^2.0.0", "domelementtype": "^2.3.0", "domhandler": "^5.0.3" } }, "sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw=="],
 
-    "effect": ["effect@3.19.17", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-MChgn9z0y3KJ2DJ+VsZt1bdVDJ0bDIZt9zm4s3iPpRLzgcEGDOIP8pwADjAWifaP0S672nlRE5rZPBbyDcjn1g=="],
+    "effect": ["effect@3.21.2", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-rXd2FGDM8KdjSIrc+mqEELo7ScW7xTVxEf1iInmPSpIde9/nyGuFM710cjTo7/EreGXiUX2MOonPpprbz2XHCg=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.286", "", {}, "sha512-9tfDXhJ4RKFNerfjdCcZfufu49vg620741MNs26a9+bhLThdB+plgMeou98CAaHu/WATj2iHOOHTp1hWtABj2A=="],
 

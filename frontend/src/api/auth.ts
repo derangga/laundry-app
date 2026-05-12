@@ -95,8 +95,6 @@ export function useLogin() {
     mutationFn: loginFn,
     onSuccess: (data) => {
       // Cookies set by backend via Set-Cookie headers
-      console.log(data)
-
       // Set user in cache
       queryClient.setQueryData(authKeys.user, data.user)
 
