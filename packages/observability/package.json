@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "effect": "^3.19.16",
+    "effect": "^3.21.2",
     "@effect/opentelemetry": "^0.61.0",
     "@effect/platform": "^0.72.2"
   }
