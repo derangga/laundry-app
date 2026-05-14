@@ -170,17 +170,13 @@ How services wire into the runtime:
 
 ```mermaid +render
 graph TD
-  subgraph "Provided at HttpLive"
-    A[HttpLive]
-    G[AppLogger]
-    H[HttpServer]
-    F[SqlClient]
-  end
-  subgraph "Required by the API"
-    B[ApiLayer] --> C[OrderHandler] --> D[OrderUseCase] --> E[OrderRepository]
-  end
-  A --> B
-  E -.requires.-> F
+  A[HttpLive] --> B[ApiLayer]
+  A --> G[AppLogger]
+  A --> H[HttpServer]
+  B --> C[OrderHandler]
+  C --> D[OrderUseCase]
+  D --> E[OrderRepository]
+  E --> F[SqlClient]
 ```
 
 Each arrow is a `Layer.provide`. The compiler enforces the full dependency graph — missing a layer is a compile error, not a runtime crash.
