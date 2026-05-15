@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Effect, Layer } from 'effect'
-import { ReceiptService } from 'src/usecase/receipt/ReceiptService'
+import { GenerateReceiptUseCase } from 'src/usecase/receipt/GenerateReceiptUseCase'
 import { OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
 import { ReceiptResponse } from '@domain/Receipt'
 import { CurrentUser } from '@domain/CurrentUser'
@@ -15,19 +15,22 @@ describe('GET /api/receipts/:orderId', () => {
     receipts = new Map()
   })
 
-  const createMockReceiptService = (): ReceiptService => {
+  const createMockGenerateReceiptUseCase = (): GenerateReceiptUseCase => {
     return {
-      generateReceipt: vi.fn((orderId: OrderId) => {
+      execute: vi.fn((orderId: OrderId) => {
         const receipt = receipts.get(orderId)
         if (!receipt) {
           return Effect.fail(new OrderNotFound({ message: `Order not found: ${orderId}`, orderId }))
         }
         return Effect.succeed(receipt)
       }),
-    } as unknown as ReceiptService
+    } as unknown as GenerateReceiptUseCase
   }
 
-  const createTestReceipt = (orderId: string, overrides?: Partial<ReceiptResponse>): ReceiptResponse => {
+  const createTestReceipt = (
+    orderId: string,
+    overrides?: Partial<ReceiptResponse>
+  ): ReceiptResponse => {
     return {
       business_name: 'Laundry Service',
       business_address: null,
@@ -54,8 +57,8 @@ describe('GET /api/receipts/:orderId', () => {
   }
 
   const createTestLayer = () => {
-    const mockReceiptService = createMockReceiptService()
-    return Layer.succeed(ReceiptService, mockReceiptService)
+    const mockReceiptService = createMockGenerateReceiptUseCase()
+    return Layer.succeed(GenerateReceiptUseCase, mockReceiptService)
   }
 
   const provideCurrentUser = (role: 'staff' | 'admin' = 'staff') =>
@@ -74,8 +77,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -97,8 +100,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -114,8 +117,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('admin'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -149,8 +152,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -171,8 +174,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -190,8 +193,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, fullLayer))
@@ -206,8 +209,8 @@ describe('GET /api/receipts/:orderId', () => {
       const fullLayer = Layer.mergeAll(testLayer, provideCurrentUser('staff'))
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('non-existent-order'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('non-existent-order'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, fullLayer))
