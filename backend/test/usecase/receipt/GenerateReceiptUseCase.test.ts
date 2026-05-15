@@ -1,18 +1,25 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import { ReceiptService } from 'src/usecase/receipt/ReceiptService'
+import { GenerateReceiptUseCase } from 'src/usecase/receipt/GenerateReceiptUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { UserRepository } from '@repositories/UserRepository'
-import { Order, OrderId, OrderStatus, PaymentStatus, OrderItemWithService, OrderItemId } from '@domain/Order'
+import {
+  Order,
+  OrderId,
+  OrderStatus,
+  PaymentStatus,
+  OrderItemWithService,
+  OrderItemId,
+} from '@domain/Order'
 import { Customer, CustomerId } from '@domain/Customer'
 import { UserId, UserBasicInfo } from '@domain/User'
 import { ServiceId, UnitType } from '@domain/LaundryService'
 import { OrderNotFound } from '@domain/OrderErrors'
 import { ReceiptResponse } from '@domain/Receipt'
 
-describe('ReceiptService', () => {
+describe('GenerateReceiptUseCase', () => {
   // Test data factories
   const createTestOrder = (id: string, overrides?: Partial<Order>): Order =>
     ({
@@ -28,7 +35,10 @@ describe('ReceiptService', () => {
       ...overrides,
     }) as Order
 
-  const createTestOrderItemWithService = (id: string, overrides?: Partial<OrderItemWithService>): OrderItemWithService =>
+  const createTestOrderItemWithService = (
+    id: string,
+    overrides?: Partial<OrderItemWithService>
+  ): OrderItemWithService =>
     ({
       id: id as OrderItemId,
       order_id: 'order-1' as OrderId,
@@ -125,16 +135,16 @@ describe('ReceiptService', () => {
     } as unknown as UserRepository
   }
 
-  // Build the ReceiptService manually using the mock repositories
+  // Build the GenerateReceiptUseCase manually using the mock repositories
   // This follows the same pattern as CustomerService and OrderService tests
-  const buildReceiptService = (
+  const buildGenerateReceiptUseCase = (
     orderRepo: OrderRepository,
     orderItemRepo: OrderItemRepository,
     customerRepo: CustomerRepository,
     userRepo: UserRepository
-  ): ReceiptService => {
+  ): GenerateReceiptUseCase => {
     return {
-      generateReceipt: (orderId: OrderId) =>
+      execute: (orderId: OrderId) =>
         Effect.gen(function* () {
           // 1. Fetch order
           const orderOption = yield* orderRepo.findById(orderId)
@@ -147,8 +157,12 @@ describe('ReceiptService', () => {
           const items = yield* orderItemRepo.findByOrderIdWithService(orderId)
 
           // 3. Fetch customer
-          const customerOption = yield* customerRepo.findById(order.customer_id as unknown as CustomerId)
-          const customer = Option.isSome(customerOption) ? customerOption.value : { name: 'Unknown', phone: '-' }
+          const customerOption = yield* customerRepo.findById(
+            order.customer_id as unknown as CustomerId
+          )
+          const customer = Option.isSome(customerOption)
+            ? customerOption.value
+            : { name: 'Unknown', phone: '-' }
 
           // 4. Fetch staff
           const staffOption = yield* userRepo.findBasicInfo(order.created_by as unknown as UserId)
@@ -176,7 +190,7 @@ describe('ReceiptService', () => {
             staff_name: staffName,
           } as unknown as typeof ReceiptResponse.Type
         }),
-    } as ReceiptService
+    } as GenerateReceiptUseCase
   }
 
   // Create service layer using the REAL service logic with mocked repositories
@@ -190,11 +204,16 @@ describe('ReceiptService', () => {
     const mockOrderItemRepo = createMockOrderItemRepo(items)
     const mockCustomerRepo = createMockCustomerRepo(customers)
     const mockUserRepo = createMockUserRepo(users)
-    const service = buildReceiptService(mockOrderRepo, mockOrderItemRepo, mockCustomerRepo, mockUserRepo)
-    return Layer.succeed(ReceiptService, service)
+    const service = buildGenerateReceiptUseCase(
+      mockOrderRepo,
+      mockOrderItemRepo,
+      mockCustomerRepo,
+      mockUserRepo
+    )
+    return Layer.succeed(GenerateReceiptUseCase, service)
   }
 
-  describe('generateReceipt', () => {
+  describe('execute', () => {
     it('should return complete receipt with all PRD FR-7.1 fields', async () => {
       const order = createTestOrder('order-1')
       const item = createTestOrderItemWithService('item-1')
@@ -204,8 +223,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [item], [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -225,15 +244,18 @@ describe('ReceiptService', () => {
 
     it('should use price_at_order (historical price)', async () => {
       const order = createTestOrder('order-1')
-      const item = createTestOrderItemWithService('item-1', { price_at_order: 15000, subtotal: 30000 })
+      const item = createTestOrderItemWithService('item-1', {
+        price_at_order: 15000,
+        subtotal: 30000,
+      })
       const customer = createTestCustomer('customer-1')
       const user = createTestUserBasicInfo('user-1')
 
       const serviceLayer = createServiceLayer([order], [item], [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -250,8 +272,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [item], [customer], [])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -267,8 +289,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [item], [], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -280,9 +302,26 @@ describe('ReceiptService', () => {
     it('should include multiple items in receipt', async () => {
       const order = createTestOrder('order-1', { total_price: 55000 })
       const items = [
-        createTestOrderItemWithService('item-1', { service_name: 'Washing', quantity: 2, price_at_order: 10000, subtotal: 20000 }),
-        createTestOrderItemWithService('item-2', { service_name: 'Ironing', unit_type: 'set' as UnitType, quantity: 3, price_at_order: 5000, subtotal: 15000 }),
-        createTestOrderItemWithService('item-3', { service_name: 'Dry Cleaning', unit_type: 'piece' as UnitType, quantity: 2, price_at_order: 10000, subtotal: 20000 }),
+        createTestOrderItemWithService('item-1', {
+          service_name: 'Washing',
+          quantity: 2,
+          price_at_order: 10000,
+          subtotal: 20000,
+        }),
+        createTestOrderItemWithService('item-2', {
+          service_name: 'Ironing',
+          unit_type: 'set' as UnitType,
+          quantity: 3,
+          price_at_order: 5000,
+          subtotal: 15000,
+        }),
+        createTestOrderItemWithService('item-3', {
+          service_name: 'Dry Cleaning',
+          unit_type: 'piece' as UnitType,
+          quantity: 2,
+          price_at_order: 10000,
+          subtotal: 20000,
+        }),
       ]
       const customer = createTestCustomer('customer-1')
       const user = createTestUserBasicInfo('user-1')
@@ -290,8 +329,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], items, [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -304,8 +343,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([], [], [], [])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('non-existent-order'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('non-existent-order'))
       })
 
       const result = await Effect.runPromiseExit(Effect.provide(program, serviceLayer))
@@ -321,8 +360,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [], [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -339,8 +378,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [item], [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
@@ -357,8 +396,8 @@ describe('ReceiptService', () => {
       const serviceLayer = createServiceLayer([order], [item], [customer], [user])
 
       const program = Effect.gen(function* () {
-        const receiptService = yield* ReceiptService
-        return yield* receiptService.generateReceipt(OrderId.make('order-1'))
+        const receiptService = yield* GenerateReceiptUseCase
+        return yield* receiptService.execute(OrderId.make('order-1'))
       })
 
       const result = await Effect.runPromise(Effect.provide(program, serviceLayer))
