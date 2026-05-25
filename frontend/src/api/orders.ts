@@ -3,17 +3,19 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Schema, Effect } from 'effect'
 import { toast } from 'sonner'
 import type {
   OrderStatus,
   PaymentStatus,
   UpdateOrderStatusInput,
   UpdatePaymentStatusInput,
+  OrderWithDetails,
+  OrderResponse,
+  CreateOrderInput,
+  CreateWalkInOrderInput,
 } from '@laundry-app/shared'
-import { OrderWithDetails, OrderResponse } from '@laundry-app/shared'
 
-import { api } from '@/lib/api-client'
+import { runClient } from '@/lib/runtime'
 
 /**
  * Query keys factory for order-related queries
@@ -44,24 +46,25 @@ export type OrderFilters = {
 export async function fetchOrders(
   filters?: OrderFilters,
 ): Promise<readonly OrderWithDetails[]> {
-  const params = new URLSearchParams()
-  if (filters?.status) params.set('status', filters.status)
-  if (filters?.payment_status)
-    params.set('payment_status', filters.payment_status)
-  if (filters?.order_number) params.set('order_number', filters.order_number)
-  if (filters?.start_date) params.set('start_date', filters.start_date)
-  if (filters?.end_date) params.set('end_date', filters.end_date)
-  const qs = params.toString()
-  const path = qs ? `/api/orders?${qs}` : '/api/orders'
-  return Effect.runPromise(api.get(path, Schema.Array(OrderWithDetails)))
+  return runClient((client) =>
+    client.Orders.list({
+      urlParams: {
+        status: filters?.status,
+        payment_status: filters?.payment_status,
+        order_number: filters?.order_number,
+        start_date: filters?.start_date,
+        end_date: filters?.end_date,
+      },
+    }),
+  )
 }
 
 export async function updateOrderStatusFn(
   id: string,
   input: UpdateOrderStatusInput,
 ): Promise<OrderResponse> {
-  return Effect.runPromise(
-    api.put(`/api/orders/${id}/status`, input, OrderResponse),
+  return runClient((client) =>
+    client.Orders.updateStatus({ path: { id }, payload: input }),
   )
 }
 
@@ -69,8 +72,8 @@ export async function updatePaymentStatusFn(
   id: string,
   input: UpdatePaymentStatusInput,
 ): Promise<OrderResponse> {
-  return Effect.runPromise(
-    api.put(`/api/orders/${id}/payment`, input, OrderResponse),
+  return runClient((client) =>
+    client.Orders.updatePayment({ path: { id }, payload: input }),
   )
 }
 
@@ -84,12 +87,18 @@ export interface CreateOrderParams {
 export async function createOrderFn(
   input: CreateOrderParams,
 ): Promise<OrderResponse> {
-  return Effect.runPromise(api.post('/api/orders', input, OrderResponse))
+  // Form values arrive as plain strings; the payload schema brands ids/decimals
+  // and is validated server-side, so we widen through `unknown` (matching the
+  // old client, which accepted an untyped body).
+  return runClient((client) =>
+    client.Orders.create({ payload: input as unknown as CreateOrderInput }),
+  )
 }
 
 export interface CreateWalkInOrderParams {
   customer_name: string
   customer_phone: string
+  customer_address?: string | null
   items: { service_id: string; quantity: number }[]
   payment_status?: 'paid' | 'unpaid'
 }
@@ -97,8 +106,13 @@ export interface CreateWalkInOrderParams {
 export async function createWalkInOrderFn(
   input: CreateWalkInOrderParams,
 ): Promise<OrderResponse> {
-  return Effect.runPromise(
-    api.post('/api/orders/walk-in', input, OrderResponse),
+  return runClient((client) =>
+    client.Orders.createWalkIn({
+      payload: {
+        ...input,
+        customer_address: input.customer_address ?? null,
+      } as unknown as CreateWalkInOrderInput,
+    }),
   )
 }
 
@@ -146,7 +160,7 @@ export function useUpdateOrderStatus() {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Order status updated')
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(error.message)
     },
   })
@@ -164,7 +178,7 @@ export function useCreateOrder() {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Order created successfully')
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(error.message)
     },
   })
@@ -182,7 +196,7 @@ export function useCreateWalkInOrder() {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Customer registered and order created')
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(error.message)
     },
   })
@@ -209,7 +223,7 @@ export function useUpdatePaymentStatus() {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Payment status updated')
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(error.message)
     },
   })

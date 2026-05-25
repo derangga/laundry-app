@@ -1,14 +1,20 @@
-import { HttpApiMiddleware, HttpApiSecurity } from '@effect/platform'
-import { Effect, Layer, Redacted, Schema } from 'effect'
-import { Forbidden, Unauthorized } from '@domain/http/HttpErrors'
+import { Effect, Layer, Redacted } from 'effect'
+import {
+  AuthMiddleware,
+  AuthAdminMiddleware,
+  Forbidden,
+  Unauthorized,
+  type CurrentUserData,
+} from '@laundry-app/api-contract'
 import { JwtService } from 'src/usecase/auth/JwtService'
-import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
 
 /**
- * Cookie-based security scheme for browser clients.
- * Reads the accessToken from an httpOnly cookie.
+ * The `AuthMiddleware` / `AuthAdminMiddleware` Tags + `cookieSecurity` now live in
+ * `@laundry-app/api-contract` (pure, no runtime deps). They are re-exported here so
+ * `@middleware/AuthMiddleware` consumers (Router, handlers) keep resolving the Tags.
+ * The Live implementations stay here because they need `JwtService`.
  */
-const cookieSecurity = HttpApiSecurity.apiKey({ key: 'accessToken', in: 'cookie' })
+export { AuthMiddleware, AuthAdminMiddleware, cookieSecurity } from '@laundry-app/api-contract'
 
 /**
  * Shared token verification logic.
@@ -28,36 +34,6 @@ const verifyToken = (jwtService: JwtService, token: Redacted.Redacted) =>
       role: payload.role,
     } satisfies CurrentUserData
   })
-
-/**
- * Authentication Middleware using HttpApiMiddleware.Tag pattern
- *
- * Provides CurrentUser context to protected handlers by:
- * 1. Extracting bearer token from Authorization header (tried first)
- * 2. Falling back to accessToken cookie for browser clients
- * 3. Verifying JWT with JwtService
- * 4. Providing CurrentUserData to downstream handlers
- */
-export class AuthMiddleware extends HttpApiMiddleware.Tag<AuthMiddleware>()('AuthMiddleware', {
-  failure: Unauthorized,
-  provides: CurrentUser,
-  security: {
-    bearer: HttpApiSecurity.bearer,
-    cookie: cookieSecurity,
-  },
-}) {}
-
-export class AuthAdminMiddleware extends HttpApiMiddleware.Tag<AuthAdminMiddleware>()(
-  'AuthAdminMiddleware',
-  {
-    failure: Schema.Union(Unauthorized, Forbidden),
-    provides: CurrentUser,
-    security: {
-      bearer: HttpApiSecurity.bearer,
-      cookie: cookieSecurity,
-    },
-  }
-) {}
 
 /**
  * AuthMiddleware implementation

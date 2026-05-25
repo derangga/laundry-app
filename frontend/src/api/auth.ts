@@ -4,14 +4,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Effect } from 'effect'
 import { toast } from 'sonner'
 import type {
   LoginInput,
   CreateUserInput,
   ChangePasswordInput,
-} from '@laundry-app/shared'
-import {
   AuthResponse,
   AuthenticatedUser,
   LogoutResult,
@@ -19,8 +16,15 @@ import {
   ChangePasswordSuccess,
 } from '@laundry-app/shared'
 
-import { api, HttpError } from '@/lib/api-client'
+import type { ApiClientType, ClientError } from '@/lib/runtime'
+import { runClient } from '@/lib/runtime'
 import { userKeys } from '@/api/users'
+
+type LoginError = ClientError<ReturnType<ApiClientType['Auth']['login']>>
+type RegisterError = ClientError<ReturnType<ApiClientType['Auth']['register']>>
+type ChangePasswordError = ClientError<
+  ReturnType<ApiClientType['Auth']['changePassword']>
+>
 
 /**
  * Query keys factory for auth-related queries
@@ -35,35 +39,31 @@ export const authKeys = {
  */
 
 export async function loginFn(input: LoginInput): Promise<AuthResponse> {
-  return Effect.runPromise(api.post('/api/auth/login', input, AuthResponse))
+  return runClient((client) => client.Auth.login({ payload: input }))
 }
 
 export async function refreshFn(): Promise<AuthResponse> {
-  return Effect.runPromise(api.post('/api/auth/refresh', {}, AuthResponse))
+  return runClient((client) => client.Auth.refresh({ payload: {} }))
 }
 
 export async function logoutFn(): Promise<LogoutResult> {
-  return Effect.runPromise(api.post('/api/auth/logout', {}, LogoutResult))
+  return runClient((client) => client.Auth.logout({ payload: {} }))
 }
 
 export async function getMeFn(): Promise<AuthenticatedUser> {
-  return Effect.runPromise(api.get('/api/auth/me', AuthenticatedUser))
+  return runClient((client) => client.Auth.me())
 }
 
 export async function registerUserFn(
   input: CreateUserInput,
 ): Promise<UserWithoutPassword> {
-  return Effect.runPromise(
-    api.post('/api/auth/register', input, UserWithoutPassword),
-  )
+  return runClient((client) => client.Auth.register({ payload: input }))
 }
 
 export async function changePasswordFn(
   input: ChangePasswordInput,
 ): Promise<ChangePasswordSuccess> {
-  return Effect.runPromise(
-    api.patch('/api/auth/change-password', input, ChangePasswordSuccess),
-  )
+  return runClient((client) => client.Auth.changePassword({ payload: input }))
 }
 
 /**
@@ -91,7 +91,7 @@ export function useLogin() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  return useMutation({
+  return useMutation<AuthResponse, LoginError, LoginInput>({
     mutationFn: loginFn,
     onSuccess: (data) => {
       // Cookies set by backend via Set-Cookie headers
@@ -109,14 +109,13 @@ export function useLogin() {
     },
     onError: (error) => {
       console.error(error)
-      const isAuthError =
-        error instanceof HttpError &&
-        (error.status === 401 || error.status === 400)
-
-      if (isAuthError) {
-        toast.error('Wrong email or password')
-      } else {
-        toast.error('Something went wrong. Please try again.')
+      switch (error._tag) {
+        case 'InvalidCredentials':
+        case 'ValidationError':
+          toast.error('Wrong email or password')
+          break
+        default:
+          toast.error('Something went wrong. Please try again.')
       }
     },
   })
@@ -128,17 +127,19 @@ export function useLogin() {
  */
 export function useRegisterUser() {
   const queryClient = useQueryClient()
-  return useMutation({
+  return useMutation<UserWithoutPassword, RegisterError, CreateUserInput>({
     mutationFn: registerUserFn,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: userKeys.list() })
       toast.success(`${data.name} has been registered successfully.`)
     },
     onError: (error) => {
-      if (error instanceof HttpError && error.status === 409) {
-        toast.error('A user with this email already exists.')
-      } else {
-        toast.error('Failed to register user. Please try again.')
+      switch (error._tag) {
+        case 'UserAlreadyExists':
+          toast.error('A user with this email already exists.')
+          break
+        default:
+          toast.error('Failed to register user. Please try again.')
       }
     },
   })
@@ -168,17 +169,26 @@ export function useLogout() {
  * Change password mutation
  */
 export function useChangePassword(options?: { onSuccess?: () => void }) {
-  return useMutation({
+  return useMutation<
+    ChangePasswordSuccess,
+    ChangePasswordError,
+    ChangePasswordInput
+  >({
     mutationFn: changePasswordFn,
     onSuccess: (data) => {
       toast.success(data.message || 'Password changed successfully')
       options?.onSuccess?.()
     },
     onError: (error) => {
-      if (error instanceof HttpError) {
-        toast.error(error.message || 'Failed to change password')
-      } else {
-        toast.error('Failed to change password')
+      switch (error._tag) {
+        case 'InvalidCredentials':
+          toast.error('Current password is incorrect')
+          break
+        case 'ValidationError':
+          toast.error(error.message || 'Failed to change password')
+          break
+        default:
+          toast.error('Failed to change password')
       }
     },
   })

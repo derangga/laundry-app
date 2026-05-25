@@ -1,20 +1,8 @@
-import { Schema } from 'effect'
-
 /**
- * Health Check Domain Models
+ * Health Check Domain Models — re-export shim.
  *
- * Used for monitoring server and database health.
+ * `HealthResponse` / `DatabaseHealthResponse` are pure response schemas that now
+ * live alongside the Health API group in `@laundry-app/api-contract`. Re-exported
+ * here so `@domain/Health` consumers (HealthHandlers) keep resolving them.
  */
-
-export class HealthResponse extends Schema.Class<HealthResponse>('HealthResponse')({
-  status: Schema.Literal('ok', 'degraded', 'down'),
-  timestamp: Schema.DateTimeUtc,
-}) {}
-
-export class DatabaseHealthResponse extends Schema.Class<DatabaseHealthResponse>(
-  'DatabaseHealthResponse'
-)({
-  status: Schema.Literal('ok', 'down'),
-  latencyMs: Schema.Number,
-  timestamp: Schema.DateTimeUtc,
-}) {}
+export { HealthResponse, DatabaseHealthResponse } from '@laundry-app/api-contract'
