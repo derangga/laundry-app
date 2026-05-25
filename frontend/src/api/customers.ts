@@ -33,7 +33,14 @@ export async function searchCustomerByPhone(
 export async function createCustomerFn(
   input: CreateCustomerInput,
 ): Promise<CustomerResponse> {
-  return runClient((client) => client.Customers.create({ payload: input }))
+  return runClient((client) =>
+    client.Customers.create({
+      payload: {
+        ...input,
+        address: input.address ?? null,
+      } as unknown as CreateCustomerInput,
+    }),
+  )
 }
 
 export function useSearchCustomer(phone: string) {

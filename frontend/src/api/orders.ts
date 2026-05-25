@@ -98,6 +98,7 @@ export async function createOrderFn(
 export interface CreateWalkInOrderParams {
   customer_name: string
   customer_phone: string
+  customer_address?: string | null
   items: { service_id: string; quantity: number }[]
   payment_status?: 'paid' | 'unpaid'
 }
@@ -107,7 +108,10 @@ export async function createWalkInOrderFn(
 ): Promise<OrderResponse> {
   return runClient((client) =>
     client.Orders.createWalkIn({
-      payload: input as unknown as CreateWalkInOrderInput,
+      payload: {
+        ...input,
+        customer_address: input.customer_address ?? null,
+      } as unknown as CreateWalkInOrderInput,
     }),
   )
 }
