@@ -5,11 +5,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Effect } from 'effect'
 import { toast } from 'sonner'
-import type { CreateCustomerInput } from '@laundry-app/shared'
-import { CustomerResponse } from '@laundry-app/shared'
+import type { CreateCustomerInput, CustomerResponse } from '@laundry-app/shared'
 
-import type { HttpError } from '@/lib/api-client'
-import { api } from '@/lib/api-client'
+import type { ApiClientType, ClientError } from '@/lib/runtime'
+import { runClient } from '@/lib/runtime'
+
+type CreateCustomerError = ClientError<
+  ReturnType<ApiClientType['Customers']['create']>
+>
 
 export const customerKeys = {
   all: ['customers'] as const,
@@ -19,25 +22,18 @@ export const customerKeys = {
 export async function searchCustomerByPhone(
   phone: string,
 ): Promise<CustomerResponse | null> {
-  return Effect.runPromise(
-    api
-      .get(
-        `/api/customers/search?phone=${encodeURIComponent(phone)}`,
-        CustomerResponse,
-      )
-      .pipe(
-        Effect.catchIf(
-          (e): e is HttpError => e._tag === 'HttpError' && e.status === 404,
-          () => Effect.succeed(null),
-        ),
-      ),
+  return runClient((client) =>
+    client.Customers.searchByPhone({ urlParams: { phone } }).pipe(
+      // A missing customer is an expected "not found", not an error.
+      Effect.catchTag('CustomerNotFound', () => Effect.succeed(null)),
+    ),
   )
 }
 
 export async function createCustomerFn(
   input: CreateCustomerInput,
 ): Promise<CustomerResponse> {
-  return Effect.runPromise(api.post('/api/customers', input, CustomerResponse))
+  return runClient((client) => client.Customers.create({ payload: input }))
 }
 
 export function useSearchCustomer(phone: string) {
@@ -50,10 +46,23 @@ export function useSearchCustomer(phone: string) {
 }
 
 export function useCreateCustomer() {
-  return useMutation({
+  return useMutation<
+    CustomerResponse,
+    CreateCustomerError,
+    CreateCustomerInput
+  >({
     mutationFn: createCustomerFn,
-    onError: (error: Error) => {
-      toast.error(error.message)
+    onError: (error) => {
+      switch (error._tag) {
+        case 'CustomerAlreadyExists':
+          toast.error('A customer with this phone number already exists.')
+          break
+        case 'ValidationError':
+          toast.error(error.message)
+          break
+        default:
+          toast.error('Failed to create customer. Please try again.')
+      }
     },
   })
 }

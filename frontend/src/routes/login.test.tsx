@@ -35,7 +35,7 @@ describe('LoginPage', () => {
     server.use(
       http.post('*/api/auth/login', () =>
         HttpResponse.json(
-          { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' },
+          { _tag: 'InvalidCredentials', message: 'Invalid credentials' },
           { status: 401 },
         ),
       ),
@@ -47,11 +47,10 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText(/password/i), 'wrongpassword')
     await user.click(screen.getByRole('button', { name: /sign in/i }))
 
-    // The narrower "Wrong email or password" branch in `useLogin`.onError is
-    // unreachable: the mutation's error is wrapped in a FiberFailure by
-    // Effect.runPromise, so `error instanceof HttpError` never matches. Users
-    // see the generic toast on every login failure today.
-    const errorMatches = await screen.findAllByText(/something went wrong/i)
+    // The contract-derived client decodes the typed `InvalidCredentials` error
+    // and `runClient` re-rejects with the raw tagged error, so `useLogin`.onError
+    // reads `error._tag` and shows the specific "Wrong email or password" toast.
+    const errorMatches = await screen.findAllByText(/wrong email or password/i)
     expect(errorMatches.length).toBeGreaterThan(0)
     expect(router.state.location.pathname).toBe('/login')
   })

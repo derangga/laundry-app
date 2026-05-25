@@ -1,6 +1,6 @@
 import { HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Schema } from 'effect'
-import { UserWithoutPassword, UpdateUserInput } from '@domain/User'
+import { UserWithoutPassword, UpdateUserInput } from '@laundry-app/shared'
 import {
   UserNotFound,
   UserAlreadyExists,
@@ -8,8 +8,8 @@ import {
   Forbidden,
   RetrieveDataEror,
   UnprocessibleEntity,
-} from '@domain/http/HttpErrors'
-import { AuthAdminMiddleware } from '@middleware/AuthMiddleware'
+} from '../errors.js'
+import { AuthAdminMiddleware } from '../middleware.js'
 
 const UserIdParam = Schema.Struct({ id: Schema.String })
 

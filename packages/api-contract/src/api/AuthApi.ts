@@ -9,8 +9,9 @@ import {
   AuthenticatedUser,
   ChangePasswordInput,
   ChangePasswordSuccess,
-} from '@domain/Auth'
-import { CreateUserInput, UserWithoutPassword } from '@domain/User'
+  CreateUserInput,
+  UserWithoutPassword,
+} from '@laundry-app/shared'
 import {
   InvalidCredentials,
   Unauthorized,
@@ -18,8 +19,8 @@ import {
   BootstrapNotAllowed,
   UserAlreadyExists,
   UnprocessibleEntity,
-} from '@domain/http/HttpErrors'
-import { AuthMiddleware } from 'src/middleware/AuthMiddleware'
+} from '../errors.js'
+import { AuthMiddleware } from '../middleware.js'
 
 export const AuthGroup = HttpApiGroup.make('Auth')
   .add(

@@ -1,8 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Schema } from 'effect'
-import { ReceiptResponse } from '@domain/Receipt'
-import { OrderNotFound, UnprocessibleEntity } from '@domain/http/HttpErrors'
-import { AuthMiddleware } from '@middleware/AuthMiddleware'
+import { ReceiptResponse } from '@laundry-app/shared'
+import { OrderNotFound, UnprocessibleEntity } from '../errors.js'
+import { AuthMiddleware } from '../middleware.js'
 
 const OrderIdParam = Schema.Struct({ orderId: Schema.String })
 

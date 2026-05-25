@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Effect } from 'effect'
-import {
+import type {
   WeeklyAnalyticsResponse,
   DashboardStatsResponse,
 } from '@laundry-app/shared'
-import { api } from '@/lib/api-client'
+
+import { runClient } from '@/lib/runtime'
 
 export interface WeeklyParams {
   payment_status?: 'paid' | 'unpaid' | 'all'
@@ -20,17 +20,18 @@ export const analyticsKeys = {
 export async function fetchWeeklyAnalytics(
   params?: WeeklyParams,
 ): Promise<WeeklyAnalyticsResponse> {
-  const qs = new URLSearchParams()
-  if (params?.payment_status) qs.set('payment_status', params.payment_status)
-  if (params?.range) qs.set('range', params.range)
-  const path = `/api/analytics/weekly${qs.toString() ? `?${qs}` : ''}`
-  return Effect.runPromise(api.get(path, WeeklyAnalyticsResponse))
+  return runClient((client) =>
+    client.Analytics.weekly({
+      urlParams: {
+        payment_status: params?.payment_status,
+        range: params?.range,
+      },
+    }),
+  )
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStatsResponse> {
-  return Effect.runPromise(
-    api.get('/api/analytics/dashboard', DashboardStatsResponse),
-  )
+  return runClient((client) => client.Analytics.dashboard())
 }
 
 export function useWeeklyAnalytics(params?: WeeklyParams) {

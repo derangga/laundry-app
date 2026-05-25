@@ -1,12 +1,12 @@
 import { HttpApiEndpoint, HttpApiGroup } from '@effect/platform'
 import { Schema } from 'effect'
-import { CustomerResponse, CreateCustomerInput } from '@domain/Customer'
+import { CustomerResponse, CreateCustomerInput } from '@laundry-app/shared'
 import {
   CustomerNotFound,
   CustomerAlreadyExists,
   ValidationError,
   UnprocessibleEntity,
-} from '@domain/http/HttpErrors'
+} from '../errors.js'
 
 const SearchByPhoneParams = Schema.Struct({
   phone: Schema.String.pipe(Schema.nonEmptyString()),
