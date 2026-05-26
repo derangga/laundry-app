@@ -1,26 +1,9 @@
-import { HttpApi, OpenApi } from '@effect/platform'
-import { HealthGroup } from './HealthApi'
-import { AuthGroup } from './AuthApi'
-import { CustomerGroup } from './CustomerApi'
-import { ServiceGroup } from './ServiceApi'
-import { OrderGroup } from './OrderApi'
-import { ReceiptGroup } from './ReceiptApi'
-import { AnalyticsGroup } from './AnalyticsApi'
-import { UserGroup } from './UserApi'
-
-export class AppApi extends HttpApi.make('AppApi')
-  .add(HealthGroup)
-  .add(AuthGroup)
-  .add(CustomerGroup)
-  .add(ServiceGroup)
-  .add(OrderGroup)
-  .add(ReceiptGroup)
-  .add(AnalyticsGroup)
-  .add(UserGroup)
-  .annotateContext(
-    OpenApi.annotations({
-      title: 'Laundry App API',
-      version: '1.0.0',
-      description: 'API for laundry management — customers, orders, services, payments',
-    })
-  ) {}
+/**
+ * AppApi — re-export shim.
+ *
+ * The full HTTP API contract (all `HttpApiGroup`s + `AppApi`) now lives in
+ * `@laundry-app/api-contract` so the frontend can derive a typed client from it
+ * without pulling backend runtime deps. `@api/AppApi` consumers (Router, handlers)
+ * keep resolving `AppApi` unchanged.
+ */
+export { AppApi } from '@laundry-app/api-contract'

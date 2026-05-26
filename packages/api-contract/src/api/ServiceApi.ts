@@ -5,7 +5,7 @@ import {
   UpdateLaundryServiceInput,
   LaundryServiceResponse,
   SuccessDeleteService,
-} from '@domain/LaundryService'
+} from '@laundry-app/shared'
 import {
   ServiceNotFound,
   ValidationError,
@@ -13,8 +13,8 @@ import {
   RetrieveDataEror,
   UpdateDataEror,
   UnprocessibleEntity,
-} from '@domain/http/HttpErrors'
-import { AuthAdminMiddleware } from 'src/middleware/AuthMiddleware'
+} from '../errors.js'
+import { AuthAdminMiddleware } from '../middleware.js'
 
 const ServiceIdParam = Schema.Struct({ id: Schema.String })
 const ServiceListParams = Schema.Struct({

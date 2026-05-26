@@ -4,9 +4,9 @@ import {
   WeeklyAnalyticsResponse,
   DashboardStatsResponse,
   AnalyticsPaymentFilter,
-} from '@domain/Analytics'
-import { ValidationError, Forbidden, InternalServerError } from '@domain/http/HttpErrors'
-import { AuthAdminMiddleware } from 'src/middleware/AuthMiddleware'
+} from '@laundry-app/shared'
+import { ValidationError, Forbidden, InternalServerError } from '../errors.js'
+import { AuthAdminMiddleware } from '../middleware.js'
 
 const WeeklyUrlParams = Schema.Struct({
   payment_status: Schema.optional(AnalyticsPaymentFilter),

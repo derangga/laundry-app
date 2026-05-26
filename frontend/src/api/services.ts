@@ -3,19 +3,16 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Schema, Effect } from 'effect'
-import {
-  LaundryServiceResponse,
-  SuccessDeleteService,
-} from '@laundry-app/shared'
+import { toast } from 'sonner'
 import type {
   ServiceId,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
+  LaundryServiceResponse,
+  SuccessDeleteService,
 } from '@laundry-app/shared'
 
-import { api } from '@/lib/api-client'
-import { toast } from 'sonner'
+import { runClient } from '@/lib/runtime'
 
 export const serviceKeys = {
   all: ['services'] as const,
@@ -26,33 +23,34 @@ export const serviceKeys = {
 export async function fetchServices(params?: {
   include_inactive?: boolean
 }): Promise<readonly LaundryServiceResponse[]> {
-  const url = params?.include_inactive
-    ? '/api/services?include_inactive=true'
-    : '/api/services'
-  return Effect.runPromise(api.get(url, Schema.Array(LaundryServiceResponse)))
+  return runClient((client) =>
+    client.Services.list({
+      urlParams: {
+        include_inactive: params?.include_inactive ? 'true' : undefined,
+      },
+    }),
+  )
 }
 
 export async function createServiceFn(
   input: CreateLaundryServiceInput,
 ): Promise<LaundryServiceResponse> {
-  return Effect.runPromise(
-    api.post('/api/services', input, LaundryServiceResponse),
-  )
+  return runClient((client) => client.Services.create({ payload: input }))
 }
 
 export async function updateServiceFn(
   id: ServiceId,
   input: UpdateLaundryServiceInput,
 ): Promise<LaundryServiceResponse> {
-  return Effect.runPromise(
-    api.put(`/api/services/${id}`, input, LaundryServiceResponse),
+  return runClient((client) =>
+    client.Services.update({ path: { id }, payload: input }),
   )
 }
 
 export async function deleteServiceFn(
   id: ServiceId,
 ): Promise<SuccessDeleteService> {
-  return Effect.runPromise(api.del(`/api/services/${id}`, SuccessDeleteService))
+  return runClient((client) => client.Services.delete({ path: { id } }))
 }
 
 export function useServices(params?: { include_inactive?: boolean }) {

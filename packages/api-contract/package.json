@@ -1,5 +1,5 @@
 {
-  "name": "@laundry-app/shared",
+  "name": "@laundry-app/api-contract",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -7,6 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@laundry-app/shared": "workspace:*",
+    "@effect/platform": "^0.72.2",
     "effect": "^3.21.2"
   }
 }

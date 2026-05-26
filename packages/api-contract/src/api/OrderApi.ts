@@ -8,7 +8,7 @@ import {
   OrderResponse,
   OrderWithItemsResponse,
   OrderWithDetails,
-} from '@domain/Order'
+} from '@laundry-app/shared'
 import {
   OrderNotFound,
   InvalidOrderStatus,
@@ -18,8 +18,8 @@ import {
   UnprocessibleEntity,
   RetrieveDataEror,
   OrderPaymentRequired,
-} from '@domain/http/HttpErrors'
-import { AuthMiddleware } from '@middleware/AuthMiddleware'
+} from '../errors.js'
+import { AuthMiddleware } from '../middleware.js'
 
 const OrderIdParam = Schema.Struct({ id: Schema.String })
 

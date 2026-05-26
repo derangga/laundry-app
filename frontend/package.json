@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^10.0.0",
+    "@laundry-app/api-contract": "workspace:*",
     "@laundry-app/shared": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/match-sorter-utils": "^8.19.4",
