@@ -1,5 +1,5 @@
 import { Effect, Option, Schema } from 'effect'
-import { SqlClient, SqlError, Model } from '@effect/sql'
+import { SqlClient, SqlError } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
 import {
   LaundryService,
@@ -18,19 +18,30 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
 
-    // Base CRUD from Model.makeRepository
-    const repo = yield* Model.makeRepository(LaundryService, {
-      tableName: 'services',
-      spanPrefix: 'ServiceRepository',
-      idColumn: 'id',
-    })
+    // Custom findById that filters soft-deleted records
+    const findById = (
+      id: ServiceId
+    ): Effect.Effect<Option.Option<LaundryService>, SqlError.SqlError> =>
+      sql`
+        SELECT id, name, price, unit_type, is_active, created_at, updated_at, deleted_at
+        FROM services
+        WHERE id = ${id} AND deleted_at IS NULL
+      `.pipe(
+        Effect.flatMap((rows) => {
+          const first = rows[0]
+          return first !== undefined
+            ? decodeService(first).pipe(Effect.map(Option.some))
+            : Effect.succeed(Option.none())
+        }),
+        Effect.mapError((e) => new SqlError.SqlError({ cause: e }))
+      )
 
     // Custom methods with explicit columns
     const findActive = (): Effect.Effect<readonly LaundryService[], SqlError.SqlError> =>
       sql`
-        SELECT id, name, price, unit_type, is_active, created_at, updated_at
+        SELECT id, name, price, unit_type, is_active, created_at, updated_at, deleted_at
         FROM services
-        WHERE is_active = true
+        WHERE is_active = true AND deleted_at IS NULL
         ORDER BY name ASC
       `.pipe(
         Effect.flatMap((rows) => decodeServices(rows)),
@@ -39,8 +50,9 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
 
     const findAll = (): Effect.Effect<readonly LaundryService[], SqlError.SqlError> =>
       sql`
-        SELECT id, name, price, unit_type, is_active, created_at, updated_at
+        SELECT id, name, price, unit_type, is_active, created_at, updated_at, deleted_at
         FROM services
+        WHERE deleted_at IS NULL
         ORDER BY name ASC
       `.pipe(
         Effect.flatMap((rows) => decodeServices(rows)),
@@ -54,7 +66,7 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       sql`
         SELECT id, name, price, unit_type
         FROM services
-        WHERE is_active = true
+        WHERE is_active = true AND deleted_at IS NULL
         ORDER BY name ASC
       `.pipe(
         Effect.flatMap((rows) => decodeActiveServiceInfos(rows)),
@@ -67,7 +79,7 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       sql`
         INSERT INTO services (name, price, unit_type, is_active)
         VALUES (${data.name}, ${data.price}, ${data.unit_type}, true)
-        RETURNING id, name, price, unit_type, is_active, created_at, updated_at
+        RETURNING id, name, price, unit_type, is_active, created_at, updated_at, deleted_at
       `.pipe(
         Effect.flatMap((rows) => {
           const first = rows[0]
@@ -87,7 +99,7 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
       )
 
       if (entries.length === 0) {
-        return repo.findById(id)
+        return findById(id)
       }
 
       const setClauses = entries.map(([key], i) => `${key} = $${i + 1}`)
@@ -95,7 +107,7 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
 
       const params = [...entries.map(([, value]) => value), id]
 
-      const query = `UPDATE services SET ${setClauses.join(', ')} WHERE id = $${entries.length + 1} RETURNING id, name, price, unit_type, is_active, created_at, updated_at`
+      const query = `UPDATE services SET ${setClauses.join(', ')} WHERE id = $${entries.length + 1} RETURNING id, name, price, unit_type, is_active, created_at, updated_at, deleted_at`
 
       return sql.unsafe(query, params).pipe(
         Effect.flatMap((rows) => {
@@ -111,13 +123,13 @@ export class ServiceRepository extends Effect.Service<ServiceRepository>()('Serv
     const softDelete = (id: ServiceId): Effect.Effect<void, SqlError.SqlError> =>
       sql`
         UPDATE services
-        SET is_active = false, updated_at = NOW()
+        SET deleted_at = NOW(), updated_at = NOW()
         WHERE id = ${id}
       `.pipe(Effect.map(() => void 0))
 
     return {
-      findById: (...args: Parameters<typeof repo.findById>) =>
-        withSpanCount('ServiceRepository.findById', repo.findById(...args)),
+      findById: (...args: Parameters<typeof findById>) =>
+        withSpanCount('ServiceRepository.findById', findById(...args)),
       insert: (...args: Parameters<typeof insert>) =>
         withSpanCount('ServiceRepository.insert', insert(...args)),
       update: (...args: Parameters<typeof update>) =>

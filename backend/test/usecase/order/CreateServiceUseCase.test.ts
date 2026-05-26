@@ -23,6 +23,7 @@ const createMockRepo = () =>
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
+        deleted_at: null,
       } as unknown as LaundryService),
   } as unknown as ServiceRepository)
 

@@ -37,11 +37,11 @@ import { UserId } from '@domain/User'
 const createMockServiceRepo = (services: LaundryService[]) => {
   const repo = {
     findById: (id: ServiceId) => {
-      const service = services.find((s) => s.id === id)
+      const service = services.find((s) => s.id === id && !s.deleted_at)
       return Effect.succeed(service ? Option.some(service) : Option.none())
     },
     findActive: () => {
-      const activeServices = services.filter((s) => s.is_active)
+      const activeServices = services.filter((s) => s.is_active && !s.deleted_at)
       return Effect.succeed(activeServices)
     },
     insert: (data: CreateLaundryServiceInput) => {
@@ -53,6 +53,7 @@ const createMockServiceRepo = (services: LaundryService[]) => {
         is_active: true,
         created_at: new Date() as any,
         updated_at: new Date() as any,
+        deleted_at: null,
       }
       services.push(newService)
       return Effect.succeed(newService)
@@ -77,7 +78,11 @@ const createMockServiceRepo = (services: LaundryService[]) => {
     softDelete: (id: ServiceId) => {
       const index = services.findIndex((s) => s.id === id)
       if (index !== -1) {
-        services[index] = { ...services[index]!, is_active: false, updated_at: new Date() as any }
+        services[index] = {
+          ...services[index]!,
+          deleted_at: new Date() as any,
+          updated_at: new Date() as any,
+        }
       }
       return Effect.succeed(undefined)
     },
@@ -142,6 +147,7 @@ describe('GET /api/services', () => {
         is_active: true,
         created_at: new Date() as any,
         updated_at: new Date() as any,
+        deleted_at: null,
       }
       const inactiveService: LaundryService = {
         id: 'service-2' as ServiceId,
@@ -151,6 +157,7 @@ describe('GET /api/services', () => {
         is_active: false,
         created_at: new Date() as any,
         updated_at: new Date() as any,
+        deleted_at: null,
       }
       services.push(activeService, inactiveService)
 
@@ -249,6 +256,7 @@ describe('PUT /api/services/:id', () => {
         is_active: true,
         created_at: new Date() as any,
         updated_at: new Date() as any,
+        deleted_at: null,
       }
       services.push(existingService)
 
@@ -304,6 +312,7 @@ describe('DELETE /api/services/:id', () => {
         is_active: true,
         created_at: new Date() as any,
         updated_at: new Date() as any,
+        deleted_at: null,
       }
       services.push(existingService)
 
@@ -316,9 +325,9 @@ describe('DELETE /api/services/:id', () => {
         return yield* findById.execute(ServiceId.make('service-1'))
       })
 
-      const result = await Effect.runPromise(Effect.provide(program, testLayer))
+      const result = await Effect.runPromiseExit(Effect.provide(program, testLayer))
 
-      expect(result.is_active).toBe(false)
+      expect(result._tag).toBe('Failure')
     })
   })
 

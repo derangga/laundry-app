@@ -20,6 +20,7 @@ const createMockService = (overrides: Partial<LaundryService> = {}): LaundryServ
     is_active: true,
     created_at: new Date('2024-01-01T00:00:00.000Z'),
     updated_at: new Date('2024-01-01T00:00:00.000Z'),
+    deleted_at: null,
     ...overrides,
   }) as unknown as LaundryService
 
@@ -325,9 +326,12 @@ describe('ServiceRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update('service-123' as ServiceId, {
-          price: 25000,
-        } as UpdateLaundryServiceInput)
+        return yield* repo.update(
+          'service-123' as ServiceId,
+          {
+            price: 25000,
+          } as UpdateLaundryServiceInput
+        )
       })
 
       const result = await Effect.runPromise(
@@ -365,9 +369,12 @@ describe('ServiceRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update('service-123' as ServiceId, {
-          price: 15000,
-        } as UpdateLaundryServiceInput)
+        return yield* repo.update(
+          'service-123' as ServiceId,
+          {
+            price: 15000,
+          } as UpdateLaundryServiceInput
+        )
       })
 
       const result = await Effect.runPromiseExit(

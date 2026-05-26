@@ -77,6 +77,7 @@ const createTestService = (id: string, overrides?: Partial<LaundryService>): Lau
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
+    deleted_at: null,
     ...overrides,
   }) as LaundryService
 
