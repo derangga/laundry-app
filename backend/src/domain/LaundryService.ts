@@ -20,4 +20,5 @@ export class LaundryService extends Model.Class<LaundryService>('LaundryService'
   is_active: Schema.Boolean,
   created_at: Model.DateTimeInsertFromDate,
   updated_at: Model.DateTimeUpdateFromDate,
+  deleted_at: Schema.optional(Schema.NullOr(Model.DateTimeFromDate)),
 }) {}

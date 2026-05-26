@@ -77,7 +77,11 @@ const createMockServiceRepo = (services: LaundryService[]) => {
     softDelete: (id: ServiceId) => {
       const index = services.findIndex((s) => s.id === id)
       if (index !== -1) {
-        services[index] = { ...services[index]!, is_active: false, updated_at: new Date() as any }
+        services[index] = {
+          ...services[index]!,
+          deleted_at: new Date() as any,
+          updated_at: new Date() as any,
+        }
       }
       return Effect.succeed(undefined)
     },
@@ -318,7 +322,8 @@ describe('DELETE /api/services/:id', () => {
 
       const result = await Effect.runPromise(Effect.provide(program, testLayer))
 
-      expect(result.is_active).toBe(false)
+      expect(result.deleted_at).not.toBeNull()
+      expect(result.deleted_at).not.toBeUndefined()
     })
   })
 

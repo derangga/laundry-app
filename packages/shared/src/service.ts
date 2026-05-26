@@ -68,12 +68,15 @@ export class LaundryServiceResponse extends Schema.Class<LaundryServiceResponse>
   is_active: Schema.Boolean,
   created_at: DateTimeUtcString,
   updated_at: DateTimeUtcString,
+  deleted_at: Schema.optional(Schema.NullOr(DateTimeUtcString)),
 }) {}
 
 /**
  * Service deletion success response schema.
  * Contains a confirmation message after successful deletion.
  */
-export class SuccessDeleteService extends Schema.Class<SuccessDeleteService>('SuccessDeleteService')({
+export class SuccessDeleteService extends Schema.Class<SuccessDeleteService>(
+  'SuccessDeleteService'
+)({
   message: Schema.String,
 }) {}
