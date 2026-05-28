@@ -15,6 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card'
+import {
   ORDER_STATUS_NEXT,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -27,7 +32,7 @@ const statusColorMap: Record<OrderStatus, string> = {
   in_progress: 'bg-amber-100 text-amber-700 border-transparent',
   ready: 'bg-purple-100 text-purple-700 border-transparent',
   delivered: 'bg-green-100 text-green-700 border-transparent',
-  cancelled: 'bg-gray-100 text-gray-700 border-transparent',
+  cancelled: 'bg-red-100 text-red-700 border-transparent',
 }
 
 const paymentColorMap: Record<PaymentStatus, string> = {
@@ -39,6 +44,7 @@ const paymentColorMap: Record<PaymentStatus, string> = {
 interface OrderColumnCallbacks {
   onAdvanceStatus: (orderId: string, nextStatus: OrderStatus) => void
   onTogglePayment: (orderId: string, currentPayment: PaymentStatus) => void
+  onCancelOrder?: (order: OrderWithDetails) => void
 }
 
 export function getOrderColumns(
@@ -67,11 +73,51 @@ export function getOrderColumns(
     {
       accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => (
-        <Badge className={statusColorMap[row.original.status]}>
-          {ORDER_STATUS_LABELS[row.original.status]}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const order = row.original
+        if (order.status === 'cancelled') {
+          return (
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Badge className={`${statusColorMap.cancelled} cursor-help`}>
+                  {ORDER_STATUS_LABELS.cancelled}
+                </Badge>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-72 text-sm">
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Cancelled by
+                    </p>
+                    <p className="font-medium">
+                      {order.cancelled_by_name ?? '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">At</p>
+                    <p className="font-medium">
+                      {order.cancelled_at
+                        ? formatDate(order.cancelled_at)
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Reason</p>
+                    <p className="font-medium">
+                      {order.cancellation_reason ?? '—'}
+                    </p>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          )
+        }
+        return (
+          <Badge className={statusColorMap[order.status]}>
+            {ORDER_STATUS_LABELS[order.status]}
+          </Badge>
+        )
+      },
     },
     {
       accessorKey: 'payment_status',
@@ -142,6 +188,14 @@ export function getOrderColumns(
               >
                 Toggle Payment
               </DropdownMenuItem>
+              {status === 'received' && callbacks.onCancelOrder && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => callbacks.onCancelOrder?.(row.original)}
+                >
+                  Cancel order
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
