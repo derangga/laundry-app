@@ -22,8 +22,9 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
             sql`
               SELECT
                 DATE_TRUNC('week', created_at)::date AS week_start,
-                COALESCE(SUM(total_price), 0) AS total_revenue,
-                COUNT(*) AS order_count
+                COALESCE(SUM(total_price) FILTER (WHERE status != 'cancelled'), 0) AS total_revenue,
+                COUNT(*) FILTER (WHERE status != 'cancelled') AS order_count,
+                COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_count
               FROM orders
               WHERE created_at >= ${startDate}
                 AND created_at < ${endDate}
@@ -37,8 +38,9 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
             sql`
               SELECT
                 DATE_TRUNC('week', created_at)::date AS week_start,
-                COALESCE(SUM(total_price), 0) AS total_revenue,
-                COUNT(*) AS order_count
+                COALESCE(SUM(total_price) FILTER (WHERE status != 'cancelled'), 0) AS total_revenue,
+                COUNT(*) FILTER (WHERE status != 'cancelled') AS order_count,
+                COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled_count
               FROM orders
               WHERE created_at >= ${startDate}
                 AND created_at < ${endDate}
@@ -56,6 +58,7 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
           SELECT COUNT(*) AS count
           FROM orders
           WHERE created_at >= CURRENT_DATE
+            AND status != 'cancelled'
         `.pipe(Effect.map((rows) => parseInt(rows[0]?.count ?? '0', 10)))
 
       const getPendingPaymentCount = (): Effect.Effect<number, SqlError.SqlError> =>
@@ -63,6 +66,7 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
           SELECT COUNT(*) AS count
           FROM orders
           WHERE payment_status = 'unpaid'
+            AND status != 'cancelled'
         `.pipe(Effect.map((rows) => parseInt(rows[0]?.count ?? '0', 10)))
 
       const getWeeklyRevenue = (): Effect.Effect<number, SqlError.SqlError> =>
@@ -70,8 +74,17 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
           SELECT COALESCE(SUM(total_price), 0) AS total
           FROM orders
           WHERE payment_status = 'paid'
+            AND status != 'cancelled'
             AND created_at >= CURRENT_DATE - INTERVAL '7 days'
         `.pipe(Effect.map((rows) => parseFloat(rows[0]?.total ?? '0')))
+
+      const getCancelledOrdersThisWeek = (): Effect.Effect<number, SqlError.SqlError> =>
+        sql<{ count: string }>`
+          SELECT COUNT(*) AS count
+          FROM orders
+          WHERE status = 'cancelled'
+            AND created_at >= DATE_TRUNC('week', CURRENT_DATE)
+        `.pipe(Effect.map((rows) => parseInt(rows[0]?.count ?? '0', 10)))
 
       const getTotalCustomerCount = (): Effect.Effect<number, SqlError.SqlError> =>
         sql<{ count: string }>`
@@ -91,6 +104,11 @@ export class AnalyticsRepository extends Effect.Service<AnalyticsRepository>()(
           ),
         getWeeklyRevenue: (...args: Parameters<typeof getWeeklyRevenue>) =>
           withSpanCount('AnalyticsRepository.getWeeklyRevenue', getWeeklyRevenue(...args)),
+        getCancelledOrdersThisWeek: (...args: Parameters<typeof getCancelledOrdersThisWeek>) =>
+          withSpanCount(
+            'AnalyticsRepository.getCancelledOrdersThisWeek',
+            getCancelledOrdersThisWeek(...args)
+          ),
         getTotalCustomerCount: (...args: Parameters<typeof getTotalCustomerCount>) =>
           withSpanCount(
             'AnalyticsRepository.getTotalCustomerCount',

@@ -5,6 +5,7 @@ import {
   CreateWalkInOrderInput,
   UpdateOrderStatusInput,
   UpdatePaymentStatusInput,
+  CancelOrderInput,
   OrderResponse,
   OrderWithItemsResponse,
   OrderWithDetails,
@@ -18,8 +19,9 @@ import {
   UnprocessibleEntity,
   RetrieveDataEror,
   OrderPaymentRequired,
+  OrderCannotBeCancelled,
 } from '../errors.js'
-import { AuthMiddleware } from '../middleware.js'
+import { AuthMiddleware, AuthAdminMiddleware } from '../middleware.js'
 
 const OrderIdParam = Schema.Struct({ id: Schema.String })
 
@@ -82,5 +84,16 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .addSuccess(OrderResponse)
       .addError(OrderNotFound)
       .addError(UnprocessibleEntity)
+  )
+  .add(
+    HttpApiEndpoint.post('cancel', '/api/orders/:id/cancel')
+      .setPath(OrderIdParam)
+      .setPayload(CancelOrderInput)
+      .addSuccess(OrderResponse)
+      .addError(OrderNotFound)
+      .addError(OrderCannotBeCancelled)
+      .addError(ValidationError)
+      .addError(UnprocessibleEntity)
+      .middleware(AuthAdminMiddleware)
   )
   .middlewareEndpoints(AuthMiddleware)

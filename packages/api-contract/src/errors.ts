@@ -240,6 +240,17 @@ export class OrderPaymentRequired extends Schema.TaggedError<OrderPaymentRequire
   HttpApiSchema.annotations({ status: 422 })
 ) {}
 
+export class OrderCannotBeCancelled extends Schema.TaggedError<OrderCannotBeCancelled>()(
+  'OrderCannotBeCancelled',
+  {
+    message: Schema.String,
+    orderId: Schema.String,
+    currentStatus: Schema.optional(Schema.String),
+    paymentStatus: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 409 })
+) {}
+
 export class EmptyOrderError extends Schema.TaggedError<EmptyOrderError>()(
   'EmptyOrderError',
   {

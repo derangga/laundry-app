@@ -6,31 +6,27 @@ import {
 } from 'src/usecase/analytics/GetDashboardStatsUseCase'
 import { AnalyticsRepository } from '@repositories/AnalyticsRepository'
 
-const createMockRepo = (values: {
+type RepoValues = {
   todaysOrders: number
   pendingPayments: number
   weeklyRevenue: number
   totalCustomers: number
-}) =>
+  cancelledOrders: number
+}
+
+const createMockRepo = (values: RepoValues) =>
   Layer.succeed(AnalyticsRepository, {
     getTodaysOrderCount: () => Effect.succeed(values.todaysOrders),
     getPendingPaymentCount: () => Effect.succeed(values.pendingPayments),
     getWeeklyRevenue: () => Effect.succeed(values.weeklyRevenue),
     getTotalCustomerCount: () => Effect.succeed(values.totalCustomers),
+    getCancelledOrdersThisWeek: () => Effect.succeed(values.cancelledOrders),
   } as unknown as AnalyticsRepository)
 
-const createTestLayer = (values: {
-  todaysOrders: number
-  pendingPayments: number
-  weeklyRevenue: number
-  totalCustomers: number
-}) =>
+const createTestLayer = (values: RepoValues) =>
   Layer.effect(
     GetDashboardStatsUseCase,
-    Effect.map(
-      getDashboardStatsUseCaseImpl,
-      (impl) => new GetDashboardStatsUseCase(impl)
-    )
+    Effect.map(getDashboardStatsUseCaseImpl, (impl) => new GetDashboardStatsUseCase(impl))
   ).pipe(Layer.provide(createMockRepo(values)))
 
 describe('GetDashboardStatsUseCase', () => {
@@ -48,6 +44,7 @@ describe('GetDashboardStatsUseCase', () => {
           pendingPayments: 3,
           weeklyRevenue: 4500,
           totalCustomers: 87,
+          cancelledOrders: 2,
         })
       )
     )
@@ -56,6 +53,7 @@ describe('GetDashboardStatsUseCase', () => {
     expect(result.pending_payments).toBe(3)
     expect(result.weekly_revenue).toBe(4500)
     expect(result.total_customers).toBe(87)
+    expect(result.cancelled_orders).toBe(2)
   })
 
   it('handles zero values', async () => {
@@ -72,6 +70,7 @@ describe('GetDashboardStatsUseCase', () => {
           pendingPayments: 0,
           weeklyRevenue: 0,
           totalCustomers: 0,
+          cancelledOrders: 0,
         })
       )
     )
@@ -80,9 +79,10 @@ describe('GetDashboardStatsUseCase', () => {
     expect(result.pending_payments).toBe(0)
     expect(result.weekly_revenue).toBe(0)
     expect(result.total_customers).toBe(0)
+    expect(result.cancelled_orders).toBe(0)
   })
 
-  it('invokes all four repo methods', async () => {
+  it('invokes all repo methods', async () => {
     const calls: string[] = []
     const repo = Layer.succeed(AnalyticsRepository, {
       getTodaysOrderCount: () => {
@@ -101,14 +101,15 @@ describe('GetDashboardStatsUseCase', () => {
         calls.push('customers')
         return Effect.succeed(4)
       },
+      getCancelledOrdersThisWeek: () => {
+        calls.push('cancelled')
+        return Effect.succeed(5)
+      },
     } as unknown as AnalyticsRepository)
 
     const layer = Layer.effect(
       GetDashboardStatsUseCase,
-      Effect.map(
-        getDashboardStatsUseCaseImpl,
-        (impl) => new GetDashboardStatsUseCase(impl)
-      )
+      Effect.map(getDashboardStatsUseCaseImpl, (impl) => new GetDashboardStatsUseCase(impl))
     ).pipe(Layer.provide(repo))
 
     const program = Effect.gen(function* () {
@@ -122,5 +123,6 @@ describe('GetDashboardStatsUseCase', () => {
     expect(calls).toContain('pending')
     expect(calls).toContain('revenue')
     expect(calls).toContain('customers')
+    expect(calls).toContain('cancelled')
   })
 })

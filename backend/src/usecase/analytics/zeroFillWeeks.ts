@@ -2,19 +2,23 @@ import { WeeklyDataPoint, WeeklyRow } from '@domain/Analytics'
 
 /**
  * Zero-fill: ensure every Monday between startDate and endDate has a data point.
- * Weeks with no orders show as { total_revenue: 0, order_count: 0 }.
+ * Weeks with no orders show as { total_revenue: 0, order_count: 0, cancelled_count: 0 }.
  */
 export const zeroFillWeeks = (
   rows: readonly WeeklyRow[],
   startDate: Date,
   endDate: Date
 ): WeeklyDataPoint[] => {
-  const dataMap = new Map<string, { total_revenue: number; order_count: number }>()
+  const dataMap = new Map<
+    string,
+    { total_revenue: number; order_count: number; cancelled_count: number }
+  >()
   for (const row of rows) {
     const key = row.week_start.toISOString().slice(0, 10)
     dataMap.set(key, {
       total_revenue: row.total_revenue,
       order_count: row.order_count,
+      cancelled_count: row.cancelled_count,
     })
   }
 
@@ -32,8 +36,7 @@ export const zeroFillWeeks = (
         week_start: key,
         total_revenue: data?.total_revenue ?? 0,
         order_count: data?.order_count ?? 0,
-        // TODO(laundry-app-kbs.7): wire cancelled_count
-        cancelled_count: 0,
+        cancelled_count: data?.cancelled_count ?? 0,
       })
     )
     current.setDate(current.getDate() + 7)

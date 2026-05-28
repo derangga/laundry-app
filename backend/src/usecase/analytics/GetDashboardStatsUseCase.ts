@@ -6,23 +6,24 @@ export const getDashboardStatsUseCaseImpl = Effect.gen(function* () {
   const analyticsRepo = yield* AnalyticsRepository
 
   const execute = Effect.fn('GetDashboardStatsUseCase.execute')(function* () {
-    const [todaysOrders, pendingPayments, weeklyRevenue, totalCustomers] = yield* Effect.all(
-      [
-        analyticsRepo.getTodaysOrderCount(),
-        analyticsRepo.getPendingPaymentCount(),
-        analyticsRepo.getWeeklyRevenue(),
-        analyticsRepo.getTotalCustomerCount(),
-      ],
-      { concurrency: 4 }
-    )
+    const [todaysOrders, pendingPayments, weeklyRevenue, totalCustomers, cancelledOrders] =
+      yield* Effect.all(
+        [
+          analyticsRepo.getTodaysOrderCount(),
+          analyticsRepo.getPendingPaymentCount(),
+          analyticsRepo.getWeeklyRevenue(),
+          analyticsRepo.getTotalCustomerCount(),
+          analyticsRepo.getCancelledOrdersThisWeek(),
+        ],
+        { concurrency: 5 }
+      )
 
     return DashboardStatsResponse.make({
       todays_orders: todaysOrders,
       pending_payments: pendingPayments,
       weekly_revenue: weeklyRevenue,
       total_customers: totalCustomers,
-      // TODO(laundry-app-kbs.7): compute cancelled_orders
-      cancelled_orders: 0,
+      cancelled_orders: cancelledOrders,
     })
   })
 

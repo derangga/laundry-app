@@ -40,6 +40,7 @@ import { CreateWalkInOrderUseCase } from 'src/usecase/order/CreateWalkInOrderUse
 import { FindOrderByIdUseCase } from 'src/usecase/order/FindOrderByIdUseCase'
 import { UpdateOrderStatusUseCase } from 'src/usecase/order/UpdateOrderStatusUseCase'
 import { UpdatePaymentStatusUseCase } from 'src/usecase/order/UpdatePaymentStatusUseCase'
+import { CancelOrderUseCase } from 'src/usecase/order/CancelOrderUseCase'
 import { FindOrdersByCustomerIdUseCase } from 'src/usecase/order/FindOrdersByCustomerIdUseCase'
 import { GenerateReceiptUseCase } from '@usecase/receipt/GenerateReceiptUseCase'
 import { GetWeeklyAnalyticsUseCase } from 'src/usecase/analytics/GetWeeklyAnalyticsUseCase'
@@ -82,6 +83,7 @@ const UseCasesLive = Layer.mergeAll(
   FindOrderByIdUseCase.Default,
   UpdateOrderStatusUseCase.Default,
   UpdatePaymentStatusUseCase.Default,
+  CancelOrderUseCase.Default,
   FindOrdersByCustomerIdUseCase.Default,
   GenerateReceiptUseCase.Default,
   GetWeeklyAnalyticsUseCase.Default,
