@@ -21,6 +21,8 @@ export const getDashboardStatsUseCaseImpl = Effect.gen(function* () {
       pending_payments: pendingPayments,
       weekly_revenue: weeklyRevenue,
       total_customers: totalCustomers,
+      // TODO(laundry-app-kbs.7): compute cancelled_orders
+      cancelled_orders: 0,
     })
   })
 
