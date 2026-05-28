@@ -13,9 +13,11 @@ import type {
   OrderResponse,
   CreateOrderInput,
   CreateWalkInOrderInput,
+  CancelOrderInput,
 } from '@laundry-app/shared'
 
 import { runClient } from '@/lib/runtime'
+import { analyticsKeys } from './analytics'
 
 /**
  * Query keys factory for order-related queries
@@ -74,6 +76,15 @@ export async function updatePaymentStatusFn(
 ): Promise<OrderResponse> {
   return runClient((client) =>
     client.Orders.updatePayment({ path: { id }, payload: input }),
+  )
+}
+
+export async function cancelOrderFn(
+  id: string,
+  input: CancelOrderInput,
+): Promise<OrderResponse> {
+  return runClient((client) =>
+    client.Orders.cancel({ path: { id }, payload: input }),
   )
 }
 
@@ -222,6 +233,26 @@ export function useUpdatePaymentStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all })
       toast.success('Payment status updated')
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+}
+
+/**
+ * Mutation to cancel an order
+ */
+export function useCancelOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ orderId, notes }: { orderId: string; notes: string }) =>
+      cancelOrderFn(orderId, { notes } as CancelOrderInput),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all })
+      queryClient.invalidateQueries({ queryKey: analyticsKeys.all })
+      toast.success('Order cancelled')
     },
     onError: (error) => {
       toast.error(error.message)
