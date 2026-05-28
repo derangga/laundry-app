@@ -27,7 +27,13 @@ export type OrderItemId = typeof OrderItemId.Type
  * - `ready`: Order is complete and ready for pickup/delivery
  * - `delivered`: Order has been delivered to customer
  */
-export const OrderStatus = Schema.Literal('received', 'in_progress', 'ready', 'delivered')
+export const OrderStatus = Schema.Literal(
+  'received',
+  'in_progress',
+  'ready',
+  'delivered',
+  'cancelled'
+)
 export type OrderStatus = typeof OrderStatus.Type
 
 /**
@@ -35,14 +41,16 @@ export type OrderStatus = typeof OrderStatus.Type
  * - `paid`: Payment has been received
  * - `unpaid`: Payment is pending
  */
-export const PaymentStatus = Schema.Literal('paid', 'unpaid')
+export const PaymentStatus = Schema.Literal('paid', 'unpaid', 'refunded')
 export type PaymentStatus = typeof PaymentStatus.Type
 
 /**
  * Input schema for creating an order item.
  * Represents a single service within an order.
  */
-export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>('CreateOrderItemInput')({
+export class CreateOrderItemInput extends Schema.Class<CreateOrderItemInput>(
+  'CreateOrderItemInput'
+)({
   service_id: ServiceId,
   quantity: Schema.Number,
 }) {}
@@ -94,6 +102,15 @@ export class UpdatePaymentStatusInput extends Schema.Class<UpdatePaymentStatusIn
 }) {}
 
 /**
+ * Input schema for cancelling an order.
+ * Admin-only action. `notes` is required and recorded as the cancellation reason
+ * (persisted to `orders.cancellation_reason`).
+ */
+export class CancelOrderInput extends Schema.Class<CancelOrderInput>('CancelOrderInput')({
+  notes: Schema.String.pipe(Schema.nonEmptyString(), Schema.maxLength(500)),
+}) {}
+
+/**
  * Order with complete details schema.
  * Includes customer and creator information along with order data.
  */
@@ -110,6 +127,10 @@ export class OrderWithDetails extends Schema.Class<OrderWithDetails>('OrderWithD
   created_by_name: Schema.String,
   created_at: DateTimeUtcString,
   updated_at: DateTimeUtcString,
+  cancelled_at: Schema.NullOr(DateTimeUtcString),
+  cancelled_by: Schema.NullOr(UserId),
+  cancelled_by_name: Schema.NullOr(Schema.String),
+  cancellation_reason: Schema.NullOr(Schema.String),
 }) {}
 
 /**
@@ -128,7 +149,9 @@ export class OrderSummary extends Schema.Class<OrderSummary>('OrderSummary')({
  * Order item with service details schema.
  * Includes service information and pricing for each line item.
  */
-export class OrderItemWithService extends Schema.Class<OrderItemWithService>('OrderItemWithService')({
+export class OrderItemWithService extends Schema.Class<OrderItemWithService>(
+  'OrderItemWithService'
+)({
   id: OrderItemId,
   order_id: OrderId,
   service_id: ServiceId,

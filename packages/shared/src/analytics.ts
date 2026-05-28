@@ -17,6 +17,7 @@ export class WeeklyDataPoint extends Schema.Class<WeeklyDataPoint>('WeeklyDataPo
   week_start: Schema.String,
   total_revenue: Schema.Number,
   order_count: Schema.Number,
+  cancelled_count: Schema.Number,
 }) {}
 
 /**
@@ -43,4 +44,5 @@ export class DashboardStatsResponse extends Schema.Class<DashboardStatsResponse>
   pending_payments: Schema.Number,
   weekly_revenue: Schema.Number,
   total_customers: Schema.Number,
+  cancelled_orders: Schema.Number,
 }) {}
