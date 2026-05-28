@@ -14,10 +14,7 @@ type AggregationCall = {
   paymentStatus: Option.Option<PaymentStatus>
 }
 
-const createMockRepo = (
-  rows: readonly WeeklyRow[],
-  spy?: (call: AggregationCall) => void
-) =>
+const createMockRepo = (rows: readonly WeeklyRow[], spy?: (call: AggregationCall) => void) =>
   Layer.succeed(AnalyticsRepository, {
     getWeeklyAggregation: (
       startDate: Date,
@@ -29,16 +26,10 @@ const createMockRepo = (
     },
   } as unknown as AnalyticsRepository)
 
-const createTestLayer = (
-  rows: readonly WeeklyRow[],
-  spy?: (call: AggregationCall) => void
-) =>
+const createTestLayer = (rows: readonly WeeklyRow[], spy?: (call: AggregationCall) => void) =>
   Layer.effect(
     GetWeeklyAnalyticsUseCase,
-    Effect.map(
-      getWeeklyAnalyticsUseCaseImpl,
-      (impl) => new GetWeeklyAnalyticsUseCase(impl)
-    )
+    Effect.map(getWeeklyAnalyticsUseCaseImpl, (impl) => new GetWeeklyAnalyticsUseCase(impl))
   ).pipe(Layer.provide(createMockRepo(rows, spy)))
 
 describe('GetWeeklyAnalyticsUseCase', () => {
@@ -46,11 +37,7 @@ describe('GetWeeklyAnalyticsUseCase', () => {
     let captured: AggregationCall | undefined
     const program = Effect.gen(function* () {
       const useCase = yield* GetWeeklyAnalyticsUseCase
-      return yield* useCase.execute(
-        new Date('2024-01-01'),
-        new Date('2024-01-15'),
-        'all'
-      )
+      return yield* useCase.execute(new Date('2024-01-01'), new Date('2024-01-15'), 'all')
     })
 
     const result = await Effect.runPromise(
@@ -73,11 +60,7 @@ describe('GetWeeklyAnalyticsUseCase', () => {
     let captured: AggregationCall | undefined
     const program = Effect.gen(function* () {
       const useCase = yield* GetWeeklyAnalyticsUseCase
-      return yield* useCase.execute(
-        new Date('2024-01-01'),
-        new Date('2024-01-15'),
-        'paid'
-      )
+      return yield* useCase.execute(new Date('2024-01-01'), new Date('2024-01-15'), 'paid')
     })
 
     await Effect.runPromise(
@@ -105,9 +88,7 @@ describe('GetWeeklyAnalyticsUseCase', () => {
       )
     })
 
-    const result = await Effect.runPromise(
-      Effect.provide(program, createTestLayer([]))
-    )
+    const result = await Effect.runPromise(Effect.provide(program, createTestLayer([])))
 
     expect(result.weeks).toHaveLength(3)
     for (const week of result.weeks) {
@@ -122,6 +103,7 @@ describe('GetWeeklyAnalyticsUseCase', () => {
         week_start: new Date('2024-01-01T00:00:00.000Z'),
         total_revenue: 150,
         order_count: 5,
+        cancelled_count: 0,
       }),
     ]
 
@@ -134,9 +116,7 @@ describe('GetWeeklyAnalyticsUseCase', () => {
       )
     })
 
-    const result = await Effect.runPromise(
-      Effect.provide(program, createTestLayer(rows))
-    )
+    const result = await Effect.runPromise(Effect.provide(program, createTestLayer(rows)))
 
     const filled = result.weeks.find((w) => w.week_start === '2024-01-01')
     expect(filled).toBeDefined()

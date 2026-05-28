@@ -12,4 +12,5 @@ export class WeeklyRow extends Schema.Class<WeeklyRow>('WeeklyRow')({
   week_start: Schema.DateFromSelf,
   total_revenue: DecimalNumber,
   order_count: DecimalNumber,
+  cancelled_count: DecimalNumber,
 }) {}

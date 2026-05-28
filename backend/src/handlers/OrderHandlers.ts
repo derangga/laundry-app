@@ -5,6 +5,7 @@ import { CreateOrderUseCase } from 'src/usecase/order/CreateOrderUseCase'
 import { CreateWalkInOrderUseCase } from 'src/usecase/order/CreateWalkInOrderUseCase'
 import { UpdateOrderStatusUseCase } from 'src/usecase/order/UpdateOrderStatusUseCase'
 import { UpdatePaymentStatusUseCase } from 'src/usecase/order/UpdatePaymentStatusUseCase'
+import { CancelOrderUseCase } from 'src/usecase/order/CancelOrderUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import {
@@ -27,6 +28,7 @@ import {
   UnprocessibleEntity,
   RetrieveDataEror,
   OrderPaymentRequired as OrderPaymentRequiredHttp,
+  OrderCannotBeCancelled as OrderCannotBeCancelledHttp,
 } from '@domain/http/HttpErrors'
 
 /**
@@ -345,6 +347,53 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
               OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),
               SqlError: () =>
                 new UnprocessibleEntity({ message: 'Failed to update payment status' }),
+            })
+          )
+
+        return OrderResponse.make({
+          id: order.id,
+          order_number: order.order_number,
+          customer_id: order.customer_id,
+          status: order.status,
+          payment_status: order.payment_status,
+          total_price: order.total_price,
+          created_by: order.created_by,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+        })
+      })
+    )
+
+    /**
+     * Cancel order (admin-only)
+     * POST /api/orders/:id/cancel
+     * Payload: CancelOrderInput (notes: 1..500 chars)
+     * Returns: OrderResponse
+     * Errors: 404 (not found), 409 (cannot be cancelled), 400 (validation), 422 (sql)
+     */
+    .handle('cancel', ({ path, payload }) =>
+      Effect.gen(function* () {
+        const cancelOrder = yield* CancelOrderUseCase
+        const currentUser = yield* CurrentUser
+        const id = path.id
+
+        const order = yield* cancelOrder
+          .execute(OrderId.make(id), currentUser.id, payload.notes)
+          .pipe(
+            Effect.catchTags({
+              OrderNotFound: () =>
+                new OrderNotFound({
+                  message: `Order not found with id: ${id}`,
+                  orderId: id,
+                }),
+              OrderCannotBeCancelled: (error) =>
+                new OrderCannotBeCancelledHttp({
+                  message: error.reason,
+                  orderId: error.orderId,
+                  currentStatus: error.currentStatus,
+                  paymentStatus: error.paymentStatus,
+                }),
+              SqlError: () => new UnprocessibleEntity({ message: 'Failed to cancel order' }),
             })
           )
 
