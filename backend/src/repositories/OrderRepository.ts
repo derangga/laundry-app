@@ -12,6 +12,7 @@ import {
   OrderFilterOptions,
 } from '../domain/Order'
 import { CustomerId } from '../domain/Customer'
+import { UserId } from '../domain/User'
 
 // Helper to build dynamic WHERE clauses declaratively
 type FilterDef = readonly [option: Option.Option<string | number | Date>, clause: string]
@@ -59,7 +60,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       orderNumber: string
     ): Effect.Effect<Option.Option<OrderFromDb>, SqlError.SqlError> =>
       sql`
-        SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+        SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason
         FROM orders
         WHERE order_number = ${orderNumber}
       `.pipe(
@@ -75,7 +76,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       customerId: CustomerId
     ): Effect.Effect<readonly OrderFromDb[], SqlError.SqlError> =>
       sql`
-        SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+        SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason
         FROM orders
         WHERE customer_id = ${customerId}
         ORDER BY created_at DESC
@@ -94,7 +95,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
       ])
 
       let query =
-        'SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at FROM orders'
+        'SELECT id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason FROM orders'
       if (conditions.length > 0) {
         query += ' WHERE ' + conditions.join(' AND ')
       }
@@ -209,7 +210,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         UPDATE orders
         SET status = ${status}, updated_at = NOW()
         WHERE id = ${id}
-        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason
       `.pipe(
         Effect.map((rows) => rows[0]),
         Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
@@ -223,7 +224,7 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         UPDATE orders
         SET payment_status = ${paymentStatus}, updated_at = NOW()
         WHERE id = ${id}
-        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason
       `.pipe(
         Effect.map((rows) => rows[0]),
         Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
@@ -238,6 +239,27 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         SET total_price = ${totalPrice}, updated_at = NOW()
         WHERE id = ${id}
       `.pipe(Effect.map(() => void 0))
+
+    const cancelOrder = (
+      orderId: OrderId,
+      adminId: UserId,
+      reason: string,
+      refund: boolean
+    ): Effect.Effect<OrderFromDb, SqlError.SqlError> =>
+      sql`
+        UPDATE orders
+        SET status = 'cancelled',
+            cancelled_at = NOW(),
+            cancelled_by = ${adminId},
+            cancellation_reason = ${reason},
+            payment_status = CASE WHEN ${refund} THEN 'refunded' ELSE payment_status END,
+            updated_at = NOW()
+        WHERE id = ${orderId}
+        RETURNING id, order_number, customer_id, status, payment_status, total_price, created_by, created_at, updated_at, cancelled_at, cancelled_by, cancellation_reason
+      `.pipe(
+        Effect.map((rows) => rows[0]),
+        Effect.flatMap((row) => decodeOrder(row).pipe(Effect.orDie))
+      )
 
     return {
       findById: (...args: Parameters<typeof repo.findById>) =>
@@ -260,6 +282,8 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
         withSpanCount('OrderRepository.updatePaymentStatus', updatePaymentStatus(...args)),
       updateTotalPrice: (...args: Parameters<typeof updateTotalPrice>) =>
         withSpanCount('OrderRepository.updateTotalPrice', updateTotalPrice(...args)),
+      cancelOrder: (...args: Parameters<typeof cancelOrder>) =>
+        withSpanCount('OrderRepository.cancelOrder', cancelOrder(...args)),
     } as const
   }),
 }) {}

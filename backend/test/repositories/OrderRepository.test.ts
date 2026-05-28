@@ -25,6 +25,9 @@ const createMockOrder = (overrides: Partial<Order> = {}): Order =>
     created_by: UserId.make('user-123'),
     created_at: new Date('2024-01-01T00:00:00.000Z'),
     updated_at: new Date('2024-01-01T00:00:00.000Z'),
+    cancelled_at: null,
+    cancelled_by: null,
+    cancellation_reason: null,
     ...overrides,
   }) as unknown as Order
 
@@ -730,6 +733,92 @@ describe('OrderRepository', () => {
       const program = Effect.gen(function* () {
         const repo = yield* OrderRepository
         return yield* repo.findSummaries()
+      })
+
+      const result = await Effect.runPromiseExit(
+        program.pipe(Effect.provide(OrderRepository.Default), Effect.provide(mockSqlLayer))
+      )
+
+      expect(result._tag).toBe('Failure')
+    })
+  })
+
+  describe('cancelOrder', () => {
+    it('should cancel order and set audit fields without changing payment_status when refund=false', async () => {
+      const cancelledOrder = createMockOrder({
+        status: 'cancelled' as OrderStatus,
+        payment_status: 'unpaid' as PaymentStatus,
+        cancelled_at: new Date('2024-02-01T00:00:00.000Z') as unknown as Order['cancelled_at'],
+        cancelled_by: UserId.make('admin-123') as unknown as Order['cancelled_by'],
+        cancellation_reason: 'Customer changed mind' as unknown as Order['cancellation_reason'],
+      })
+      const mockSqlLayer = createMockSqlClient<Order>({ rows: [cancelledOrder] })
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderRepository
+        return yield* repo.cancelOrder(
+          'order-123' as OrderId,
+          UserId.make('admin-123'),
+          'Customer changed mind',
+          false
+        )
+      })
+
+      const result = await Effect.runPromise(
+        program.pipe(Effect.provide(OrderRepository.Default), Effect.provide(mockSqlLayer))
+      )
+
+      expect(result.status).toBe('cancelled')
+      expect(result.payment_status).toBe('unpaid')
+      expect(result.cancelled_by).toBe('admin-123')
+      expect(result.cancellation_reason).toBe('Customer changed mind')
+      expect(result.cancelled_at).not.toBeNull()
+    })
+
+    it('should flip payment_status to refunded when refund=true', async () => {
+      const cancelledOrder = createMockOrder({
+        status: 'cancelled' as OrderStatus,
+        payment_status: 'refunded' as PaymentStatus,
+        cancelled_at: new Date('2024-02-01T00:00:00.000Z') as unknown as Order['cancelled_at'],
+        cancelled_by: UserId.make('admin-123') as unknown as Order['cancelled_by'],
+        cancellation_reason: 'Refund requested' as unknown as Order['cancellation_reason'],
+      })
+      const mockSqlLayer = createMockSqlClient<Order>({ rows: [cancelledOrder] })
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderRepository
+        return yield* repo.cancelOrder(
+          'order-123' as OrderId,
+          UserId.make('admin-123'),
+          'Refund requested',
+          true
+        )
+      })
+
+      const result = await Effect.runPromise(
+        program.pipe(Effect.provide(OrderRepository.Default), Effect.provide(mockSqlLayer))
+      )
+
+      expect(result.status).toBe('cancelled')
+      expect(result.payment_status).toBe('refunded')
+      expect(result.cancellation_reason).toBe('Refund requested')
+    })
+
+    it('should handle SQL errors', async () => {
+      const sqlError = createSqlError('Update failed')
+      const mockSqlLayer = createMockSqlClient<never>({
+        shouldFail: true,
+        error: sqlError,
+      })
+
+      const program = Effect.gen(function* () {
+        const repo = yield* OrderRepository
+        return yield* repo.cancelOrder(
+          'order-123' as OrderId,
+          UserId.make('admin-123'),
+          'reason',
+          false
+        )
       })
 
       const result = await Effect.runPromiseExit(

@@ -32,6 +32,9 @@ export class Order extends Model.Class<Order>('Order')({
   created_by: UserId,
   created_at: Model.DateTimeInsertFromDate,
   updated_at: Model.DateTimeUpdateFromDate,
+  cancelled_at: Schema.optional(Schema.NullOr(Model.DateTimeFromDate)),
+  cancelled_by: Schema.optional(Schema.NullOr(UserId)),
+  cancellation_reason: Schema.optional(Schema.NullOr(Schema.String)),
 }) {}
 
 export class OrderItem extends Model.Class<OrderItem>('OrderItem')({
@@ -55,6 +58,9 @@ export const OrderFromDb = Schema.Struct({
   created_by: UserId,
   created_at: Schema.DateTimeUtcFromDate,
   updated_at: Schema.DateTimeUtcFromDate,
+  cancelled_at: Schema.NullOr(Schema.DateTimeUtcFromDate),
+  cancelled_by: Schema.NullOr(UserId),
+  cancellation_reason: Schema.NullOr(Schema.String),
 })
 export type OrderFromDb = typeof OrderFromDb.Type
 
