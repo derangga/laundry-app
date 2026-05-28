@@ -145,10 +145,15 @@ export class OrderRepository extends Effect.Service<OrderRepository>()('OrderRep
           o.created_by,
           u.name AS created_by_name,
           o.created_at,
-          o.updated_at
+          o.updated_at,
+          o.cancelled_at,
+          o.cancelled_by,
+          cancelled_by_user.name AS cancelled_by_name,
+          o.cancellation_reason
         FROM orders o
         JOIN customers c ON o.customer_id = c.id
         JOIN users u ON o.created_by = u.id
+        LEFT JOIN users cancelled_by_user ON o.cancelled_by = cancelled_by_user.id
       `
 
       if (conditions.length > 0) {

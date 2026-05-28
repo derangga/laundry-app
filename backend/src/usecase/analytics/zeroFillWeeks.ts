@@ -32,6 +32,8 @@ export const zeroFillWeeks = (
         week_start: key,
         total_revenue: data?.total_revenue ?? 0,
         order_count: data?.order_count ?? 0,
+        // TODO(laundry-app-kbs.7): wire cancelled_count
+        cancelled_count: 0,
       })
     )
     current.setDate(current.getDate() + 7)

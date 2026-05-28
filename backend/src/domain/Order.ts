@@ -73,6 +73,10 @@ export class OrderWithDetailsFromDb extends Schema.Class<OrderWithDetailsFromDb>
   created_by_name: Schema.String,
   created_at: Schema.DateTimeUtcFromDate,
   updated_at: Schema.DateTimeUtcFromDate,
+  cancelled_at: Schema.NullOr(Schema.DateTimeUtcFromDate),
+  cancelled_by: Schema.NullOr(UserId),
+  cancelled_by_name: Schema.NullOr(Schema.String),
+  cancellation_reason: Schema.NullOr(Schema.String),
 }) {}
 
 export class OrderSummaryFromDb extends Schema.Class<OrderSummaryFromDb>('OrderSummaryFromDb')({

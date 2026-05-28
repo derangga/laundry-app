@@ -27,11 +27,13 @@ const statusColorMap: Record<OrderStatus, string> = {
   in_progress: 'bg-amber-100 text-amber-700 border-transparent',
   ready: 'bg-purple-100 text-purple-700 border-transparent',
   delivered: 'bg-green-100 text-green-700 border-transparent',
+  cancelled: 'bg-gray-100 text-gray-700 border-transparent',
 }
 
 const paymentColorMap: Record<PaymentStatus, string> = {
   paid: 'bg-green-100 text-green-700 border-transparent',
   unpaid: 'bg-red-100 text-red-700 border-transparent',
+  refunded: 'bg-gray-100 text-gray-700 border-transparent',
 }
 
 interface OrderColumnCallbacks {

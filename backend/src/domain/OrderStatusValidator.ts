@@ -7,6 +7,7 @@ const validTransitions: Record<OrderStatus, OrderStatus[]> = {
   in_progress: ['ready'],
   ready: ['delivered'],
   delivered: [], // Terminal state
+  cancelled: [], // Terminal state
 }
 
 export const validateStatusTransition = (

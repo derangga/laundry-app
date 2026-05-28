@@ -6,11 +6,13 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   in_progress: 'In Progress',
   ready: 'Ready',
   delivered: 'Delivered',
+  cancelled: 'Cancelled',
 }
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   paid: 'Paid',
   unpaid: 'Unpaid',
+  refunded: 'Refunded',
 }
 
 export const ORDER_STATUS_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {

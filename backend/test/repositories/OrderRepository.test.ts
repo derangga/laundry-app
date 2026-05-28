@@ -42,6 +42,10 @@ const createMockOrderWithDetails = (overrides: Partial<OrderWithDetails> = {}): 
     created_by_name: 'Admin User',
     created_at: new Date('2024-01-01T00:00:00.000Z'),
     updated_at: new Date('2024-01-01T00:00:00.000Z'),
+    cancelled_at: null,
+    cancelled_by: null,
+    cancelled_by_name: null,
+    cancellation_reason: null,
     ...overrides,
   }) as unknown as OrderWithDetails
 
