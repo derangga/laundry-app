@@ -3,6 +3,8 @@ import type { WeeklyDataPoint } from '@laundry-app/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -12,6 +14,10 @@ const chartConfig = {
   order_count: {
     label: 'Orders',
     color: 'var(--chart-2)',
+  },
+  cancelled_count: {
+    label: 'Cancelled',
+    color: 'var(--chart-5)',
   },
 } satisfies ChartConfig
 
@@ -44,15 +50,28 @@ export function OrderChart({ data }: OrderChartProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(label) => formatWeekStart(label as string)}
-                  formatter={(value) => [value, 'Orders']}
+                  formatter={(value, name) => [
+                    value,
+                    chartConfig[name as keyof typeof chartConfig]?.label ??
+                      name,
+                  ]}
                 />
               }
             />
+            <ChartLegend>
+              <ChartLegendContent />
+            </ChartLegend>
             <Line
               dataKey="order_count"
               stroke="var(--color-order_count)"
               strokeWidth={2}
               dot={{ fill: 'var(--color-order_count)' }}
+            />
+            <Line
+              dataKey="cancelled_count"
+              stroke="var(--color-cancelled_count)"
+              strokeWidth={2}
+              dot={{ fill: 'var(--color-cancelled_count)' }}
             />
           </LineChart>
         </ChartContainer>
