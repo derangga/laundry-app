@@ -1,4 +1,4 @@
-import { Data } from 'effect'
+import { Data, Schema } from 'effect'
 
 export class OrderNotFound extends Data.TaggedError('OrderNotFound')<{
   orderId: string
@@ -26,3 +26,13 @@ export class OrderValidationError extends Data.TaggedError('OrderValidationError
 export class EmptyOrderError extends Data.TaggedError('EmptyOrderError')<{
   message: string
 }> {}
+
+export class OrderCannotBeCancelled extends Schema.TaggedError<OrderCannotBeCancelled>()(
+  'OrderCannotBeCancelled',
+  {
+    orderId: Schema.String,
+    currentStatus: Schema.String,
+    paymentStatus: Schema.String,
+    reason: Schema.String,
+  }
+) {}
