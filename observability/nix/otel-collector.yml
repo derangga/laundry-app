@@ -16,7 +16,7 @@ receivers:
         timestamp:
           parse_from: attributes.timestamp
           layout_type: gotime
-          layout: "2006-01-02T15:04:05.000Z"
+          layout: '2006-01-02T15:04:05.000Z'
         severity:
           parse_from: attributes.level
       - type: move
@@ -33,12 +33,12 @@ processors:
 
 exporters:
   prometheusremotewrite:
-    endpoint: "http://localhost:9090/api/v1/write"
+    endpoint: 'http://localhost:9090/api/v1/write'
     resource_to_telemetry_conversion:
       enabled: true
 
   loki:
-    endpoint: "http://localhost:3100/loki/api/v1/push"
+    endpoint: 'http://localhost:3200/loki/api/v1/push'
 
   debug:
     verbosity: basic
