@@ -91,7 +91,11 @@ export function RegisterStaffForm({ onSuccess }: RegisterStaffFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4"
+      autoComplete="off"
+    >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="name">Name</Label>
         <Input
@@ -112,6 +116,7 @@ export function RegisterStaffForm({ onSuccess }: RegisterStaffFormProps) {
         <Input
           id="email"
           type="email"
+          autoComplete="off"
           value={fields.email}
           onChange={(e) => handleChange('email', e.target.value)}
           placeholder="email@example.com"
@@ -127,6 +132,7 @@ export function RegisterStaffForm({ onSuccess }: RegisterStaffFormProps) {
         <Input
           id="password"
           type="password"
+          autoComplete="new-password"
           value={fields.password}
           onChange={(e) => handleChange('password', e.target.value)}
           placeholder="Min. 8 characters"

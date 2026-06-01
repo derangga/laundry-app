@@ -147,6 +147,8 @@ export function getOrderColumns(
         const blockedByPayment =
           nextStatus === 'delivered' && payment_status === 'unpaid'
         const advanceDisabled = !nextStatus || blockedByPayment
+        const paymentLocked =
+          status === 'cancelled' || payment_status === 'refunded'
 
         return (
           <DropdownMenu>
@@ -179,6 +181,7 @@ export function getOrderColumns(
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem
+                disabled={paymentLocked}
                 onClick={() =>
                   callbacks.onTogglePayment(
                     id,
