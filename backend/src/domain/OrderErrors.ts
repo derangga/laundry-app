@@ -36,3 +36,10 @@ export class OrderCannotBeCancelled extends Schema.TaggedError<OrderCannotBeCanc
     reason: Schema.String,
   }
 ) {}
+
+export class PaymentUpdateNotAllowed extends Data.TaggedError('PaymentUpdateNotAllowed')<{
+  orderId: string
+  currentStatus: string
+  paymentStatus: string
+  reason: string
+}> {}

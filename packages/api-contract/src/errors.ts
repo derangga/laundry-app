@@ -251,6 +251,17 @@ export class OrderCannotBeCancelled extends Schema.TaggedError<OrderCannotBeCanc
   HttpApiSchema.annotations({ status: 409 })
 ) {}
 
+export class PaymentUpdateNotAllowed extends Schema.TaggedError<PaymentUpdateNotAllowed>()(
+  'PaymentUpdateNotAllowed',
+  {
+    message: Schema.String,
+    orderId: Schema.String,
+    currentStatus: Schema.optional(Schema.String),
+    paymentStatus: Schema.optional(Schema.String),
+  },
+  HttpApiSchema.annotations({ status: 409 })
+) {}
+
 export class EmptyOrderError extends Schema.TaggedError<EmptyOrderError>()(
   'EmptyOrderError',
   {

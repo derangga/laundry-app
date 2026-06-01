@@ -29,6 +29,7 @@ import {
   RetrieveDataEror,
   OrderPaymentRequired as OrderPaymentRequiredHttp,
   OrderCannotBeCancelled as OrderCannotBeCancelledHttp,
+  PaymentUpdateNotAllowed as PaymentUpdateNotAllowedHttp,
 } from '@domain/http/HttpErrors'
 
 /**
@@ -345,6 +346,13 @@ export const OrderHandlersLive = HttpApiBuilder.group(AppApi, 'Orders', (handler
           .pipe(
             Effect.catchTags({
               OrderNotFound: () => new OrderNotFound({ message: `Order not found with id: ${id}` }),
+              PaymentUpdateNotAllowed: (error) =>
+                new PaymentUpdateNotAllowedHttp({
+                  message: error.reason,
+                  orderId: error.orderId,
+                  currentStatus: error.currentStatus,
+                  paymentStatus: error.paymentStatus,
+                }),
               SqlError: () =>
                 new UnprocessibleEntity({ message: 'Failed to update payment status' }),
             })

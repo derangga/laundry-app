@@ -20,6 +20,7 @@ import {
   RetrieveDataEror,
   OrderPaymentRequired,
   OrderCannotBeCancelled,
+  PaymentUpdateNotAllowed,
 } from '../errors.js'
 import { AuthMiddleware, AuthAdminMiddleware } from '../middleware.js'
 
@@ -83,6 +84,7 @@ export const OrderGroup = HttpApiGroup.make('Orders')
       .setPayload(UpdatePaymentStatusInput)
       .addSuccess(OrderResponse)
       .addError(OrderNotFound)
+      .addError(PaymentUpdateNotAllowed)
       .addError(UnprocessibleEntity)
   )
   .add(

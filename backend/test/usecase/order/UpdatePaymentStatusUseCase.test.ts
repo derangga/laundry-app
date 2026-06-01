@@ -9,7 +9,7 @@ import {
   findOrderByIdUseCaseImpl,
 } from 'src/usecase/order/FindOrderByIdUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
-import { OrderNotFound } from '@domain/OrderErrors'
+import { OrderNotFound, PaymentUpdateNotAllowed } from '@domain/OrderErrors'
 import { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
@@ -79,6 +79,44 @@ describe('UpdatePaymentStatusUseCase', () => {
     expect(exit._tag).toBe('Failure')
     if (exit._tag === 'Failure' && exit.cause._tag === 'Fail') {
       expect(exit.cause.error).toBeInstanceOf(OrderNotFound)
+    }
+  })
+
+  it('fails with PaymentUpdateNotAllowed when order is cancelled', async () => {
+    const order = createTestOrder('order-cancelled', {
+      status: 'cancelled' as OrderStatus,
+      payment_status: 'unpaid' as PaymentStatus,
+    })
+
+    const program = Effect.gen(function* () {
+      const useCase = yield* UpdatePaymentStatusUseCase
+      return yield* useCase.execute(OrderId.make('order-cancelled'), 'paid' as PaymentStatus)
+    })
+
+    const exit = await Effect.runPromiseExit(Effect.provide(program, createTestLayer([order])))
+
+    expect(exit._tag).toBe('Failure')
+    if (exit._tag === 'Failure' && exit.cause._tag === 'Fail') {
+      expect(exit.cause.error).toBeInstanceOf(PaymentUpdateNotAllowed)
+    }
+  })
+
+  it('fails with PaymentUpdateNotAllowed when payment status is refunded', async () => {
+    const order = createTestOrder('order-refunded', {
+      status: 'received' as OrderStatus,
+      payment_status: 'refunded' as PaymentStatus,
+    })
+
+    const program = Effect.gen(function* () {
+      const useCase = yield* UpdatePaymentStatusUseCase
+      return yield* useCase.execute(OrderId.make('order-refunded'), 'paid' as PaymentStatus)
+    })
+
+    const exit = await Effect.runPromiseExit(Effect.provide(program, createTestLayer([order])))
+
+    expect(exit._tag).toBe('Failure')
+    if (exit._tag === 'Failure' && exit.cause._tag === 'Fail') {
+      expect(exit.cause.error).toBeInstanceOf(PaymentUpdateNotAllowed)
     }
   })
 })

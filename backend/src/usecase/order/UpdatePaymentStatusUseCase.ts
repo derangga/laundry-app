@@ -3,6 +3,8 @@ import { OrderRepository } from '@repositories/OrderRepository'
 import { FindOrderByIdUseCase } from './FindOrderByIdUseCase'
 import { OrderId, PaymentStatus } from '@domain/Order'
 
+import { PaymentUpdateNotAllowed } from '@domain/OrderErrors'
+
 export const updatePaymentStatusUseCaseImpl = Effect.gen(function* () {
   const orderRepo = yield* OrderRepository
   const findOrderByIdUseCase = yield* FindOrderByIdUseCase
@@ -11,7 +13,18 @@ export const updatePaymentStatusUseCaseImpl = Effect.gen(function* () {
     id: OrderId,
     paymentStatus: PaymentStatus
   ) {
-    yield* findOrderByIdUseCase.execute(id)
+    const order = yield* findOrderByIdUseCase.execute(id)
+
+    if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+      return yield* Effect.fail(
+        new PaymentUpdateNotAllowed({
+          orderId: id,
+          currentStatus: order.status,
+          paymentStatus: order.payment_status,
+          reason: `Payment cannot be updated: order is in status '${order.status}' with payment '${order.payment_status}'`,
+        })
+      )
+    }
 
     return yield* orderRepo.updatePaymentStatus(id, paymentStatus)
   })
