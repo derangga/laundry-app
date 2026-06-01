@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChevronDown, Inbox } from 'lucide-react'
 
-import type { OrderStatus } from '@laundry-app/shared'
+import type { OrderStatus, OrderWithDetails } from '@laundry-app/shared'
 
 import {
   AlertDialog,
@@ -24,11 +24,13 @@ import {
 import { DataTable } from '@/components/shared/data-table'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
+import { CancelOrderDialog } from '@/components/features/orders/cancel-order-dialog'
 import { CreateOrderDialog } from '@/components/features/orders/create-order-dialog'
 import { CreateOrderWithCustomerDialog } from '@/components/features/orders/create-order-with-customer-dialog'
 import { getOrderColumns } from '@/components/features/orders/order-table-columns'
 import {
   useActiveOrders,
+  useCancelOrder,
   useUpdateOrderStatus,
   useUpdatePaymentStatus,
 } from '@/api/orders'
@@ -54,10 +56,14 @@ function DashboardHome() {
   } = useActiveOrders()
   const updateOrderStatus = useUpdateOrderStatus()
   const updatePaymentStatus = useUpdatePaymentStatus()
+  const cancelOrder = useCancelOrder()
 
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog | null>(null)
   const [orderDialogOpen, setOrderDialogOpen] = useState(false)
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false)
+  const [cancelTarget, setCancelTarget] = useState<OrderWithDetails | null>(
+    null,
+  )
 
   const columns = getOrderColumns({
     onAdvanceStatus: (orderId, nextStatus) => {
@@ -69,6 +75,7 @@ function DashboardHome() {
         payment_status: newPaymentStatus,
       })
     },
+    onCancelOrder: (order) => setCancelTarget(order),
   })
 
   return (
@@ -165,6 +172,22 @@ function DashboardHome() {
       <CreateOrderWithCustomerDialog
         open={registerDialogOpen}
         onOpenChange={setRegisterDialogOpen}
+      />
+      <CancelOrderDialog
+        open={cancelTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setCancelTarget(null)
+        }}
+        order={cancelTarget}
+        isPending={cancelOrder.isPending}
+        onConfirm={(notes) => {
+          if (cancelTarget) {
+            cancelOrder.mutate(
+              { orderId: cancelTarget.id, notes },
+              { onSuccess: () => setCancelTarget(null) },
+            )
+          }
+        }}
       />
     </div>
   )
