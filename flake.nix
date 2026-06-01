@@ -73,7 +73,7 @@
             echo "  PostgreSQL: localhost:$PGPORT (database: $DATABASE_NAME)"
             echo "  Grafana:    http://localhost:3001 (admin/admin)"
             echo "  Prometheus: http://localhost:9090"
-            echo "  Loki:       http://localhost:3100"
+            echo "  Loki:       http://localhost:3200"
             echo "  OTLP HTTP:  http://localhost:4318"
             echo ""
             echo "  process-compose up              - start all services"

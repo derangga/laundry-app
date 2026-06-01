@@ -1,11 +1,11 @@
-version: "0.5"
+version: '0.5'
 
 log_level: info
 log_location: ${OBS_DIR}/process-compose.log
 
 processes:
   postgres-init:
-    description: "Initialize PostgreSQL data directory (one-shot)"
+    description: 'Initialize PostgreSQL data directory (one-shot)'
     command: |
       set -e
       if [ ! -f "$PGDATA/PG_VERSION" ]; then
@@ -15,10 +15,10 @@ processes:
         echo "port = $PGPORT" >> "$PGDATA/postgresql.conf"
       fi
     availability:
-      restart: "no"
+      restart: 'no'
 
   postgres:
-    description: "PostgreSQL 16"
+    description: 'PostgreSQL 16'
     command: postgres -D "$PGDATA" -k "$PGDATA"
     depends_on:
       postgres-init:
@@ -33,7 +33,7 @@ processes:
       restart: on_failure
 
   postgres-setup:
-    description: "Create dev role and database if missing (one-shot)"
+    description: 'Create dev role and database if missing (one-shot)'
     command: |
       set -e
       # Create dev_user role if it doesn't exist
@@ -50,10 +50,10 @@ processes:
       postgres:
         condition: process_healthy
     availability:
-      restart: "no"
+      restart: 'no'
 
   prometheus:
-    description: "Prometheus metrics storage (port 9090)"
+    description: 'Prometheus metrics storage (port 9090)'
     command: >-
       prometheus
       --config.file=observability/nix/prometheus.yml
@@ -73,12 +73,12 @@ processes:
       restart: on_failure
 
   loki:
-    description: "Loki log storage (port 3100)"
+    description: 'Loki log storage (port 3200)'
     command: loki -config.file=observability/nix/loki-config.yml -config.expand-env=true
     readiness_probe:
       http_get:
         host: 127.0.0.1
-        port: 3100
+        port: 3200
         path: /ready
       initial_delay_seconds: 2
       period_seconds: 3
@@ -87,7 +87,7 @@ processes:
       restart: on_failure
 
   otel-collector:
-    description: "OpenTelemetry Collector (OTLP 4317/4318, filelog → Loki)"
+    description: 'OpenTelemetry Collector (OTLP 4317/4318, filelog → Loki)'
     command: otelcol-contrib --config=observability/nix/otel-collector.yml
     depends_on:
       prometheus:
@@ -98,7 +98,7 @@ processes:
       restart: on_failure
 
   grafana:
-    description: "Grafana dashboards (port 3001, admin/admin)"
+    description: 'Grafana dashboards (port 3001, admin/admin)'
     command: grafana server --homepath=${GRAFANA_HOMEPATH} --config=${PWD}/observability/nix/grafana.ini
     depends_on:
       prometheus:
