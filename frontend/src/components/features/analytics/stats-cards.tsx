@@ -1,4 +1,4 @@
-import { ShoppingBag, Clock, DollarSign, Users } from 'lucide-react'
+import { ShoppingBag, Clock, DollarSign, Users, Ban } from 'lucide-react'
 import type { DashboardStatsResponse } from '@laundry-app/shared'
 import {
   Card,
@@ -17,8 +17,8 @@ interface StatsCardsProps {
 export function StatsCards({ data, isLoading }: StatsCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-[120px]" />
         ))}
       </div>
@@ -46,10 +46,15 @@ export function StatsCards({ data, isLoading }: StatsCardsProps) {
       value: data?.total_customers ?? 0,
       icon: Users,
     },
+    {
+      label: 'Cancelled Orders',
+      value: data?.cancelled_orders ?? 0,
+      icon: Ban,
+    },
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {cards.map(({ label, value, icon: Icon }) => (
         <Card key={label}>
           <CardHeader className="pb-2">
