@@ -15,7 +15,11 @@ export const updatePaymentStatusUseCaseImpl = Effect.gen(function* () {
   ) {
     const order = yield* findOrderByIdUseCase.execute(id)
 
-    if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+    if (
+      order.status === 'cancelled' ||
+      order.status === 'delivered' ||
+      order.payment_status === 'refunded'
+    ) {
       return yield* Effect.fail(
         new PaymentUpdateNotAllowed({
           orderId: id,

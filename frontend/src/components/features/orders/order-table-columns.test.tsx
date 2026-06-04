@@ -87,4 +87,13 @@ describe('order-table-columns — Toggle Payment disabled state', () => {
     const item = screen.getByText('Toggle Payment')
     expect(isDisabled(item)).toBe(true)
   })
+
+  it('Toggle Payment is disabled when order status is delivered', async () => {
+    const user = userEvent.setup()
+    setup(makeOrder({ status: 'delivered', payment_status: 'paid' }))
+
+    await user.click(screen.getByRole('button'))
+    const item = screen.getByText('Toggle Payment')
+    expect(isDisabled(item)).toBe(true)
+  })
 })
