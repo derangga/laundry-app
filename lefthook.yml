@@ -4,3 +4,6 @@ pre-commit:
       run: bunx prettier --write {staged_files}
       glob: '*.{ts,tsx,js,jsx,json,css,md,yaml,yml}'
       stage_fixed: true
+    oxlint:
+      run: bunx oxlint {staged_files}
+      glob: 'frontend/**/*.{ts,tsx,js,jsx}'

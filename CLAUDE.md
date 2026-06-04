@@ -14,34 +14,30 @@ Bun workspace monorepo with `@laundry-app/shared` as the shared package (importe
 
 ## Project Structure
 
-```
-packages/shared/src/  # Shared domain models (DTOs, branded IDs, enums) — used by both backend & frontend
-  common/             # Shared transforms (DecimalNumber, DateTimeUtcString)
-  user.ts             # User schemas (UserId, CreateUserInput, UserWithoutPassword, etc.)
-  auth.ts             # Auth schemas (LoginInput, AuthResponse, etc.)
-  customer.ts         # Customer schemas (CustomerId, CreateCustomerInput, etc.)
-  service.ts          # Service schemas (ServiceId, UnitType, etc.)
-  order.ts            # Order schemas (OrderId, OrderStatus, CreateOrderInput, etc.)
-  analytics.ts        # Analytics schemas (WeeklyAnalyticsResponse, DashboardStatsResponse)
-  receipt.ts          # Receipt schemas (ReceiptResponse, ReceiptItem)
+Layer map only — explore files with Serena (`get_symbols_overview`, `list_dir`) for current detail.
 
-backend/src/
-  domain/        # Backend-only error types + re-exports from @laundry-app/shared
-  usecase/       # Business logic (Effect.Service pattern)
-  repositories/  # Database access (SQL queries)
-  handlers/      # Route handler implementations
-  api/           # HttpApi route definitions
-  middleware/    # AuthMiddleware (JWT verification)
-  configs/       # Environment variable parsing
-  http/          # HTTP server setup, router
-  main.ts        # Entry point
+**Packages** (`workspace:*`, shared by backend & frontend):
 
-frontend/src/
-  routes/        # TanStack Router file-based routes
-  components/    # React components
-  data/          # Data fetching, API clients
-  lib/           # Utilities
-```
+- `packages/shared/` — domain models: DTOs, branded IDs, enums, common transforms
+- `packages/api-contract/` — HttpApi contract: per-domain API defs, shared errors & middleware
+- `packages/observability/` — OpenTelemetry: telemetry layer, config, custom metrics
+
+**Backend** (`backend/src/`) — Effect-TS, request flows `api → handlers → usecase → repositories`:
+
+- `api/` — HttpApi route definitions
+- `handlers/` — route handler implementations
+- `usecase/` — business logic (`Effect.Service`); never put DTOs here
+- `repositories/` — DB access, raw SQL only
+- `domain/` — error classes + re-exports from `@laundry-app/shared` (not data models)
+- `middleware/` — AuthMiddleware (JWT)
+- `configs/` — env var parsing · `http/` — server + router + layer wiring · `SqlClient.ts` — PG client · `main.ts` — entry
+
+**Frontend** (`frontend/src/`) — TanStack Start / React:
+
+- `routes/` — file-based routes (`routeTree.gen.ts` is generated, do not edit)
+- `components/` — React components (`auth/`, `features/`, `layout/`, `shared/`, `ui/`)
+- `api/` — data fetching / API clients (TanStack Query)
+- `hooks/` — custom hooks · `domain/` — FE-only types · `integrations/` — tanstack-query provider · `lib/` — utilities · `test/` — setup, fixtures, MSW handlers
 
 ## Documentation
 
@@ -120,7 +116,7 @@ Always use Serena's semantic tools for code exploration instead of reading entir
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **laundry-app** (3807 symbols, 6132 relationships, 72 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **laundry-app** (3561 symbols, 5298 relationships, 32 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -160,3 +156,16 @@ This project is indexed by GitNexus as **laundry-app** (3807 symbols, 6132 relat
 | Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
 
 <!-- gitnexus:end -->
+
+## Issue tracking — `bd` (beads)
+
+Use `bd` for **all** task tracking. Do not use TodoWrite, TaskCreate, or
+markdown TODO lists. Run `bd prime` after `/clear` or a new session to
+reload the full workflow context (it covers everything below in detail).
+
+- `bd ready` — unblocked work
+- `bd show <id>` — issue detail
+- `bd update <id> --claim` — claim atomically before writing code
+- `bd close <id1> <id2> ...` — close one or more
+- `bd remember "..."` — persistent cross-session notes (not MEMORY.md)
+
