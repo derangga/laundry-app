@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { LaundryServiceResponse } from '@laundry-app/shared'
 import { useCreateService, useUpdateService } from '@/api/services'
 import { Button } from '@/components/ui/button'
@@ -54,30 +54,49 @@ export function ServiceFormDialog({
   open,
   onOpenChange,
 }: ServiceFormDialogProps) {
-  const [fields, setFields] = useState<FormFields>({
-    name: '',
-    price: '',
-    unit_type: '',
-  })
+  const isEditing = !!service
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? 'Edit Service' : 'Add Service'}
+          </DialogTitle>
+        </DialogHeader>
+        {open && (
+          <ServiceForm
+            key={service?.id ?? 'new'}
+            service={service ?? null}
+            onOpenChange={onOpenChange}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ServiceForm({
+  service,
+  onOpenChange,
+}: {
+  service: LaundryServiceResponse | null
+  onOpenChange: (open: boolean) => void
+}) {
+  const [fields, setFields] = useState<FormFields>(() =>
+    service
+      ? {
+          name: service.name,
+          price: String(service.price),
+          unit_type: service.unit_type,
+        }
+      : { name: '', price: '', unit_type: '' },
+  )
   const [errors, setErrors] = useState<FormErrors>({})
   const createService = useCreateService()
   const updateService = useUpdateService()
 
-  const isEditing = !!service
   const isPending = createService.isPending || updateService.isPending
-
-  useEffect(() => {
-    if (service) {
-      setFields({
-        name: service.name,
-        price: String(service.price),
-        unit_type: service.unit_type,
-      })
-    } else {
-      setFields({ name: '', price: '', unit_type: '' })
-    }
-    setErrors({})
-  }, [service, open])
 
   function handleChange(key: keyof FormFields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
@@ -101,7 +120,7 @@ export function ServiceFormDialog({
       unit_type: fields.unit_type as 'kg' | 'set',
     }
 
-    if (isEditing && service) {
+    if (service) {
       updateService.mutate(
         { id: service.id, input: payload },
         { onSuccess: () => onOpenChange(false) },
@@ -114,79 +133,70 @@ export function ServiceFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edit Service' : 'Add Service'}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="service-name">Name</Label>
-            <Input
-              id="service-name"
-              type="text"
-              maxLength={50}
-              value={fields.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Service name"
-              aria-invalid={!!errors.name}
-            />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name}</p>
-            )}
-          </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="service-name">Name</Label>
+        <Input
+          id="service-name"
+          type="text"
+          maxLength={50}
+          value={fields.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          placeholder="Service name"
+          aria-invalid={!!errors.name}
+        />
+        {errors.name && (
+          <p className="text-destructive text-sm">{errors.name}</p>
+        )}
+      </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="service-price">Price</Label>
-            <Input
-              id="service-price"
-              type="number"
-              maxLength={20}
-              value={fields.price}
-              onChange={(e) => handleChange('price', e.target.value)}
-              placeholder="0"
-              aria-invalid={!!errors.price}
-            />
-            {errors.price && (
-              <p className="text-destructive text-sm">{errors.price}</p>
-            )}
-          </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="service-price">Price</Label>
+        <Input
+          id="service-price"
+          type="number"
+          maxLength={20}
+          value={fields.price}
+          onChange={(e) => handleChange('price', e.target.value)}
+          placeholder="0"
+          aria-invalid={!!errors.price}
+        />
+        {errors.price && (
+          <p className="text-destructive text-sm">{errors.price}</p>
+        )}
+      </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="service-unit-type">Unit Type</Label>
-            <Select
-              value={fields.unit_type}
-              onValueChange={(value) => handleChange('unit_type', value)}
-            >
-              <SelectTrigger id="service-unit-type">
-                <SelectValue placeholder="Select unit type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="kg">kg</SelectItem>
-                <SelectItem value="set">set</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.unit_type && (
-              <p className="text-destructive text-sm">{errors.unit_type}</p>
-            )}
-          </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="service-unit-type">Unit Type</Label>
+        <Select
+          value={fields.unit_type}
+          onValueChange={(value) => handleChange('unit_type', value)}
+        >
+          <SelectTrigger id="service-unit-type">
+            <SelectValue placeholder="Select unit type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="kg">kg</SelectItem>
+            <SelectItem value="set">set</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.unit_type && (
+          <p className="text-destructive text-sm">{errors.unit_type}</p>
+        )}
+      </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? 'Saving…' : 'Save'}
+        </Button>
+      </DialogFooter>
+    </form>
   )
 }
