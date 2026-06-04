@@ -59,10 +59,14 @@ function HistoryPage() {
   // Local search input state with debounce
   const [searchInput, setSearchInput] = useState(order_number ?? '')
 
-  // Sync searchInput when URL param changes externally (e.g. reset)
-  useEffect(() => {
+  // Re-sync the local search box when the URL param changes externally
+  // (reset, browser back/forward). Adjust state during render instead of an
+  // effect — https://react.dev/learn/you-might-not-need-an-effect
+  const [prevOrderNumber, setPrevOrderNumber] = useState(order_number)
+  if (order_number !== prevOrderNumber) {
+    setPrevOrderNumber(order_number)
     setSearchInput(order_number ?? '')
-  }, [order_number])
+  }
 
   // Debounce search input to URL param
   useEffect(() => {

@@ -17,7 +17,8 @@
     "format": "bun run --parallel format:backend format:frontend",
     "format:backend": "bun --cwd ./backend format",
     "format:frontend": "bun --cwd ./frontend format",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "doctor": "npx react-doctor@latest"
   },
   "workspaces": [
     "packages/shared",
@@ -27,6 +28,7 @@
     "frontend"
   ],
   "devDependencies": {
-    "lefthook": "^2.1.6"
+    "lefthook": "^2.1.6",
+    "react-doctor": "^0.3.0"
   }
 }

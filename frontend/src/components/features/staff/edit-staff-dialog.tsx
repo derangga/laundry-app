@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { UserWithoutPassword } from '@laundry-app/shared'
 import { useUpdateUser } from '@/api/users'
 import { Button } from '@/components/ui/button'
@@ -46,16 +46,37 @@ export function EditStaffDialog({
   open,
   onOpenChange,
 }: EditStaffDialogProps) {
-  const [fields, setFields] = useState<FormFields>({ name: '', email: '' })
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Staff</DialogTitle>
+        </DialogHeader>
+        {staff && (
+          <EditStaffForm
+            key={staff.id}
+            staff={staff}
+            onOpenChange={onOpenChange}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditStaffForm({
+  staff,
+  onOpenChange,
+}: {
+  staff: UserWithoutPassword
+  onOpenChange: (open: boolean) => void
+}) {
+  const [fields, setFields] = useState<FormFields>(() => ({
+    name: staff.name,
+    email: staff.email,
+  }))
   const [errors, setErrors] = useState<FormErrors>({})
   const { mutate, isPending } = useUpdateUser()
-
-  useEffect(() => {
-    if (staff) {
-      setFields({ name: staff.name, email: staff.email })
-      setErrors({})
-    }
-  }, [staff])
 
   function handleChange(key: keyof FormFields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
@@ -66,7 +87,6 @@ export function EditStaffDialog({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!staff) return
 
     const validation = validate(fields)
     if (Object.keys(validation).length > 0) {
@@ -84,56 +104,49 @@ export function EditStaffDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Staff</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-name">Name</Label>
-            <Input
-              id="edit-name"
-              type="text"
-              value={fields.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Full name"
-              aria-invalid={!!errors.name}
-            />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name}</p>
-            )}
-          </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit-name">Name</Label>
+        <Input
+          id="edit-name"
+          type="text"
+          value={fields.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          placeholder="Full name"
+          aria-invalid={!!errors.name}
+        />
+        {errors.name && (
+          <p className="text-destructive text-sm">{errors.name}</p>
+        )}
+      </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-email">Email</Label>
-            <Input
-              id="edit-email"
-              type="email"
-              value={fields.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="email@example.com"
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email}</p>
-            )}
-          </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="edit-email">Email</Label>
+        <Input
+          id="edit-email"
+          type="email"
+          value={fields.email}
+          onChange={(e) => handleChange('email', e.target.value)}
+          placeholder="email@example.com"
+          aria-invalid={!!errors.email}
+        />
+        {errors.email && (
+          <p className="text-destructive text-sm">{errors.email}</p>
+        )}
+      </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? 'Saving…' : 'Save'}
+        </Button>
+      </DialogFooter>
+    </form>
   )
 }

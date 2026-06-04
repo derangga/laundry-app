@@ -13,7 +13,8 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@effect/platform": "^0.72.2",
@@ -61,6 +62,7 @@
     "jsdom": "^27.0.0",
     "msw": "^2.14.2",
     "prettier": "^3.5.3",
+    "react-doctor": "^0.2.16",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^5.1.4",
