@@ -14,34 +14,30 @@ Bun workspace monorepo with `@laundry-app/shared` as the shared package (importe
 
 ## Project Structure
 
-```
-packages/shared/src/  # Shared domain models (DTOs, branded IDs, enums) — used by both backend & frontend
-  common/             # Shared transforms (DecimalNumber, DateTimeUtcString)
-  user.ts             # User schemas (UserId, CreateUserInput, UserWithoutPassword, etc.)
-  auth.ts             # Auth schemas (LoginInput, AuthResponse, etc.)
-  customer.ts         # Customer schemas (CustomerId, CreateCustomerInput, etc.)
-  service.ts          # Service schemas (ServiceId, UnitType, etc.)
-  order.ts            # Order schemas (OrderId, OrderStatus, CreateOrderInput, etc.)
-  analytics.ts        # Analytics schemas (WeeklyAnalyticsResponse, DashboardStatsResponse)
-  receipt.ts          # Receipt schemas (ReceiptResponse, ReceiptItem)
+Layer map only — explore files with Serena (`get_symbols_overview`, `list_dir`) for current detail.
 
-backend/src/
-  domain/        # Backend-only error types + re-exports from @laundry-app/shared
-  usecase/       # Business logic (Effect.Service pattern)
-  repositories/  # Database access (SQL queries)
-  handlers/      # Route handler implementations
-  api/           # HttpApi route definitions
-  middleware/    # AuthMiddleware (JWT verification)
-  configs/       # Environment variable parsing
-  http/          # HTTP server setup, router
-  main.ts        # Entry point
+**Packages** (`workspace:*`, shared by backend & frontend):
 
-frontend/src/
-  routes/        # TanStack Router file-based routes
-  components/    # React components
-  data/          # Data fetching, API clients
-  lib/           # Utilities
-```
+- `packages/shared/` — domain models: DTOs, branded IDs, enums, common transforms
+- `packages/api-contract/` — HttpApi contract: per-domain API defs, shared errors & middleware
+- `packages/observability/` — OpenTelemetry: telemetry layer, config, custom metrics
+
+**Backend** (`backend/src/`) — Effect-TS, request flows `api → handlers → usecase → repositories`:
+
+- `api/` — HttpApi route definitions
+- `handlers/` — route handler implementations
+- `usecase/` — business logic (`Effect.Service`); never put DTOs here
+- `repositories/` — DB access, raw SQL only
+- `domain/` — error classes + re-exports from `@laundry-app/shared` (not data models)
+- `middleware/` — AuthMiddleware (JWT)
+- `configs/` — env var parsing · `http/` — server + router + layer wiring · `SqlClient.ts` — PG client · `main.ts` — entry
+
+**Frontend** (`frontend/src/`) — TanStack Start / React:
+
+- `routes/` — file-based routes (`routeTree.gen.ts` is generated, do not edit)
+- `components/` — React components (`auth/`, `features/`, `layout/`, `shared/`, `ui/`)
+- `api/` — data fetching / API clients (TanStack Query)
+- `hooks/` — custom hooks · `domain/` — FE-only types · `integrations/` — tanstack-query provider · `lib/` — utilities · `test/` — setup, fixtures, MSW handlers
 
 ## Documentation
 
@@ -161,61 +157,15 @@ This project is indexed by GitNexus as **laundry-app** (3561 symbols, 5298 relat
 
 <!-- gitnexus:end -->
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
+## Issue tracking — `bd` (beads)
 
-## Beads Issue Tracker
+Use `bd` for **all** task tracking. Do not use TodoWrite, TaskCreate, or
+markdown TODO lists. Run `bd prime` after `/clear` or a new session to
+reload the full workflow context (it covers everything below in detail).
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+- `bd ready` — unblocked work
+- `bd show <id>` — issue detail
+- `bd update <id> --claim` — claim atomically before writing code
+- `bd close <id1> <id2> ...` — close one or more
+- `bd remember "..."` — persistent cross-session notes (not MEMORY.md)
 
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
-```
-
-### Rules
-
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
-
-## Agent Context Profiles
-
-The managed Beads block is task-tracking guidance, not permission to override repository, user, or orchestrator instructions.
-
-- **Conservative (default)**: Use `bd` for task tracking. Do not run git commits, git pushes, or Dolt remote sync unless explicitly asked. At handoff, report changed files, validation, and suggested next commands.
-- **Minimal**: Keep tool instruction files as pointers to `bd prime`; use the same conservative git policy unless active instructions say otherwise.
-- **Team-maintainer**: Only when the repository explicitly opts in, agents may close beads, run quality gates, commit, and push as part of session close. A current "do not commit" or "do not push" instruction still wins.
-
-## Session Completion
-
-This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
-
-1. **File issues for remaining work** - Create beads for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **Handle git/sync by active profile**:
-
-   ```bash
-   # Conservative/minimal/default: report status and proposed commands; wait for approval.
-   git status
-
-   # Team-maintainer opt-in only, unless current instructions forbid it:
-   git pull --rebase
-   git push
-   git status
-   ```
-
-5. **Hand off** - Summarize changes, validation, issue status, and any blocked sync/commit/push step
-
-**Critical rules:**
-
-- Explicit user or orchestrator instructions override this Beads block.
-- Do not commit or push without clear authority from the active profile or the current user request.
-- If a required sync or push is blocked, stop and report the exact command and error.
-<!-- END BEADS INTEGRATION -->
