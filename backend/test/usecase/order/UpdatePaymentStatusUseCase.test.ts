@@ -119,4 +119,42 @@ describe('UpdatePaymentStatusUseCase', () => {
       expect(exit.cause.error).toBeInstanceOf(PaymentUpdateNotAllowed)
     }
   })
+
+  it('fails with PaymentUpdateNotAllowed when order is delivered without calling updatePaymentStatus', async () => {
+    const order = createTestOrder('order-delivered', {
+      status: 'delivered' as OrderStatus,
+      payment_status: 'paid' as PaymentStatus,
+    })
+
+    let updateCalled = false
+    const repoLayer = Layer.succeed(OrderRepository, {
+      findById: (id: OrderId) =>
+        Effect.succeed(id === order.id ? Option.some(order) : Option.none()),
+      updatePaymentStatus: (_id: OrderId, paymentStatus: PaymentStatus) => {
+        updateCalled = true
+        return Effect.succeed({ ...order, payment_status: paymentStatus, updated_at: new Date() })
+      },
+    } as unknown as OrderRepository)
+    const findByIdLayer = Layer.effect(
+      FindOrderByIdUseCase,
+      Effect.map(findOrderByIdUseCaseImpl, (i) => new FindOrderByIdUseCase(i))
+    ).pipe(Layer.provide(repoLayer))
+    const testLayer = Layer.effect(
+      UpdatePaymentStatusUseCase,
+      Effect.map(updatePaymentStatusUseCaseImpl, (i) => new UpdatePaymentStatusUseCase(i))
+    ).pipe(Layer.provide(Layer.mergeAll(repoLayer, findByIdLayer)))
+
+    const program = Effect.gen(function* () {
+      const useCase = yield* UpdatePaymentStatusUseCase
+      return yield* useCase.execute(OrderId.make('order-delivered'), 'unpaid' as PaymentStatus)
+    })
+
+    const exit = await Effect.runPromiseExit(Effect.provide(program, testLayer))
+
+    expect(exit._tag).toBe('Failure')
+    if (exit._tag === 'Failure' && exit.cause._tag === 'Fail') {
+      expect(exit.cause.error).toBeInstanceOf(PaymentUpdateNotAllowed)
+    }
+    expect(updateCalled).toBe(false)
+  })
 })

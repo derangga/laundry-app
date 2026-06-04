@@ -148,7 +148,9 @@ export function getOrderColumns(
           nextStatus === 'delivered' && payment_status === 'unpaid'
         const advanceDisabled = !nextStatus || blockedByPayment
         const paymentLocked =
-          status === 'cancelled' || payment_status === 'refunded'
+          status === 'cancelled' ||
+          status === 'delivered' ||
+          payment_status === 'refunded'
 
         return (
           <DropdownMenu>
