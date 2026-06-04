@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "laundry_app",
+  "project_id": "9b4604ca-64c3-4184-8c00-64a3519b343f"
+}
