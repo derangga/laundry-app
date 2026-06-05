@@ -4,13 +4,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - 'feat/**'
-      - 'feature/**'
-      - 'fix/**'
-      - 'refactor/**'
-      - 'chore/**'
 
 jobs:
   frontend:
