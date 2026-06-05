@@ -1,4 +1,4 @@
-name: PR Validation
+name: Backend
 
 on:
   pull_request:
@@ -6,15 +6,15 @@ on:
       - master
   push:
     branches:
-      - "feat/**"
-      - "feature/**"
-      - "fix/**"
-      - "refactor/**"
-      - "chore/**"
+      - 'feat/**'
+      - 'feature/**'
+      - 'fix/**'
+      - 'refactor/**'
+      - 'chore/**'
 
 jobs:
-  validate:
-    name: Validate Backend
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -32,27 +32,30 @@ jobs:
         with:
           path: |
             ~/.bun/install/cache
-            backend/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('backend/bun.lockb') }}
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        working-directory: ./backend
         run: bun install --frozen-lockfile
 
-      - name: Type check
+      - name: Lint check
         working-directory: ./backend
-        run: bun run typecheck
+        run: bun run lint
 
       - name: Format check
         working-directory: ./backend
         run: bun run format:check
 
-      - name: Build
+      - name: Type check
         working-directory: ./backend
-        run: bun run build
+        run: bun run typecheck
 
-      - name: Run tests
+      - name: Unit tests
         working-directory: ./backend
         run: bun -b run test:run
+
+      - name: Build check
+        working-directory: ./backend
+        run: bun run build

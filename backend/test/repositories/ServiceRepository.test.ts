@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import {
+import type {
   LaundryService,
   ServiceId,
   ActiveServiceInfo,
@@ -325,9 +325,12 @@ describe('ServiceRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update('service-123' as ServiceId, {
-          price: 25000,
-        } as UpdateLaundryServiceInput)
+        return yield* repo.update(
+          'service-123' as ServiceId,
+          {
+            price: 25000,
+          } as UpdateLaundryServiceInput
+        )
       })
 
       const result = await Effect.runPromise(
@@ -365,9 +368,12 @@ describe('ServiceRepository', () => {
 
       const program = Effect.gen(function* () {
         const repo = yield* ServiceRepository
-        return yield* repo.update('service-123' as ServiceId, {
-          price: 15000,
-        } as UpdateLaundryServiceInput)
+        return yield* repo.update(
+          'service-123' as ServiceId,
+          {
+            price: 15000,
+          } as UpdateLaundryServiceInput
+        )
       })
 
       const result = await Effect.runPromiseExit(

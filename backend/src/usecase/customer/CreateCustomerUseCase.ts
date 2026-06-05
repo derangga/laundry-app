@@ -1,6 +1,7 @@
 import { Effect, Option } from 'effect'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { CreateCustomerInput, Customer } from '@domain/Customer'
+import type { CreateCustomerInput } from '@domain/Customer'
+import { Customer } from '@domain/Customer'
 import { normalizePhoneNumber } from '@domain/PhoneNumber'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 

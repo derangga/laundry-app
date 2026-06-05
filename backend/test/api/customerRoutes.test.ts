@@ -13,7 +13,8 @@ import {
   createCustomerUseCaseImpl,
 } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
+import type { Customer } from '@domain/Customer'
+import { CreateCustomerInput, CustomerId } from '@domain/Customer'
 import { CurrentUser } from '@domain/CurrentUser'
 import { UserId } from '@domain/User'
 

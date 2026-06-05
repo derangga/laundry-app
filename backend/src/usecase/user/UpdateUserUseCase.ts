@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
-import { SqlError } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
-import { UserId, UpdateUserInput, UserWithoutPassword, UserUpdateData } from '@domain/User'
+import type { UserId, UpdateUserInput, UserWithoutPassword, UserUpdateData } from '@domain/User'
 import { UserNotFoundError, UserAlreadyExistsError } from '@domain/UserErrors'
 
 const updateUser = (

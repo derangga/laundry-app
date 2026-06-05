@@ -1,4 +1,5 @@
-import { jwtVerify, JWTPayload } from 'jose'
+import type { JWTPayload } from 'jose'
+import { jwtVerify } from 'jose'
 
 export interface ParsedCookies {
   accessToken?: string

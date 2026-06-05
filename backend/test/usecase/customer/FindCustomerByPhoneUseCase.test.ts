@@ -5,7 +5,7 @@ import {
   findCustomerByPhoneUseCaseImpl,
 } from 'src/usecase/customer/FindCustomerByPhoneUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { Customer, CustomerId } from '@domain/Customer'
+import type { Customer, CustomerId } from '@domain/Customer'
 import { CustomerNotFound } from '@domain/CustomerErrors'
 
 const existingCustomer = {

@@ -1,8 +1,9 @@
 import { Effect, Option } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
-import { RefreshToken, RefreshTokenId } from '../domain/RefreshToken'
-import { UserId } from '../domain/User'
+import type { RefreshTokenId } from '../domain/RefreshToken'
+import { RefreshToken } from '../domain/RefreshToken'
+import type { UserId } from '../domain/User'
 import { RefreshTokenNotCreated } from '@domain/UserErrors'
 
 export class RefreshTokenRepository extends Effect.Service<RefreshTokenRepository>()(

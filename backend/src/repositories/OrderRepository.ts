@@ -1,18 +1,17 @@
 import { Effect, Option, Schema } from 'effect'
-import { SqlClient, SqlError, Model } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
+import { SqlClient, Model } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
+import type { OrderId, OrderStatus, PaymentStatus } from '../domain/Order'
 import {
   Order,
   OrderFromDb,
-  OrderId,
-  OrderStatus,
-  PaymentStatus,
   OrderWithDetailsFromDb,
   OrderSummaryFromDb,
   OrderFilterOptions,
 } from '../domain/Order'
-import { CustomerId } from '../domain/Customer'
-import { UserId } from '../domain/User'
+import type { CustomerId } from '../domain/Customer'
+import type { UserId } from '../domain/User'
 
 // Helper to build dynamic WHERE clauses declaratively
 type FilterDef = readonly [option: Option.Option<string | number | Date>, clause: string]

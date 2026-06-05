@@ -1,9 +1,9 @@
 import { Effect, Duration } from 'effect'
 import * as jose from 'jose'
-import { UserId, UserRole } from '../../domain/User'
+import type { UserId, UserRole } from '../../domain/User'
 import { InvalidTokenError } from '../../domain/UserErrors'
 import { JwtConfig } from '../../configs/env'
-import { JwtPayload } from '@domain/Auth'
+import type { JwtPayload } from '@domain/Auth'
 
 const parseExpiry = (expiry: string): Duration.Duration => {
   const match = expiry.match(/^(\d+)([smhd])$/)

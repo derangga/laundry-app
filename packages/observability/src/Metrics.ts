@@ -6,7 +6,4 @@ export const withSpanCount = <A, E, R>(
   spanName: string,
   effect: Effect.Effect<A, E, R>
 ): Effect.Effect<A, E, R> =>
-  Effect.ensuring(
-    effect,
-    Metric.update(SpanCount.pipe(Metric.tagged('span_name', spanName)), 1)
-  )
+  Effect.ensuring(effect, Metric.update(SpanCount.pipe(Metric.tagged('span_name', spanName)), 1))

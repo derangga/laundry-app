@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { FindOrderByIdUseCase } from './FindOrderByIdUseCase'
-import { OrderId, PaymentStatus } from '@domain/Order'
+import type { OrderId, PaymentStatus } from '@domain/Order'
 
 import { PaymentUpdateNotAllowed } from '@domain/OrderErrors'
 

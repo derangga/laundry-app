@@ -4,7 +4,8 @@ import {
   createMemoryHistory,
   createRouter,
 } from '@tanstack/react-router'
-import { act, render, type RenderResult } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
+import type { RenderResult } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { Toaster } from '@/components/ui/sonner'

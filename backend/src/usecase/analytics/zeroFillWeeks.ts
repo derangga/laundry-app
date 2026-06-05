@@ -1,4 +1,5 @@
-import { WeeklyDataPoint, WeeklyRow } from '@domain/Analytics'
+import type { WeeklyRow } from '@domain/Analytics'
+import { WeeklyDataPoint } from '@domain/Analytics'
 
 /**
  * Zero-fill: ensure every Monday between startDate and endDate has a data point.

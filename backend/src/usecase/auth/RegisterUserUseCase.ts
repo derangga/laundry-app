@@ -2,7 +2,8 @@ import { Effect, Option } from 'effect'
 import { UserRepository } from '@repositories/UserRepository'
 import { PasswordService } from './PasswordService'
 import { UserAlreadyExistsError } from '@domain/UserErrors'
-import { CreateUserInput, User, UserWithoutPassword } from '@domain/User'
+import type { CreateUserInput } from '@domain/User'
+import { User, UserWithoutPassword } from '@domain/User'
 
 export const registerUserUseCaseImpl = Effect.gen(function* () {
   const userRepo = yield* UserRepository

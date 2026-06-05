@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { FindServiceByIdUseCase } from './FindServiceByIdUseCase'
-import { ServiceId } from '@domain/LaundryService'
+import type { ServiceId } from '@domain/LaundryService'
 
 export const softDeleteServiceUseCaseImpl = Effect.gen(function* () {
   const repo = yield* ServiceRepository

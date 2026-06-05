@@ -10,12 +10,8 @@ import {
 } from 'src/usecase/order/FindServiceByIdUseCase'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import {
-  LaundryService,
-  ServiceId,
-  UnitType,
-  UpdateLaundryServiceInput,
-} from '@domain/LaundryService'
+import type { LaundryService, UnitType, UpdateLaundryServiceInput } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 
 const createTestService = (id: string, overrides?: Partial<LaundryService>): LaundryService =>
   ({

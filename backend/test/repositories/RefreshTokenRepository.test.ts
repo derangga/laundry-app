@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { DateTime, Effect, Option } from 'effect'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
-import { UserId } from '@domain/User'
+import type { UserId } from '@domain/User'
 import { createMockSqlClient, createSqlError } from '../testUtils'
-import { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
+import type { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
 
 const createMockRefreshToken = (overrides?: Partial<RefreshToken>): RefreshToken =>
   ({

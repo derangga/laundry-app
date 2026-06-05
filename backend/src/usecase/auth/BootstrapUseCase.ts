@@ -2,7 +2,7 @@ import { Effect, Option } from 'effect'
 import { UserRepository } from '@repositories/UserRepository'
 import { PasswordService } from './PasswordService'
 import { BootstrapNotAllowedError, UserAlreadyExistsError } from '@domain/UserErrors'
-import { BootstrapInput } from '@domain/Auth'
+import type { BootstrapInput } from '@domain/Auth'
 import { User, UserWithoutPassword } from '@domain/User'
 
 export const bootstrapUseCaseImpl = Effect.gen(function* () {

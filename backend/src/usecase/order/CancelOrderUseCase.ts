@@ -1,8 +1,8 @@
 import { Effect } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { FindOrderByIdUseCase } from './FindOrderByIdUseCase'
-import { OrderId } from '@domain/Order'
-import { UserId } from '@domain/User'
+import type { OrderId } from '@domain/Order'
+import type { UserId } from '@domain/User'
 import { OrderCannotBeCancelled } from '@domain/OrderErrors'
 
 export const cancelOrderUseCaseImpl = Effect.gen(function* () {

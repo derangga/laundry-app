@@ -6,7 +6,7 @@ import {
 } from 'src/usecase/analytics/GetWeeklyAnalyticsUseCase'
 import { AnalyticsRepository } from '@repositories/AnalyticsRepository'
 import { WeeklyRow } from '@domain/Analytics'
-import { PaymentStatus } from '@domain/Order'
+import type { PaymentStatus } from '@domain/Order'
 
 type AggregationCall = {
   startDate: Date

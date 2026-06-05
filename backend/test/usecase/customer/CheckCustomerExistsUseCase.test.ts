@@ -5,7 +5,7 @@ import {
   checkCustomerExistsUseCaseImpl,
 } from 'src/usecase/customer/CheckCustomerExistsUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { Customer, CustomerId } from '@domain/Customer'
+import type { Customer, CustomerId } from '@domain/Customer'
 
 const existingCustomer = {
   id: 'customer-1' as CustomerId,
@@ -47,9 +47,7 @@ describe('CheckCustomerExistsUseCase', () => {
       return yield* useCase.execute('+6289876543210')
     })
 
-    const result = await Effect.runPromise(
-      Effect.provide(program, createTestLayer(Option.none()))
-    )
+    const result = await Effect.runPromise(Effect.provide(program, createTestLayer(Option.none())))
 
     expect(result).toBe(false)
   })

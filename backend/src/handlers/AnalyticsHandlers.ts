@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import { AppApi } from '@api/AppApi'
 import { GetWeeklyAnalyticsUseCase } from 'src/usecase/analytics/GetWeeklyAnalyticsUseCase'
 import { GetDashboardStatsUseCase } from 'src/usecase/analytics/GetDashboardStatsUseCase'
-import { AnalyticsPaymentFilter } from '@domain/Analytics'
+import type { AnalyticsPaymentFilter } from '@domain/Analytics'
 import { ValidationError, InternalServerError } from '@domain/http/HttpErrors'
 
 /**

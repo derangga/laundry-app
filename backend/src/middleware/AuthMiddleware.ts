@@ -4,8 +4,8 @@ import {
   AuthAdminMiddleware,
   Forbidden,
   Unauthorized,
-  type CurrentUserData,
 } from '@laundry-app/api-contract'
+import type { CurrentUserData } from '@laundry-app/api-contract'
 import { JwtService } from 'src/usecase/auth/JwtService'
 
 /**

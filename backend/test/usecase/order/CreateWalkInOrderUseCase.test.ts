@@ -8,15 +8,9 @@ import { CreateOrderUseCase } from 'src/usecase/order/CreateOrderUseCase'
 import { CheckCustomerExistsUseCase } from 'src/usecase/customer/CheckCustomerExistsUseCase'
 import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
-import {
-  CreateWalkInOrderInput,
-  CreateOrderItemInput,
-  Order,
-  OrderId,
-  OrderStatus,
-  PaymentStatus,
-} from '@domain/Order'
-import { Customer, CustomerId } from '@domain/Customer'
+import type { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
+import { CreateWalkInOrderInput, CreateOrderItemInput } from '@domain/Order'
+import type { Customer, CustomerId } from '@domain/Customer'
 import { ServiceId } from '@domain/LaundryService'
 import { UserId } from '@domain/User'
 

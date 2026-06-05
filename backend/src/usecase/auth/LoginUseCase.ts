@@ -5,7 +5,8 @@ import { PasswordService } from './PasswordService'
 import { JwtService } from './JwtService'
 import { TokenGenerator } from './TokenGenerator'
 import { InvalidCredentialsError } from '@domain/UserErrors'
-import { LoginInput, JwtPayload, AuthResponse, AuthenticatedUser } from '@domain/Auth'
+import type { JwtPayload } from '@domain/Auth'
+import { LoginInput, AuthResponse, AuthenticatedUser } from '@domain/Auth'
 
 export { LoginInput }
 
