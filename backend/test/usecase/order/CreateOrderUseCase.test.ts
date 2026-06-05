@@ -1,17 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
-import {
-  CreateOrderUseCase,
-  createOrderUseCaseImpl,
-} from 'src/usecase/order/CreateOrderUseCase'
+import { CreateOrderUseCase, createOrderUseCaseImpl } from 'src/usecase/order/CreateOrderUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import {
-  CreateOrderInput,
-  CreateOrderItemInput,
+import type {
   Order,
   OrderId,
   OrderStatus,
@@ -19,7 +14,9 @@ import {
   OrderItem,
   OrderItemId,
 } from '@domain/Order'
-import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
+import { CreateOrderInput, CreateOrderItemInput } from '@domain/Order'
+import type { LaundryService, UnitType } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 
@@ -44,18 +41,19 @@ const service2 = createTestService('service-2', {
 
 const createMockOrderRepo = () =>
   Layer.succeed(OrderRepository, {
-    insert: vi.fn((data: { customer_id: CustomerId; total_price: number; payment_status: PaymentStatus }) =>
-      Effect.succeed({
-        id: 'new-order-id' as OrderId,
-        order_number: 'ORD-1',
-        customer_id: data.customer_id,
-        status: 'received' as OrderStatus,
-        payment_status: data.payment_status,
-        total_price: data.total_price,
-        created_by: 'user-1' as UserId,
-        created_at: new Date(),
-        updated_at: new Date(),
-      } as unknown as Order)
+    insert: vi.fn(
+      (data: { customer_id: CustomerId; total_price: number; payment_status: PaymentStatus }) =>
+        Effect.succeed({
+          id: 'new-order-id' as OrderId,
+          order_number: 'ORD-1',
+          customer_id: data.customer_id,
+          status: 'received' as OrderStatus,
+          payment_status: data.payment_status,
+          total_price: data.total_price,
+          created_by: 'user-1' as UserId,
+          created_at: new Date(),
+          updated_at: new Date(),
+        } as unknown as Order)
     ),
   } as unknown as OrderRepository)
 
@@ -93,7 +91,11 @@ const createTestLayer = (services: LaundryService[]) =>
     Effect.map(createOrderUseCaseImpl, (i) => new CreateOrderUseCase(i))
   ).pipe(
     Layer.provide(
-      Layer.mergeAll(createMockOrderRepo(), createMockOrderItemRepo(), createMockServiceRepo(services))
+      Layer.mergeAll(
+        createMockOrderRepo(),
+        createMockOrderItemRepo(),
+        createMockServiceRepo(services)
+      )
     )
   )
 
@@ -128,7 +130,9 @@ describe('CreateOrderUseCase', () => {
       return yield* useCase.execute(
         CreateOrderInput.make({
           customer_id: CustomerId.make('customer-1'),
-          items: [CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 1 })],
+          items: [
+            CreateOrderItemInput.make({ service_id: ServiceId.make('service-1'), quantity: 1 }),
+          ],
           created_by: UserId.make('user-1'),
           payment_status: 'paid',
         })

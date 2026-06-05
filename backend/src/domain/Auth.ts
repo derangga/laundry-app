@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
-import { UserId, UserRole, AuthResponse } from '@laundry-app/shared'
+import type { AuthResponse } from '@laundry-app/shared'
+import { UserId, UserRole } from '@laundry-app/shared'
 
 export class JwtPayload extends Schema.Class<JwtPayload>('JwtPayload')({
   sub: UserId,

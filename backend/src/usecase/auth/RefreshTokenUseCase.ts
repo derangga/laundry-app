@@ -8,7 +8,8 @@ import {
   RefreshTokenNotFoundError,
   UserNotFoundError,
 } from '../../domain/UserErrors'
-import { RefreshTokenInput, AuthResponse, JwtPayload, AuthenticatedUser } from '../../domain/Auth'
+import type { JwtPayload } from '../../domain/Auth'
+import { RefreshTokenInput, AuthResponse, AuthenticatedUser } from '../../domain/Auth'
 
 export { RefreshTokenInput }
 

@@ -5,7 +5,8 @@ import { ServiceRepository } from '@repositories/ServiceRepository'
 import { generateOrderNumber } from '@domain/OrderNumberGenerator'
 import { EmptyOrderError } from '@domain/OrderErrors'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { CreateOrderInput, Order } from '@domain/Order'
+import type { CreateOrderInput } from '@domain/Order'
+import { Order } from '@domain/Order'
 
 const calculateTotal = (items: Array<{ quantity: number; priceAtOrder: number }>): number =>
   items.reduce((total, item) => total + item.quantity * item.priceAtOrder, 0)

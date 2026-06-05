@@ -25,12 +25,12 @@ import {
   softDeleteServiceUseCaseImpl,
 } from 'src/usecase/order/SoftDeleteServiceUseCase'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import {
+import type {
   LaundryService,
-  ServiceId,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
 } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 import { CurrentUser } from '@domain/CurrentUser'
 import { UserId } from '@domain/User'
 

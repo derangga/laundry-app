@@ -1,3 +1,17 @@
+import { Schema } from 'effect'
+import { Model } from '@effect/sql'
+import {
+  OrderId,
+  OrderItemId,
+  OrderStatus,
+  PaymentStatus,
+  CustomerId,
+  UserId,
+  ServiceId,
+  DecimalNumber,
+  UnitType,
+} from '@laundry-app/shared'
+
 export {
   OrderId,
   OrderItemId,
@@ -15,12 +29,6 @@ export {
   OrderItemResponse,
   OrderWithItemsResponse,
 } from '@laundry-app/shared'
-
-import { Schema } from 'effect'
-import { Model } from '@effect/sql'
-import { OrderId, OrderItemId, OrderStatus, PaymentStatus, CustomerId } from '@laundry-app/shared'
-import { UserId } from '@laundry-app/shared'
-import { ServiceId, DecimalNumber, UnitType } from '@laundry-app/shared'
 
 export class Order extends Model.Class<Order>('Order')({
   id: Model.Generated(OrderId),

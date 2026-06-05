@@ -5,8 +5,8 @@ import { UserRepository } from '@repositories/UserRepository'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
-import { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
-import { User, UserId, UserRole } from '@domain/User'
+import type { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
+import type { User, UserId, UserRole } from '@domain/User'
 
 const MOCK_ACCESS_TOKEN = 'mock-access-token'
 const MOCK_RAW_TOKEN = 'mock-raw-token'
@@ -38,7 +38,12 @@ let insertedTokens: unknown[] = []
 const MockJwtService = Layer.succeed(JwtService, {
   signAccessToken: () => Effect.succeed(MOCK_ACCESS_TOKEN),
   signRefreshToken: () => Effect.succeed('mock-refresh-jwt'),
-  verifyAccessToken: () => Effect.succeed({ sub: 'user-123' as UserId, email: 'test@example.com', role: 'admin' as UserRole }),
+  verifyAccessToken: () =>
+    Effect.succeed({
+      sub: 'user-123' as UserId,
+      email: 'test@example.com',
+      role: 'admin' as UserRole,
+    }),
   verifyRefreshToken: () => Effect.succeed({ sub: 'user-123' as UserId }),
   getRefreshExpiryDate: () => MOCK_EXPIRY,
   accessExpiry: {} as never,
@@ -48,7 +53,8 @@ const MockJwtService = Layer.succeed(JwtService, {
 const MockTokenGenerator = Layer.succeed(TokenGenerator, {
   generate: () => Effect.succeed(MOCK_RAW_TOKEN),
   hash: (_raw: string) => Effect.succeed(MOCK_HASHED_TOKEN),
-  generateAndHash: () => Effect.succeed({ rawToken: MOCK_RAW_TOKEN, hashedToken: MOCK_HASHED_TOKEN }),
+  generateAndHash: () =>
+    Effect.succeed({ rawToken: MOCK_RAW_TOKEN, hashedToken: MOCK_HASHED_TOKEN }),
 } as unknown as TokenGenerator)
 
 const createMockUserRepo = (user: User | null) =>
@@ -90,10 +96,13 @@ const createMockRefreshTokenRepo = (storedToken: RefreshToken | null) =>
   } as unknown as RefreshTokenRepository)
 
 const createTestLayer = (opts: { storedToken?: RefreshToken | null; user?: User | null }) =>
-  Layer.effect(RefreshTokenUseCase, Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))).pipe(
+  Layer.effect(
+    RefreshTokenUseCase,
+    Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))
+  ).pipe(
     Layer.provide(
       Layer.mergeAll(
-        createMockUserRepo('user' in opts ? opts.user ?? null : testUser),
+        createMockUserRepo('user' in opts ? (opts.user ?? null) : testUser),
         createMockRefreshTokenRepo(opts.storedToken ?? null),
         MockJwtService,
         MockTokenGenerator

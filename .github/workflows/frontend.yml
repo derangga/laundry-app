@@ -1,0 +1,60 @@
+name: Frontend
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.6
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Runs oxlint only. The eslint half of the `lint` script (`oxlint && eslint`)
+      # is temporarily excluded — eslint's config/deps need a separate fix before
+      # it can gate CI. Switch back to `bun run lint` once eslint passes.
+      - name: Lint check
+        working-directory: ./frontend
+        run: bun x oxlint
+
+      - name: Format check
+        working-directory: ./frontend
+        run: bun run check
+
+      - name: Type check
+        working-directory: ./frontend
+        run: bun run typecheck
+
+      - name: Unit tests
+        working-directory: ./frontend
+        run: bun run test
+
+      # React Doctor runs as its own workflow (react-doctor.yml) so it can post
+      # the sticky PR summary comment. It is not duplicated here.
+
+      - name: Build check
+        working-directory: ./frontend
+        run: bun run build

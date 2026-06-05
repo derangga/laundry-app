@@ -3,9 +3,10 @@ import { CheckCustomerExistsUseCase } from 'src/usecase/customer/CheckCustomerEx
 import { CreateCustomerUseCase } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CreateOrderUseCase } from './CreateOrderUseCase'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
-import { CreateWalkInOrderInput, CreateOrderInput } from '@domain/Order'
+import type { CreateWalkInOrderInput } from '@domain/Order'
+import { CreateOrderInput } from '@domain/Order'
 import { CreateCustomerInput } from '@domain/Customer'
-import { UserId } from '@domain/User'
+import type { UserId } from '@domain/User'
 
 export const createWalkInOrderUseCaseImpl = Effect.gen(function* () {
   const checkCustomerExists = yield* CheckCustomerExistsUseCase

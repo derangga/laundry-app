@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import { CreateLaundryServiceInput } from '@domain/LaundryService'
+import type { CreateLaundryServiceInput } from '@domain/LaundryService'
 
 export const createServiceUseCaseImpl = Effect.gen(function* () {
   const repo = yield* ServiceRepository

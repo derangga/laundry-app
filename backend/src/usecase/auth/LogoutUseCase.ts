@@ -3,7 +3,7 @@ import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { TokenGenerator } from './TokenGenerator'
 import { CurrentUser } from '../../domain/CurrentUser'
 import { UnauthorizedError } from '../../domain/UserErrors'
-import { LogoutInput } from '../../domain/Auth'
+import type { LogoutInput } from '../../domain/Auth'
 
 export const logoutUseCaseImpl = Effect.gen(function* () {
   const refreshTokenRepo = yield* RefreshTokenRepository

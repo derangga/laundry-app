@@ -7,8 +7,8 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from '@/components/ui/chart'
+import type { ChartConfig } from '@/components/ui/chart'
 
 const chartConfig = {
   order_count: {

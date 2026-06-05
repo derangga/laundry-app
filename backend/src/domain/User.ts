@@ -1,3 +1,7 @@
+import { Schema } from 'effect'
+import { Model } from '@effect/sql'
+import { UserId, UserRole } from '@laundry-app/shared'
+
 export {
   UserId,
   UserRole,
@@ -6,10 +10,6 @@ export {
   UserWithoutPassword,
   UserBasicInfo,
 } from '@laundry-app/shared'
-
-import { Schema } from 'effect'
-import { Model } from '@effect/sql'
-import { UserId, UserRole } from '@laundry-app/shared'
 
 // DB-specific decode schema — same shape as UserWithoutPassword but accepts Date objects
 export const UserWithoutPasswordFromDb = Schema.Struct({

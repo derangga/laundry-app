@@ -1,23 +1,23 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Effect, Layer, Option } from 'effect'
 import { GenerateReceiptUseCase } from 'src/usecase/receipt/GenerateReceiptUseCase'
-import { OrderRepository } from '@repositories/OrderRepository'
-import { OrderItemRepository } from '@repositories/OrderItemRepository'
-import { CustomerRepository } from '@repositories/CustomerRepository'
-import { UserRepository } from '@repositories/UserRepository'
-import {
+import type { OrderRepository } from '@repositories/OrderRepository'
+import type { OrderItemRepository } from '@repositories/OrderItemRepository'
+import type { CustomerRepository } from '@repositories/CustomerRepository'
+import type { UserRepository } from '@repositories/UserRepository'
+import type {
   Order,
-  OrderId,
   OrderStatus,
   PaymentStatus,
   OrderItemWithService,
   OrderItemId,
 } from '@domain/Order'
-import { Customer, CustomerId } from '@domain/Customer'
-import { UserId, UserBasicInfo } from '@domain/User'
-import { ServiceId, UnitType } from '@domain/LaundryService'
+import { OrderId } from '@domain/Order'
+import type { Customer, CustomerId } from '@domain/Customer'
+import type { UserId, UserBasicInfo } from '@domain/User'
+import type { ServiceId, UnitType } from '@domain/LaundryService'
 import { OrderNotFound } from '@domain/OrderErrors'
-import { ReceiptResponse } from '@domain/Receipt'
+import type { ReceiptResponse } from '@domain/Receipt'
 
 describe('GenerateReceiptUseCase', () => {
   // Test data factories

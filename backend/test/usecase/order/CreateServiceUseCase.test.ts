@@ -5,7 +5,7 @@ import {
   createServiceUseCaseImpl,
 } from 'src/usecase/order/CreateServiceUseCase'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import {
+import type {
   CreateLaundryServiceInput,
   LaundryService,
   ServiceId,

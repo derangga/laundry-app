@@ -3,7 +3,7 @@ import { DateTime, Effect, Layer, Option } from 'effect'
 import { BootstrapUseCase, bootstrapUseCaseImpl } from 'src/usecase/auth/BootstrapUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
-import { User, UserId, UserRole } from '@domain/User'
+import type { User, UserId, UserRole } from '@domain/User'
 
 const MOCK_HASHED_PASSWORD = 'mock-hashed-password'
 const MOCK_DATE = DateTime.unsafeMake('2024-01-01T00:00:00Z')
@@ -35,9 +35,10 @@ const createMockUserRepo = (opts: { hasUsers?: boolean; emailExists?: boolean })
   } as unknown as UserRepository)
 
 const createTestLayer = (opts: { hasUsers?: boolean; emailExists?: boolean } = {}) =>
-  Layer.effect(BootstrapUseCase, Effect.map(bootstrapUseCaseImpl, (impl) => new BootstrapUseCase(impl))).pipe(
-    Layer.provide(Layer.mergeAll(createMockUserRepo(opts), MockPasswordService))
-  )
+  Layer.effect(
+    BootstrapUseCase,
+    Effect.map(bootstrapUseCaseImpl, (impl) => new BootstrapUseCase(impl))
+  ).pipe(Layer.provide(Layer.mergeAll(createMockUserRepo(opts), MockPasswordService)))
 
 describe('BootstrapUseCase', () => {
   it('should bootstrap first admin user successfully', async () => {
@@ -50,9 +51,7 @@ describe('BootstrapUseCase', () => {
       })
     })
 
-    const result = await Effect.runPromise(
-      Effect.provide(program, createTestLayer())
-    )
+    const result = await Effect.runPromise(Effect.provide(program, createTestLayer()))
 
     expect(result.id).toBe(createdUser.id)
     expect(result.email).toBe('admin@example.com')

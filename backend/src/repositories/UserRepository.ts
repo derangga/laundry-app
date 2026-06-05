@@ -1,15 +1,9 @@
 import { Effect, Option, Schema } from 'effect'
-import { SqlClient, SqlError, Model } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
+import { SqlClient, Model } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
-import {
-  User,
-  UserId,
-  UserWithoutPassword,
-  UserWithoutPasswordFromDb,
-  UserFromDb,
-  UserBasicInfo,
-  UserUpdateData,
-} from '../domain/User'
+import type { UserId, UserWithoutPassword, UserUpdateData } from '../domain/User'
+import { User, UserWithoutPasswordFromDb, UserFromDb, UserBasicInfo } from '../domain/User'
 
 export class UserRepository extends Effect.Service<UserRepository>()('UserRepository', {
   effect: Effect.gen(function* () {

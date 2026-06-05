@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
-import { SqlError } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
-import { UserWithoutPassword } from '@domain/User'
+import type { UserWithoutPassword } from '@domain/User'
 
 const listUsers = (): Effect.Effect<
   readonly UserWithoutPassword[],

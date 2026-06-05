@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
-import { SqlError } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
 import { UserRepository } from '@repositories/UserRepository'
-import { UserId, UserWithoutPassword } from '@domain/User'
+import type { UserId, UserWithoutPassword } from '@domain/User'
 import { UserNotFoundError } from '@domain/UserErrors'
 
 const deleteUser = (

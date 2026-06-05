@@ -1,7 +1,8 @@
 import { Effect, Option } from 'effect'
 import { AnalyticsRepository } from '@repositories/AnalyticsRepository'
-import { AnalyticsPaymentFilter, WeeklyAnalyticsResponse } from '@domain/Analytics'
-import { PaymentStatus } from '@domain/Order'
+import type { AnalyticsPaymentFilter } from '@domain/Analytics'
+import { WeeklyAnalyticsResponse } from '@domain/Analytics'
+import type { PaymentStatus } from '@domain/Order'
 import { zeroFillWeeks } from './zeroFillWeeks'
 
 export const getWeeklyAnalyticsUseCaseImpl = Effect.gen(function* () {

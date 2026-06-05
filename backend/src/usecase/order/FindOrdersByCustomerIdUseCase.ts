@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
-import { CustomerId } from '@domain/Customer'
+import type { CustomerId } from '@domain/Customer'
 
 export const findOrdersByCustomerIdUseCaseImpl = Effect.gen(function* () {
   const orderRepo = yield* OrderRepository

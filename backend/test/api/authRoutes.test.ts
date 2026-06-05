@@ -7,16 +7,16 @@ import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordServiceLive } from 'src/usecase/auth/PasswordService'
 import { JwtServiceLive, JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGeneratorLive } from 'src/usecase/auth/TokenGenerator'
-import { RefreshToken, RefreshTokenId } from '@domain/RefreshToken'
-import { User, UserId } from '@domain/User'
+import type { RefreshToken } from '@domain/RefreshToken'
+import { RefreshTokenId } from '@domain/RefreshToken'
+import type { User, UserId } from '@domain/User'
 import { LoginUseCase, loginUseCaseImpl } from 'src/usecase/auth/LoginUseCase'
 import { RefreshTokenUseCase, refreshUseCaseImpl } from 'src/usecase/auth/RefreshTokenUseCase'
 import { LogoutUseCase, logoutUseCaseImpl } from 'src/usecase/auth/LogoutUseCase'
-import { LoginInput } from 'src/usecase/auth/LoginUseCase'
-import { RefreshTokenInput } from 'src/usecase/auth/RefreshTokenUseCase'
-import { LogoutInput } from '@domain/Auth'
+import type { LoginInput } from 'src/usecase/auth/LoginUseCase'
+import type { RefreshTokenInput } from 'src/usecase/auth/RefreshTokenUseCase'
+import type { LogoutInput, JwtPayload } from '@domain/Auth'
 import { CurrentUser } from '@domain/CurrentUser'
-import { JwtPayload } from '@domain/Auth'
 
 // Helper functions that call through the service interface
 const login = (input: LoginInput) =>
@@ -96,9 +96,18 @@ const createTestLayer = (users: User[], storedRefreshTokens: RefreshToken[]) => 
   ).pipe(Layer.provide(TestConfig))
 
   return Layer.mergeAll(
-    Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))),
-    Layer.effect(RefreshTokenUseCase, Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))),
-    Layer.effect(LogoutUseCase, Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl)))
+    Layer.effect(
+      LoginUseCase,
+      Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))
+    ),
+    Layer.effect(
+      RefreshTokenUseCase,
+      Effect.map(refreshUseCaseImpl, (impl) => new RefreshTokenUseCase(impl))
+    ),
+    Layer.effect(
+      LogoutUseCase,
+      Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl))
+    )
   ).pipe(Layer.provideMerge(baseRepos))
 }
 

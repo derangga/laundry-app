@@ -21,22 +21,20 @@ import {
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceRepository } from '@repositories/ServiceRepository'
-import {
+import type {
   Order,
   OrderFromDb,
   OrderItem,
-  OrderId,
   OrderItemId,
   OrderStatus,
   PaymentStatus,
-  CreateOrderInput,
-  CreateOrderItemInput,
   OrderWithDetails,
-  OrderFilterOptions,
 } from '@domain/Order'
+import { OrderId, CreateOrderInput, CreateOrderItemInput, OrderFilterOptions } from '@domain/Order'
 import { OrderCannotBeCancelled } from '@domain/OrderErrors'
 import { CancelOrderInput } from '@laundry-app/shared'
-import { LaundryService, ServiceId, UnitType } from '@domain/LaundryService'
+import type { LaundryService, UnitType } from '@domain/LaundryService'
+import { ServiceId } from '@domain/LaundryService'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 import { CurrentUser } from '@domain/CurrentUser'

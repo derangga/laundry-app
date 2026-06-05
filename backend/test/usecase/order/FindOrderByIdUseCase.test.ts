@@ -6,9 +6,10 @@ import {
 } from 'src/usecase/order/FindOrderByIdUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderNotFound } from '@domain/OrderErrors'
-import { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
-import { CustomerId } from '@domain/Customer'
-import { UserId } from '@domain/User'
+import type { Order, OrderStatus, PaymentStatus } from '@domain/Order'
+import { OrderId } from '@domain/Order'
+import type { CustomerId } from '@domain/Customer'
+import type { UserId } from '@domain/User'
 
 const createTestOrder = (id: string, overrides?: Partial<Order>): Order =>
   ({

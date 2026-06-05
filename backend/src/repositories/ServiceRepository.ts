@@ -1,13 +1,12 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError, Model } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
-import {
-  LaundryService,
+import type {
   ServiceId,
-  ActiveServiceInfo,
   CreateLaundryServiceInput,
   UpdateLaundryServiceInput,
 } from '../domain/LaundryService'
+import { LaundryService, ActiveServiceInfo } from '../domain/LaundryService'
 
 // Helper to decode SQL results through the schema
 const decodeServices = Schema.decodeUnknown(Schema.Array(LaundryService))

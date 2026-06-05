@@ -1,15 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
-import {
-  Order,
-  OrderStatus,
-  PaymentStatus,
-  OrderWithDetails,
-  OrderSummary,
-  OrderId,
-  OrderFilterOptions,
-} from '@domain/Order'
+import type { OrderStatus, PaymentStatus, OrderWithDetails, OrderSummary } from '@domain/Order'
+import { Order, OrderId, OrderFilterOptions } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
 import { UserId } from '@domain/User'
 import { createMockSqlClient, createSqlError } from '../testUtils'

@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
 import { ServiceRepository } from '@repositories/ServiceRepository'
 import { ServiceNotFound } from '@domain/ServiceErrors'
-import { ServiceId } from '@domain/LaundryService'
+import type { ServiceId } from '@domain/LaundryService'
 
 export const findServiceByIdUseCaseImpl = Effect.gen(function* () {
   const repo = yield* ServiceRepository

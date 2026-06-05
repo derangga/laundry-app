@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { OrderNotFound } from '@domain/OrderErrors'
-import { OrderId } from '@domain/Order'
+import type { OrderId } from '@domain/Order'
 
 export const findOrderByIdUseCaseImpl = Effect.gen(function* () {
   const orderRepo = yield* OrderRepository

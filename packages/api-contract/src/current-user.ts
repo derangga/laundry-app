@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect'
-import { UserId, UserRole } from '@laundry-app/shared'
+import type { UserId, UserRole } from '@laundry-app/shared'
 import { Unauthorized } from './errors.js'
 
 export interface CurrentUserData {

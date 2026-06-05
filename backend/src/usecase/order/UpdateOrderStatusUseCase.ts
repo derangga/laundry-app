@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import { OrderRepository } from '@repositories/OrderRepository'
 import { FindOrderByIdUseCase } from './FindOrderByIdUseCase'
 import { validateStatusTransition } from '@domain/OrderStatusValidator'
-import { OrderId, OrderStatus } from '@domain/Order'
+import type { OrderId, OrderStatus } from '@domain/Order'
 
 import { OrderPaymentRequired } from '@domain/OrderErrors'
 

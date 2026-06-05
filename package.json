@@ -14,9 +14,12 @@
     "typecheck:frontend": "bun --cwd ./frontend typecheck",
     "lint": "bun run --parallel lint:frontend",
     "lint:frontend": "bun --cwd ./frontend lint",
+    "lint:shared": "oxlint -c packages/.oxlintrc.json packages",
     "format": "bun run --parallel format:backend format:frontend",
     "format:backend": "bun --cwd ./backend format",
     "format:frontend": "bun --cwd ./frontend format",
+    "format:check:shared": "prettier --check \"packages/**/*.ts\"",
+    "typecheck:shared": "tsc -p packages/shared/tsconfig.json --noEmit && tsc -p packages/api-contract/tsconfig.json --noEmit && tsc -p packages/observability/tsconfig.json --noEmit",
     "prepare": "lefthook install",
     "doctor": "npx react-doctor@latest"
   },
@@ -29,6 +32,9 @@
   ],
   "devDependencies": {
     "lefthook": "^2.1.6",
-    "react-doctor": "^0.3.0"
+    "oxlint": "^1.68.0",
+    "prettier": "^3.8.1",
+    "react-doctor": "^0.3.0",
+    "typescript": "^5.9.3"
   }
 }

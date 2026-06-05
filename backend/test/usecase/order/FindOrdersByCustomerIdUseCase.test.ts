@@ -5,9 +5,9 @@ import {
   findOrdersByCustomerIdUseCaseImpl,
 } from 'src/usecase/order/FindOrdersByCustomerIdUseCase'
 import { OrderRepository } from '@repositories/OrderRepository'
-import { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
+import type { Order, OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
 import { CustomerId } from '@domain/Customer'
-import { UserId } from '@domain/User'
+import type { UserId } from '@domain/User'
 
 const createTestOrder = (id: string, overrides?: Partial<Order>): Order =>
   ({

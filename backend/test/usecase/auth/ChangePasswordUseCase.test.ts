@@ -6,8 +6,9 @@ import {
 } from 'src/usecase/auth/ChangePasswordUseCase'
 import { UserRepository } from '@repositories/UserRepository'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
-import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
-import { UserId, UserRole } from '@domain/User'
+import type { CurrentUserData } from '@domain/CurrentUser'
+import { CurrentUser } from '@domain/CurrentUser'
+import type { UserId, UserRole } from '@domain/User'
 
 const testUser: CurrentUserData = {
   id: 'user-123' as UserId,
@@ -30,8 +31,7 @@ let updatedPasswordHash: string | undefined
 
 const createMockUserRepo = (user: typeof testUserWithPassword | null) =>
   Layer.succeed(UserRepository, {
-    findByIdWithPassword: (_id: UserId) =>
-      Effect.succeed(user ? Option.some(user) : Option.none()),
+    findByIdWithPassword: (_id: UserId) => Effect.succeed(user ? Option.some(user) : Option.none()),
     update: (_id: UserId, data: { password_hash?: string }) => {
       updatedPasswordHash = data.password_hash
       return Effect.succeed(
@@ -65,7 +65,7 @@ const createTestLayer = (opts: {
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
-        createMockUserRepo('user' in opts ? opts.user ?? null : testUserWithPassword),
+        createMockUserRepo('user' in opts ? (opts.user ?? null) : testUserWithPassword),
         createMockPasswordService(opts.passwordValid ?? true)
       )
     )
@@ -83,10 +83,7 @@ describe('ChangePasswordUseCase', () => {
     })
 
     const result = await Effect.runPromise(
-      Effect.provide(
-        Effect.provide(program, createTestLayer({})),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer({})), CurrentUser.layer(testUser))
     )
 
     expect(result.success).toBe(true)
@@ -125,10 +122,7 @@ describe('ChangePasswordUseCase', () => {
     })
 
     const result = await Effect.runPromiseExit(
-      Effect.provide(
-        Effect.provide(program, createTestLayer({})),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer({})), CurrentUser.layer(testUser))
     )
 
     expect(result._tag).toBe('Failure')

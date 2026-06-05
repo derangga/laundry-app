@@ -4,8 +4,8 @@ import {
   AuthAdminMiddleware,
   Forbidden,
   Unauthorized,
-  type CurrentUserData,
 } from '@laundry-app/api-contract'
+import type { CurrentUserData } from '@laundry-app/api-contract'
 import { JwtService } from 'src/usecase/auth/JwtService'
 
 /**
@@ -63,7 +63,7 @@ export const AuthAdminMiddlewareLive = Layer.effect(
         const user = yield* verifyToken(jwtService, token)
 
         if (user.role !== 'admin') {
-          yield* new Forbidden({ message: "You don't have any access to this endpoint" })
+          return yield* new Forbidden({ message: "You don't have any access to this endpoint" })
         }
 
         return user

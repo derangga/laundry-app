@@ -1,6 +1,7 @@
 import { Effect, Layer, ConfigProvider, Schema } from 'effect'
 import { PasswordService, PasswordServiceLive } from 'src/usecase/auth/PasswordService'
-import { User, UserId, UserRole } from '@domain/User'
+import type { User } from '@domain/User'
+import { UserId, UserRole } from '@domain/User'
 import { RefreshTokenId } from '@domain/RefreshToken'
 
 export const TestConfigProvider = ConfigProvider.fromMap(

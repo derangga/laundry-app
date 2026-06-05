@@ -4,7 +4,7 @@ import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { CustomerRepository } from '@repositories/CustomerRepository'
 import { UserRepository } from '@repositories/UserRepository'
 import { ReceiptItem, ReceiptResponse } from '@domain/Receipt'
-import { OrderId } from '@domain/Order'
+import type { OrderId } from '@domain/Order'
 import { OrderNotFound } from '@domain/OrderErrors'
 
 export const generateReceiptUseCaseImpl = Effect.gen(function* () {

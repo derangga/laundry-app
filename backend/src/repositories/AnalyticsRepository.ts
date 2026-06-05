@@ -1,7 +1,7 @@
 import { Effect, Option, Schema } from 'effect'
 import { SqlClient, SqlError } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
-import { PaymentStatus } from '../domain/Order'
+import type { PaymentStatus } from '../domain/Order'
 import { WeeklyRow } from '@domain/Analytics'
 
 const decodeWeeklyRows = Schema.decodeUnknown(Schema.Array(WeeklyRow))

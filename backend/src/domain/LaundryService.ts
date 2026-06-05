@@ -1,3 +1,7 @@
+import { Schema } from 'effect'
+import { Model } from '@effect/sql'
+import { ServiceId, UnitType, DecimalNumber } from '@laundry-app/shared'
+
 export {
   ServiceId,
   UnitType,
@@ -7,10 +11,6 @@ export {
   LaundryServiceResponse,
   SuccessDeleteService,
 } from '@laundry-app/shared'
-
-import { Schema } from 'effect'
-import { Model } from '@effect/sql'
-import { ServiceId, UnitType, DecimalNumber } from '@laundry-app/shared'
 
 export class LaundryService extends Model.Class<LaundryService>('LaundryService')({
   id: Model.Generated(ServiceId),

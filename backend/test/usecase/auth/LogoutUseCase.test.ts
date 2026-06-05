@@ -3,8 +3,9 @@ import { Effect, Layer, Option } from 'effect'
 import { LogoutUseCase, logoutUseCaseImpl } from 'src/usecase/auth/LogoutUseCase'
 import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
-import { CurrentUser, CurrentUserData } from '@domain/CurrentUser'
-import { UserId, UserRole } from '@domain/User'
+import type { CurrentUserData } from '@domain/CurrentUser'
+import { CurrentUser } from '@domain/CurrentUser'
+import type { UserId, UserRole } from '@domain/User'
 
 const MOCK_HASHED_TOKEN = 'hashed-token-value'
 
@@ -48,9 +49,10 @@ const createMockRefreshTokenRepo = () =>
   } as unknown as RefreshTokenRepository)
 
 const createTestLayer = () =>
-  Layer.effect(LogoutUseCase, Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl))).pipe(
-    Layer.provide(Layer.mergeAll(createMockRefreshTokenRepo(), MockTokenGenerator))
-  )
+  Layer.effect(
+    LogoutUseCase,
+    Effect.map(logoutUseCaseImpl, (impl) => new LogoutUseCase(impl))
+  ).pipe(Layer.provide(Layer.mergeAll(createMockRefreshTokenRepo(), MockTokenGenerator)))
 
 describe('LogoutUseCase', () => {
   beforeEach(() => {
@@ -65,10 +67,7 @@ describe('LogoutUseCase', () => {
     })
 
     const result = await Effect.runPromise(
-      Effect.provide(
-        Effect.provide(program, createTestLayer()),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer()), CurrentUser.layer(testUser))
     )
 
     expect(result.success).toBe(true)
@@ -83,10 +82,7 @@ describe('LogoutUseCase', () => {
     })
 
     const result = await Effect.runPromise(
-      Effect.provide(
-        Effect.provide(program, createTestLayer()),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer()), CurrentUser.layer(testUser))
     )
 
     expect(result.success).toBe(true)
@@ -101,10 +97,7 @@ describe('LogoutUseCase', () => {
     })
 
     const result = await Effect.runPromise(
-      Effect.provide(
-        Effect.provide(program, createTestLayer()),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer()), CurrentUser.layer(testUser))
     )
 
     expect(result.success).toBe(true)
@@ -134,10 +127,7 @@ describe('LogoutUseCase', () => {
     })
 
     const result = await Effect.runPromise(
-      Effect.provide(
-        Effect.provide(program, createTestLayer()),
-        CurrentUser.layer(testUser)
-      )
+      Effect.provide(Effect.provide(program, createTestLayer()), CurrentUser.layer(testUser))
     )
 
     expect(result.success).toBe(true)

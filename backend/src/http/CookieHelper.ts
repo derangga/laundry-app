@@ -1,4 +1,5 @@
-import { HttpApp, HttpServerRequest, HttpServerResponse } from '@effect/platform'
+import type { HttpServerRequest } from '@effect/platform'
+import { HttpApp, HttpServerResponse } from '@effect/platform'
 import { Duration, Effect, Option } from 'effect'
 import { ServerConfig } from '@configs/env'
 

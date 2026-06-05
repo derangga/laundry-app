@@ -93,7 +93,9 @@ export class ChangePasswordInput extends Schema.Class<ChangePasswordInput>('Chan
 /**
  * Success response for password change operation.
  */
-export class ChangePasswordSuccess extends Schema.Class<ChangePasswordSuccess>('ChangePasswordSuccess')({
+export class ChangePasswordSuccess extends Schema.Class<ChangePasswordSuccess>(
+  'ChangePasswordSuccess'
+)({
   success: Schema.Boolean,
   message: Schema.String,
 }) {}

@@ -1,8 +1,10 @@
 import { Effect, Schema } from 'effect'
-import { SqlClient, SqlError, Model } from '@effect/sql'
+import type { SqlError } from '@effect/sql'
+import { SqlClient, Model } from '@effect/sql'
 import { withSpanCount } from '@laundry-app/observability'
-import { OrderItem, OrderItemWithServiceFromDb, OrderId } from '../domain/Order'
-import { ServiceId } from '../domain/LaundryService'
+import type { OrderId } from '../domain/Order'
+import { OrderItem, OrderItemWithServiceFromDb } from '../domain/Order'
+import type { ServiceId } from '../domain/LaundryService'
 
 // Helper to decode SQL results through the schema
 const decodeOrderItems = Schema.decodeUnknown(Schema.Array(OrderItem))

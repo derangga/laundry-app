@@ -1,6 +1,6 @@
 import { Config, Effect } from 'effect'
 import * as Bun from 'bun'
-import { ConfigError } from 'effect/ConfigError'
+import type { ConfigError } from 'effect/ConfigError'
 
 const DatabaseConfig = Config.all({
   host: Config.string('DATABASE_HOST'),
@@ -34,8 +34,13 @@ function runMigration(direction: 'up' | 'down'): Effect.Effect<void, ConfigError
             hostname: config.host,
             port: config.port,
             socket: {
-              open(socket) { socket.end(); resolve(true) },
-              error() { resolve(false) },
+              open(socket) {
+                socket.end()
+                resolve(true)
+              },
+              error() {
+                resolve(false)
+              },
               data() {},
             },
           })
@@ -43,7 +48,9 @@ function runMigration(direction: 'up' | 'down'): Effect.Effect<void, ConfigError
       catch: () => new Error('Can not connect to PostgreSQL'),
     })
     if (!isReachable) {
-      yield* Effect.fail(new Error(`Can not connect to PostgreSQL at ${config.host}:${config.port}`))
+      yield* Effect.fail(
+        new Error(`Can not connect to PostgreSQL at ${config.host}:${config.port}`)
+      )
     }
 
     const databaseUrl = `postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}?sslmode=disable`

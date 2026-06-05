@@ -6,7 +6,7 @@ import { RefreshTokenRepository } from '@repositories/RefreshTokenRepository'
 import { PasswordService } from 'src/usecase/auth/PasswordService'
 import { JwtService } from 'src/usecase/auth/JwtService'
 import { TokenGenerator } from 'src/usecase/auth/TokenGenerator'
-import { UserId, UserRole } from '@domain/User'
+import type { UserId, UserRole } from '@domain/User'
 
 const testUser = {
   id: 'user-123' as UserId,
@@ -26,8 +26,7 @@ const MOCK_EXPIRY = new Date('2025-01-01')
 
 const createMockUserRepo = (user: typeof testUser | null) =>
   Layer.succeed(UserRepository, {
-    findByEmail: (_email: string) =>
-      Effect.succeed(user ? Option.some(user) : Option.none()),
+    findByEmail: (_email: string) => Effect.succeed(user ? Option.some(user) : Option.none()),
   } as unknown as UserRepository)
 
 const createMockPasswordService = (isValid: boolean) =>
@@ -66,10 +65,13 @@ const createTestLayer = (opts: {
   passwordValid?: boolean
   insertSpy?: (data: unknown) => void
 }) =>
-  Layer.effect(LoginUseCase, Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))).pipe(
+  Layer.effect(
+    LoginUseCase,
+    Effect.map(loginUseCaseImpl, (impl) => new LoginUseCase(impl))
+  ).pipe(
     Layer.provide(
       Layer.mergeAll(
-        createMockUserRepo('user' in opts ? opts.user ?? null : testUser),
+        createMockUserRepo('user' in opts ? (opts.user ?? null) : testUser),
         createMockPasswordService(opts.passwordValid ?? true),
         MockJwtService,
         MockTokenGenerator,

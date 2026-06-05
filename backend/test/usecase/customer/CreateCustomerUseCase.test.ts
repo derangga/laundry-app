@@ -5,7 +5,8 @@ import {
   createCustomerUseCaseImpl,
 } from 'src/usecase/customer/CreateCustomerUseCase'
 import { CustomerRepository } from '@repositories/CustomerRepository'
-import { CreateCustomerInput, Customer, CustomerId } from '@domain/Customer'
+import type { Customer, CustomerId } from '@domain/Customer'
+import { CreateCustomerInput } from '@domain/Customer'
 import { CustomerAlreadyExists } from '@domain/CustomerErrors'
 
 const existingCustomer = {

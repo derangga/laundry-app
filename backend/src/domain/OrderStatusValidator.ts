@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { OrderStatus } from './Order.js'
+import type { OrderStatus } from './Order.js'
 import { InvalidOrderTransition } from './OrderErrors.js'
 
 const validTransitions: Record<OrderStatus, OrderStatus[]> = {

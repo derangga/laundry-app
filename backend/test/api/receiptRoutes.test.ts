@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Effect, Layer } from 'effect'
 import { GenerateReceiptUseCase } from 'src/usecase/receipt/GenerateReceiptUseCase'
-import { OrderId, OrderStatus, PaymentStatus } from '@domain/Order'
-import { ReceiptResponse } from '@domain/Receipt'
+import type { OrderStatus, PaymentStatus } from '@domain/Order'
+import { OrderId } from '@domain/Order'
+import type { ReceiptResponse } from '@domain/Receipt'
 import { CurrentUser } from '@domain/CurrentUser'
 import { UserId } from '@domain/User'
-import { UnitType } from '@domain/LaundryService'
+import type { UnitType } from '@domain/LaundryService'
 import { OrderNotFound } from '@domain/http/HttpErrors'
 
 describe('GET /api/receipts/:orderId', () => {

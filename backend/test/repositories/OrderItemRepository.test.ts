@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { Effect, Option } from 'effect'
-import { OrderItemRepository, OrderItemInsertData } from '@repositories/OrderItemRepository'
+import type { OrderItemInsertData } from '@repositories/OrderItemRepository'
+import { OrderItemRepository } from '@repositories/OrderItemRepository'
 import { ServiceId } from '@domain/LaundryService'
 import { createMockSqlClient, createSqlError } from '../testUtils'
-import { OrderId, OrderItem, OrderItemId, OrderItemWithService } from '@domain/Order'
+import type { OrderItem, OrderItemWithService } from '@domain/Order'
+import { OrderId, OrderItemId } from '@domain/Order'
 
 const createMockOrderItem = (overrides: Partial<OrderItem> = {}): OrderItem =>
   ({
