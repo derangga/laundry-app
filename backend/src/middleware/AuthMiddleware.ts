@@ -63,7 +63,7 @@ export const AuthAdminMiddlewareLive = Layer.effect(
         const user = yield* verifyToken(jwtService, token)
 
         if (user.role !== 'admin') {
-          yield* new Forbidden({ message: "You don't have any access to this endpoint" })
+          return yield* new Forbidden({ message: "You don't have any access to this endpoint" })
         }
 
         return user
