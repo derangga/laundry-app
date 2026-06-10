@@ -29,24 +29,24 @@ When in doubt, run Phase 1 + Phase 2 (Triage) only — the cost is small and the
 
 ## Phase table
 
-| #   | Phase                 | Purpose                                                                                                    |
-| --- | --------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 1   | Setup                 | Read manifest, identify branch, load context                                                               |
-| 2   | Triage                | Classify task type and size; pick phase set                                                                |
-| 3   | Discovery             | Find relevant files, patterns, conventions; **run `gitnexus_impact` for any symbol about to be modified**  |
-| 4   | Skill Discovery       | Invoke the right gateway; load Tier-1 skills it returns                                                    |
-| 5   | Complexity            | Estimate scope, identify risks and unknowns                                                                |
-| 6   | Brainstorming         | Generate 2–3 approach options; pick best with `AskUserQuestion` if material                                |
-| 7   | Architecture          | Design component structure, data flow, interfaces                                                          |
-| 8   | Implementation        | Spawn the domain developer agent; write the code                                                           |
-| 9   | Design Verification   | Confirm the implementation matches the architecture from Phase 7                                           |
-| 10  | Domain Compliance     | Verify CLAUDE.md rules: no `SELECT *`, snake_case, error class placement, Effect patterns                  |
-| 11  | Code Quality          | Maintainability review; for MEDIUM+ run `/simplify` on the diff                                            |
-| 12  | Test Planning         | Identify what to test, edge cases, integration points                                                      |
-| 13  | Testing               | Write and run tests via the developer agent                                                                |
-| 14  | Coverage Verification | Confirm critical paths are covered                                                                         |
-| 15  | Test Quality          | Validate assertions are meaningful; no false positives                                                     |
-| 16  | Completion            | **Run `gitnexus_detect_changes`**; verify reviewer PASS for all dirty domains; record final manifest entry |
+| #   | Phase                 | Purpose                                                                                                      |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1   | Setup                 | Read manifest, identify branch, load context                                                                 |
+| 2   | Triage                | Classify task type and size; pick phase set. **If MEDIUM, offer `grill-me` before Phase 3 (see gate below)** |
+| 3   | Discovery             | Find relevant files, patterns, conventions; **run `gitnexus_impact` for any symbol about to be modified**    |
+| 4   | Skill Discovery       | Invoke the right gateway; load Tier-1 skills it returns                                                      |
+| 5   | Complexity            | Estimate scope, identify risks and unknowns                                                                  |
+| 6   | Brainstorming         | Generate 2–3 approach options; pick best with `AskUserQuestion` if material                                  |
+| 7   | Architecture          | Design component structure, data flow, interfaces                                                            |
+| 8   | Implementation        | Spawn the domain developer agent; write the code                                                             |
+| 9   | Design Verification   | Confirm the implementation matches the architecture from Phase 7                                             |
+| 10  | Domain Compliance     | Verify CLAUDE.md rules: no `SELECT *`, snake_case, error class placement, Effect patterns                    |
+| 11  | Code Quality          | Maintainability review; for MEDIUM+ run `/simplify` on the diff                                              |
+| 12  | Test Planning         | Identify what to test, edge cases, integration points                                                        |
+| 13  | Testing               | Write and run tests via the developer agent                                                                  |
+| 14  | Coverage Verification | Confirm critical paths are covered                                                                           |
+| 15  | Test Quality          | Validate assertions are meaningful; no false positives                                                       |
+| 16  | Completion            | **Run `gitnexus_detect_changes`**; verify reviewer PASS for all dirty domains; record final manifest entry   |
 
 ## Skip rules (adapted from the Praetorian article 4.3)
 
@@ -58,6 +58,15 @@ Phase 2 classifies the task and selects the phase subset. Apply strictly.
 | **SMALL**   | <100 lines, single domain, well-understood     | Skip 5, 6, 7, 9, 11 |
 | **MEDIUM**  | Multi-file, single or dual domain, some design | Skip 5 only         |
 | **LARGE**   | New subsystem, cross-domain, architectural     | Run all 16          |
+
+### MEDIUM grill-me gate
+
+A MEDIUM task carries enough design surface that a misread of intent is costly, but not so much that planning is automatic. So immediately after Phase 2 classifies a task as **MEDIUM** — before Phase 3 (Discovery) — the orchestrator MUST ask the user, via `AskUserQuestion`, whether to establish shared understanding first by invoking the `grill-me` skill:
+
+- **Grill me first (Recommended)** — invoke the `grill-me` skill, work through its decision tree until intent is resolved, then resume at Phase 3 with that shared understanding folded into the manifest's findings/decisions.
+- **Skip, proceed directly** — continue to Phase 3 without grilling.
+
+Record the choice in the manifest (`decisions_add`). This gate applies ONLY to MEDIUM. TRIVIAL and SMALL are too small to justify the interruption; LARGE already runs full Brainstorming + Architecture (Phases 6–7), which covers the same ground.
 
 ## Manifest discipline
 
