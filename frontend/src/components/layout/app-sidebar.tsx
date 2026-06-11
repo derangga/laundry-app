@@ -74,7 +74,7 @@ export function AppSidebar() {
   })
 
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
